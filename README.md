@@ -1,12 +1,14 @@
 # HashTags
 
+[![GoDoc](https://godoc.org/github.com/mwat56/go-hashtags?status.svg)](https://godoc.org/github.com/mwat56/go-hashtags)
+
 ## Purpose
 
 ## Installation
 
 You can use `Go` to install this package for you:
 
-    go get github.com/mwat56/go-hashtags
+    go get -u github.com/mwat56/go-hashtags
 
 ## Usage
 
