@@ -18,11 +18,11 @@ type (
 	// Simple type alias
 	tHash = string
 
-	// TSourceList is a slice of strings
-	TSourceList []string
+	// tSourceList is a slice of strings
+	tSourceList []string
 
 	// A map indexed by `tHash` holding a `tStrList`
-	tHashMap map[tHash]*TSourceList
+	tHashMap map[tHash]*tSourceList
 
 	// THashList is a list of hashes pointing to sources
 	THashList tHashMap
@@ -31,7 +31,7 @@ type (
 // `add()` appends 'aID` to the list
 //
 // `aID` the source ID to add to the list.
-func (sl *TSourceList) add(aID string) *TSourceList {
+func (sl *tSourceList) add(aID string) *tSourceList {
 	for _, s := range *sl {
 		if s == aID {
 			// already in list
@@ -43,10 +43,17 @@ func (sl *TSourceList) add(aID string) *TSourceList {
 	return sl
 } // add()
 
+// `clear()` removes all entries in this list.
+func (sl *tSourceList) clear() *tSourceList {
+	(*sl) = (*sl)[:0]
+
+	return sl
+} // Clear()
+
 // `indexOf()` returns the list indexOf of `aID`.
 //
 // `aID` is the string to look up.
-func (sl *TSourceList) indexOf(aID string) int {
+func (sl *tSourceList) indexOf(aID string) int {
 	for result, id := range *sl {
 		if id == aID {
 			return result
@@ -59,7 +66,7 @@ func (sl *TSourceList) indexOf(aID string) int {
 // `remove()` deletes the source at index `aIdx`.
 //
 // `aIdx` the list index of the source to delete.
-func (sl *TSourceList) remove(aIdx int) *TSourceList {
+func (sl *tSourceList) remove(aIdx int) *tSourceList {
 	slen := len(*sl) - 1
 	if 0 > slen {
 		// can't remove from empty list …
@@ -77,7 +84,7 @@ func (sl *TSourceList) remove(aIdx int) *TSourceList {
 } // remove()
 
 // `sort()` returns the sorted list.
-func (sl *TSourceList) sort() *TSourceList {
+func (sl *tSourceList) sort() *tSourceList {
 	sort.Slice(*sl, func(i, j int) bool {
 		return ((*sl)[i] < (*sl)[j]) // ascending
 	})
@@ -88,7 +95,7 @@ func (sl *TSourceList) sort() *TSourceList {
 // String returns the list as a linefeed seperated string.
 //
 // (Implements `Stringer` interface)
-func (sl *TSourceList) String() string {
+func (sl *tSourceList) String() string {
 	sl.sort()
 
 	return strings.Join(*sl, "\n")
@@ -111,13 +118,28 @@ func (hl *THashList) Add(aHash, aID string) *THashList {
 	if sl, ok := (*hl)[aHash]; ok {
 		(*hl)[aHash] = sl.add(aID)
 	} else {
-		sl := make(TSourceList, 1)
+		sl := make(tSourceList, 1)
 		sl[0] = aID
 		(*hl)[aHash] = &sl
 	}
 
 	return hl
 } // Add()
+
+// Clear empties the internal data structures.
+//
+// This method can be called once the program has used the config values
+// stored in the INI file to setup the application. Emptying these data
+// structures should help the garbage collector do release the data not
+// needed anymore.
+func (hl *THashList) Clear() bool {
+	for hash, sl := range *hl {
+		sl.clear()
+		delete(*hl, hash)
+	}
+
+	return (0 == len(*hl))
+} // Clear()
 
 // DeleteSource removes `aID` from the list of `aHash`.
 //
@@ -154,12 +176,12 @@ func (hl *THashList) HashLen(aHash string) int {
 // HashList returns a list of strings associates with 'aHash`.
 //
 // `aHash` identifies the sources list to lookup.
-func (hl *THashList) HashList(aHash string) *TSourceList {
+func (hl *THashList) HashList(aHash string) (rList []string) {
 	if sl, ok := (*hl)[aHash]; ok {
-		return sl
+		rList = []string(*sl)
 	}
 
-	return nil
+	return
 } // HashList()
 
 // HashParse searches `aText` for #hashtags and if found

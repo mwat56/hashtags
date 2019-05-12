@@ -55,6 +55,31 @@ func TestTHashList_Add(t *testing.T) {
 	}
 } // TestTHashList_Add()
 
+func TestTHashList_Clear(t *testing.T) {
+	hash1, hash2 := "#hash1", "#hash2"
+	id1, id2 := "id_c", "id_a"
+	hl1 := NewList().
+		Add(hash1, id1).
+		Add(hash2, id2).
+		Add(hash2, id1).
+		Add(hash1, id2)
+	tests := []struct {
+		name string
+		hl   *THashList
+		want bool
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.Clear(); got != tt.want {
+				t.Errorf("THashList.Clear() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_Clear()
+
 func TestTHashList_Len(t *testing.T) {
 	hl1 := NewList()
 	hl2 := NewList().Add("#hash", "source")
@@ -81,8 +106,16 @@ func TestTHashList_Len(t *testing.T) {
 } // TestTHashList_Len()
 
 func TestTHashList_Load(t *testing.T) {
-	hl1 := NewList()
 	fn := "hashlist.db"
+	hash1, hash2 := "#hash1", "#hash2"
+	id1, id2 := "id_c", "id_a"
+	hl1 := NewList().
+		Add(hash1, id1).
+		Add(hash2, id2).
+		Add(hash2, id1).
+		Add(hash1, id2)
+	hl1.Store(fn)
+	hl1.Clear()
 	type args struct {
 		aFilename string
 	}
@@ -201,40 +234,40 @@ func TestTHashList_String(t *testing.T) {
 } // TestTHashList_String()
 
 func TestTSourceList_remove(t *testing.T) {
-	sl1 := &TSourceList{
+	sl1 := &tSourceList{
 		"one",
 		"two",
 		"three",
 		"four",
 		"five",
 	}
-	wl1 := &TSourceList{
+	wl1 := &tSourceList{
 		"two",
 		"three",
 		"four",
 		"five",
 	}
-	wl2 := &TSourceList{
+	wl2 := &tSourceList{
 		"two",
 		"three",
 		"five",
 	}
-	wl3 := &TSourceList{
+	wl3 := &tSourceList{
 		"two",
 		"three",
 	}
-	wl4 := &TSourceList{
+	wl4 := &tSourceList{
 		"two",
 	}
-	wl5 := &TSourceList{}
+	wl5 := &tSourceList{}
 	type args struct {
 		aIdx int
 	}
 	tests := []struct {
 		name string
-		sl   *TSourceList
+		sl   *tSourceList
 		args args
-		want *TSourceList
+		want *tSourceList
 	}{
 		// TODO: Add test cases.
 		{" 1", sl1, args{0}, wl1},
@@ -254,17 +287,17 @@ func TestTSourceList_remove(t *testing.T) {
 } // TestTSourceList_remove()
 
 func TestTSourceList_String(t *testing.T) {
-	sl1 := &TSourceList{
+	sl1 := &tSourceList{
 		"one",
 		"two",
 		"three",
 	}
 	wl1 := "one\nthree\ntwo"
-	sl2 := &TSourceList{}
+	sl2 := &tSourceList{}
 	wl2 := ""
 	tests := []struct {
 		name string
-		sl   *TSourceList
+		sl   *tSourceList
 		want string
 	}{
 		// TODO: Add test cases.
