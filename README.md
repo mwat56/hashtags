@@ -4,6 +4,8 @@
 
 ## Purpose
 
+    //TODO
+
 ## Installation
 
 You can use `Go` to install this package for you:
@@ -11,6 +13,8 @@ You can use `Go` to install this package for you:
     go get -u github.com/mwat56/go-hashtags
 
 ## Usage
+
+    //TODO
 
 ## Licence
 
@@ -22,4 +26,4 @@ You can use `Go` to install this package for you:
 >
 > This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 >
-> You should have received a copy of the GNU General Public License along with this program.  If not, see the [GNU General Public License](http://www.gnu.org/licenses/gpl.html) for details.
+> You should have received a copy of the GNU General Public License along with this program. If not, see the [GNU General Public License](http://www.gnu.org/licenses/gpl.html) for details.
