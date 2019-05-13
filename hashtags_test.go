@@ -5,6 +5,44 @@ import (
 	"testing"
 )
 
+func TestLoadList(t *testing.T) {
+	fn := "hashlist.db"
+	hash1, hash2 := "#hash1", "#hash2"
+	id1, id2 := "id_c", "id_a"
+	hl1 := NewList().
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
+	hl1.Store(fn)
+	hl2 := NewList()
+	type args struct {
+		aFilename string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *THashList
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{" 1", args{fn}, hl1, false},
+		{" 2", args{"does.not.exist"}, hl2, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := LoadList(tt.args.aFilename)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadList() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("LoadList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestLoadList()
+
 func TestNewList(t *testing.T) {
 	wl1 := make(THashList)
 	tests := []struct {
@@ -23,7 +61,7 @@ func TestNewList(t *testing.T) {
 	}
 } // TestNewList()
 
-func TestTHashList_Add(t *testing.T) {
+func TestTHashList_HashAdd(t *testing.T) {
 	hl1 := NewList()
 	h1 := "#hash"
 	s1 := "asource"
@@ -48,21 +86,21 @@ func TestTHashList_Add(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.Add(tt.args.aHash, tt.args.aSource).Len(); got != tt.want {
-				t.Errorf("THashList.Add() = %v, want %v", got, tt.want)
+			if got := tt.hl.HashAdd(tt.args.aHash, tt.args.aSource).Len(); got != tt.want {
+				t.Errorf("THashList.HashAdd() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-} // TestTHashList_Add()
+} // TestTHashList_HashAdd()
 
 func TestTHashList_Clear(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := "id_c", "id_a"
 	hl1 := NewList().
-		Add(hash1, id1).
-		Add(hash2, id2).
-		Add(hash2, id1).
-		Add(hash1, id2)
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
 	tests := []struct {
 		name string
 		hl   *THashList
@@ -84,15 +122,11 @@ func TestTHashList_HashList(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := "id_c", "id_a"
 	hl1 := NewList().
-		Add(hash1, id1).
-		Add(hash2, id2).
-		Add(hash2, id1).
-		Add(hash1, id2)
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
 	wl1 := []string{
-		id1,
-		id2,
-	}
-	wl2 := []string{
 		id2,
 		id1,
 	}
@@ -107,7 +141,7 @@ func TestTHashList_HashList(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{" 1", hl1, args{hash1}, wl1},
-		{" 2", hl1, args{hash2}, wl2},
+		{" 2", hl1, args{hash2}, wl1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -120,9 +154,9 @@ func TestTHashList_HashList(t *testing.T) {
 
 func TestTHashList_Len(t *testing.T) {
 	hl1 := NewList()
-	hl2 := NewList().Add("#hash", "source")
-	hl3 := NewList().Add("#hash2", "source1")
-	hl4 := NewList().Add("#hash2", "source1").Add("#hash3", "source2")
+	hl2 := NewList().HashAdd("#hash", "source")
+	hl3 := NewList().HashAdd("#hash2", "source1")
+	hl4 := NewList().HashAdd("#hash2", "source1").HashAdd("#hash3", "source2")
 	tests := []struct {
 		name string
 		hl   *THashList
@@ -148,10 +182,10 @@ func TestTHashList_Load(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := "id_c", "id_a"
 	hl1 := NewList().
-		Add(hash1, id1).
-		Add(hash2, id2).
-		Add(hash2, id1).
-		Add(hash1, id2)
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
 	hl1.Store(fn)
 	hl1.Clear()
 	hl2 := NewList()
@@ -167,7 +201,7 @@ func TestTHashList_Load(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{" 1", hl1, args{fn}, 2, false},
-		{" 2", hl2, args{".does.not.exist"}, 0, true},
+		{" 2", hl2, args{".does.not.exist"}, 0, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -188,7 +222,7 @@ func TestTHashList_parse(t *testing.T) {
 	s1 := []byte("What a #tag1,\n#tag2 and#tag3")
 	s2 := []byte("Helle @mention!\nDid you see @other or@another?")
 	type args struct {
-		aDelim rune
+		aDelim byte
 		aID    string
 		aText  []byte
 	}
@@ -211,14 +245,14 @@ func TestTHashList_parse(t *testing.T) {
 	}
 } // TestTHashList_parse()
 
-func TestTHashList_RemoveSource(t *testing.T) {
+func TestTHashList_HashRemove(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := "id_c", "id_a"
 	hl1 := NewList().
-		Add(hash1, id1).
-		Add(hash2, id2).
-		Add(hash2, id1).
-		Add(hash1, id2)
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
 	type args struct {
 		aHash string
 		aID   string
@@ -238,22 +272,22 @@ func TestTHashList_RemoveSource(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.RemoveSource(tt.args.aHash, tt.args.aID).HashLen(tt.args.aHash); got != tt.want {
-				t.Errorf("THashList.RemoveSource() = %v, want %v", got, tt.want)
+			if got := tt.hl.HashRemove(tt.args.aHash, tt.args.aID).HashLen(tt.args.aHash); got != tt.want {
+				t.Errorf("THashList.HashRemove() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-} // TestTHashList_RemoveSource()
+} // TestTHashList_HashRemove()
 
 func TestTHashList_Store(t *testing.T) {
 	fn := "hashlist.db"
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := "id_c", "id_a"
 	hl1 := NewList().
-		Add(hash1, id1).
-		Add(hash2, id2).
-		Add(hash2, id1).
-		Add(hash1, id2)
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
 	type args struct {
 		aFilename string
 	}
@@ -285,10 +319,10 @@ func TestTHashList_String(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := "id_c", "id_a"
 	hl1 := NewList().
-		Add(hash1, id1).
-		Add(hash2, id2).
-		Add(hash2, id1).
-		Add(hash1, id2)
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
 	wl1 := "[" + hash1 + "]\n" + id2 + "\n" + id1 +
 		"\n[" + hash2 + "]\n" + id2 + "\n" + id1 + "\n"
 	tests := []struct {
