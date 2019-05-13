@@ -250,7 +250,7 @@ func (hl *THashList) Load(aFilename string) (*THashList, error) {
 	return hl, err
 } // Load()
 
-// HashAdd appends `aID` to the list indexed by `aMention`.
+// MentionAdd appends `aID` to the list indexed by `aMention`.
 //
 // If either `aMention` or `aID` are empty strings they are silently
 // ignored (i.e. this method does nothing).
@@ -258,7 +258,7 @@ func (hl *THashList) Load(aFilename string) (*THashList, error) {
 // `aMention` is the list index to lookup.
 //
 // `aID` is to be added to the hash list.
-func (hl *THashList) MenzionAdd(aMention, aID string) *THashList {
+func (hl *THashList) MentionAdd(aMention, aID string) *THashList {
 	return hl.add('@', aMention, aID)
 } // MentionAdd()
 
