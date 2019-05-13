@@ -16,6 +16,10 @@ You can use `Go` to install this package for you:
 
 ## Usage
 
+In principle for each `#hashtag` (or `@mention`) a list of IDs is maintained.
+These IDs can be any (string) data that identifies the text in which the `#hashtag` was found, e.g. a filename or some database record reference.
+The only condition is that it is unique as far as the program using this package is concerned.
+
     //TODO
 
 ## Licence
