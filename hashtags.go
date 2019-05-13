@@ -50,7 +50,7 @@ func (sl *tSourceList) clear() *tSourceList {
 	return sl
 } // Clear()
 
-// `indexOf()` returns the list indexOf of `aID`.
+// `indexOf()` returns the list index of `aID`.
 //
 // `aID` is the string to look up.
 func (sl *tSourceList) indexOf(aID string) int {
@@ -141,27 +141,6 @@ func (hl *THashList) Clear() bool {
 	return (0 == len(*hl))
 } // Clear()
 
-// DeleteSource removes `aID` from the list of `aHash`.
-//
-// `aHash` identifies the sources list to lookup.
-//
-// `aID` is the source to remove from the list.
-func (hl *THashList) DeleteSource(aHash, aID string) *THashList {
-	if (0 == len(aHash)) || (0 == len(aID)) {
-		return hl
-	}
-	sl, ok := (*hl)[aHash]
-	if !ok {
-		return hl
-	}
-
-	if idx := sl.indexOf(aID); 0 <= idx {
-		sl.remove(idx)
-	}
-
-	return hl
-} // DeleteSource()
-
 // HashLen returns the number of sources stored for `aHash`.
 //
 // `aHash` identifies the sources list to lookup.
@@ -202,10 +181,9 @@ func (hl *THashList) Len() int {
 // Load reads the given `aFilename` returning the data structure
 // read from the file and a possible error condition.
 //
-// This method reads one line at a time of the INI file skipping both
-// empty lines and comments (identified by '#' or ';' at line start).
+// This method reads one line of the file at a time.
 //
-// `aFilename` is the name of the INI file to read.
+// `aFilename` is the name of the file to read.
 func (hl *THashList) Load(aFilename string) (*THashList, error) {
 	file, err := os.Open(aFilename)
 	if nil != err {
@@ -255,15 +233,14 @@ func (hl *THashList) parse(aDelim rune, aID string, aText []byte) *THashList {
 } // parse()
 
 var (
-	// match: [section]
-	sectionRE = regexp.MustCompile(`^\[\s*([^\]]*?)\s*]$`)
+	// match: [aHashtag]
+	hashHeadRE = regexp.MustCompile(`^\[\s*([^\]]*?)\s*\]$`)
 )
 
 // `read()` parses a file written by `Store()` returning the
 // number of bytes read and a possible error.
 //
-// This method reads one line of the INI file at a time skipping both
-// empty lines and comments (identified by '#' or ';' at line start).
+// This method reads one line of the file at a time.
 func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 	var section string
 
@@ -276,7 +253,7 @@ func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 			continue
 		}
 
-		if matches := sectionRE.FindStringSubmatch(line); nil != matches {
+		if matches := hashHeadRE.FindStringSubmatch(line); nil != matches {
 			section = strings.TrimSpace(matches[1])
 		} else {
 			hl.Add(section, line)
@@ -287,13 +264,33 @@ func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 	return
 } // read()
 
+// RemoveSource deletes `aID` from the list of `aHash`.
+//
+// `aHash` identifies the sources list to lookup.
+//
+// `aID` is the source to remove from the list.
+func (hl *THashList) RemoveSource(aHash, aID string) *THashList {
+	if (0 == len(aHash)) || (0 == len(aID)) {
+		return hl
+	}
+	sl, ok := (*hl)[aHash]
+	if !ok {
+		return hl
+	}
+
+	if idx := sl.indexOf(aID); 0 <= idx {
+		sl.remove(idx)
+	}
+
+	return hl
+} // RemoveSource()
+
 // Store writes the whole list to `aFilename`
 // returning the number of bytes written and a possible error.
 //
 // `aFilename` is the name of the file to write.
 func (hl *THashList) Store(aFilename string) (int, error) {
 	s := hl.String()
-
 	file, err := os.Create(aFilename)
 	if err != nil {
 		return 0, err
@@ -312,6 +309,7 @@ func (hl *THashList) String() string {
 	for hash := range *hl {
 		tmp = append(tmp, hash)
 	}
+	// sort the order of hashtags to get a reproducible result
 	sort.Slice(tmp, func(i, j int) bool {
 		return (tmp[i] < tmp[j]) // ascending
 	})
@@ -324,6 +322,18 @@ func (hl *THashList) String() string {
 } // String()
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+// LoadList returns a new `THashList` instance after reading
+// the given file.
+//
+// In case of an I/O error when reading the file it is returned.
+//
+// `aFilename` is the name of the file to read.
+func LoadList(aFilename string) (*THashList, error) {
+	result := NewList()
+
+	return result.Load(aFilename)
+} // LoadList()
 
 // NewList returns a new `THashList` instance.
 func NewList() *THashList {
