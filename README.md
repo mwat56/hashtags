@@ -4,7 +4,9 @@
 
 ## Purpose
 
-    //TODO
+Sometimes one might want to search and find socalled `#hashtags` or `@mentions` in your texts (in a broader sense) and store them for later retrieval.
+This package offers that facility.
+It provides the `THashList` class which can be used to parse texts for the occurance of both `#hashtags` and `@mentions` and store the hits in an internal list for later lookup; that list can be both stored in a file and later read from a file.
 
 ## Installation
 
