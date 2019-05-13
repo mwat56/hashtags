@@ -1,7 +1,7 @@
 /*
-Package hashtags implements hashtag/mentions handling.
+Package hashtags implements simple #hashtag/@mentions handling.
 
-    Copyright © 2019  M.Watermann, 10247 Berlin, Germany
+    Copyright © 2019 M.Watermann, 10247 Berlin, Germany
                     All rights reserved
                 EMail : <support@mwat.de>
 
@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see the
 [GNU General Public License](http://www.gnu.org/licenses/gpl.html)
 for details.
-
 */
 package hashtags
 
