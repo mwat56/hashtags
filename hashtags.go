@@ -49,7 +49,7 @@ func (sl *tSourceList) clear() *tSourceList {
 	(*sl) = (*sl)[:0]
 
 	return sl
-} // Clear()
+} // clear()
 
 // `indexOf()` returns the list index of `aID`.
 //
@@ -64,17 +64,33 @@ func (sl *tSourceList) indexOf(aID string) int {
 	return -1
 } // indexOf()
 
-// `remove()` deletes the source at index `aIdx`.
+// `removeID()` deletes the list entry of `aID`.
+//
+// `aID` is the string to look up.
+func (sl *tSourceList) removeID(aID string) *tSourceList {
+	idx := sl.indexOf(aID)
+	if 0 <= idx {
+		return sl.removeIdx(idx)
+	}
+
+	return sl
+} // removeID()
+
+// `removeIdx()` deletes the source at index `aIdx`.
 //
 // `aIdx` the list index of the source to delete.
-func (sl *tSourceList) remove(aIdx int) *tSourceList {
+func (sl *tSourceList) removeIdx(aIdx int) *tSourceList {
 	slen := len(*sl) - 1
 	if 0 > slen {
 		// can't remove from empty list …
 		return sl
 	}
 	if 0 == aIdx {
-		*sl = (*sl)[1:]
+		if 0 == slen {
+			*sl = (*sl)[:0]
+		} else {
+			*sl = (*sl)[1:]
+		}
 	} else if slen == aIdx {
 		*sl = (*sl)[:slen]
 	} else {
@@ -82,7 +98,7 @@ func (sl *tSourceList) remove(aIdx int) *tSourceList {
 	}
 
 	return sl
-} // remove()
+} // removeIdx()
 
 // `sort()` returns the sorted list.
 func (sl *tSourceList) sort() *tSourceList {
@@ -132,11 +148,12 @@ func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
 	return hl
 } // add()
 
-// Clear empties the internal data structures.
+// Clear empties the internal data structures:
+// all `#hashtags` and `@mentions` are deleted.
 func (hl *THashList) Clear() bool {
-	for hash, sl := range *hl {
+	for mapIdx, sl := range *hl {
 		sl.clear()
-		delete(*hl, hash)
+		delete(*hl, mapIdx)
 	}
 
 	return (0 == len(*hl))
@@ -369,12 +386,29 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 	}
 	if sl, ok := (*hl)[aMapIdx]; ok {
 		if idx := sl.indexOf(aID); 0 <= idx {
-			sl.remove(idx)
+			sl.removeIdx(idx)
+			if 0 == len(*sl) {
+				delete(*hl, aMapIdx)
+			}
 		}
 	}
 
 	return hl
 } // remove()
+
+// RemoveID deletes all @hashtags/@mentions associated with `aID`.
+//
+// `aID` is to be deleted from all lists.
+func (hl *THashList) RemoveID(aID string) *THashList {
+	for mapIdx, sl := range *hl {
+		sl.removeID(aID)
+		if 0 == len(*sl) {
+			delete(*hl, mapIdx)
+		}
+	}
+
+	return hl
+} // RemoveID()
 
 // Store writes the whole list to `aFilename`
 // returning the number of bytes written and a possible error.
