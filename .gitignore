@@ -1,6 +1,5 @@
 *~
 *.db
 .git/
-hashlist.db
 TODO*
 .vscode/
