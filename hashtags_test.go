@@ -201,7 +201,7 @@ func TestTHashList_Load(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{" 1", hl1, args{fn}, 2, false},
-		{" 2", hl2, args{".does.not.exist"}, 0, false},
+		{" 2", hl2, args{".does.not.exist"}, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -265,10 +265,10 @@ func TestTHashList_HashRemove(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{" 1", hl1, args{hash1, id1}, 1},
-		{" 2", hl1, args{hash1, id2}, 0},
+		{" 2", hl1, args{hash1, id2}, -1},
 		{" 3", hl1, args{hash2, id1}, 1},
-		{" 4", hl1, args{hash2, id2}, 0},
-		{" 5", hl1, args{hash1, id1}, 0},
+		{" 4", hl1, args{hash2, id2}, -1},
+		{" 5", hl1, args{hash1, id1}, -1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -278,6 +278,27 @@ func TestTHashList_HashRemove(t *testing.T) {
 		})
 	}
 } // TestTHashList_HashRemove()
+
+func TestTHashList_RemoveID(t *testing.T) {
+	type args struct {
+		aID string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.RemoveID(tt.args.aID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.RemoveID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_RemoveID()
 
 func TestTHashList_Store(t *testing.T) {
 	fn := "hashlist.db"
@@ -376,7 +397,53 @@ func Test_tSourceList_indexOf(t *testing.T) {
 	}
 } // Test_tSourceList_indexOf()
 
-func Test_tSourceList_remove(t *testing.T) {
+func Test_tSourceList_removeID(t *testing.T) {
+	sl1 := &tSourceList{
+		"one",
+		"two",
+		"three",
+		"four",
+		"five",
+	}
+	wl1 := &tSourceList{
+		"two",
+		"three",
+		"four",
+		"five",
+	}
+	wl2 := &tSourceList{
+		"two",
+		"three",
+		"four",
+	}
+	wl3 := &tSourceList{
+		"two",
+		"four",
+	}
+	type args struct {
+		aID string
+	}
+	tests := []struct {
+		name string
+		sl   *tSourceList
+		args args
+		want *tSourceList
+	}{
+		// TODO: Add test cases.
+		{" 1", sl1, args{"one"}, wl1},
+		{" 2", sl1, args{"five"}, wl2},
+		{" 3", sl1, args{"three"}, wl3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.sl.removeID(tt.args.aID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("tSourceList.removeID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // Test_tSourceList_removeID()
+
+func Test_tSourceList_removeIdx(t *testing.T) {
 	sl1 := &tSourceList{
 		"one",
 		"two",
@@ -422,12 +489,12 @@ func Test_tSourceList_remove(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.remove(tt.args.aIdx); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.sl.removeIdx(tt.args.aIdx); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("TSourceList.remove() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-} // Test_tSourceList_remove()
+} // Test_tSourceList_removeIdx()
 
 func Test_tSourceList_String(t *testing.T) {
 	sl1 := &tSourceList{
