@@ -105,8 +105,8 @@ func (sl *tSourceList) String() string {
 
 // Add appends `aID` to the list indexed by `aHash`.
 //
-// If either `aHash` or `aID` are empty strings htey are silently
-// ignored (i.a. this method does nothing).
+// If either `aHash` or `aID` are empty strings they are silently
+// ignored (i.e. this method does nothing).
 //
 // `aHash` is the list index to lookup.
 //
@@ -127,11 +127,6 @@ func (hl *THashList) Add(aHash, aID string) *THashList {
 } // Add()
 
 // Clear empties the internal data structures.
-//
-// This method can be called once the program has used the config values
-// stored in the INI file to setup the application. Emptying these data
-// structures should help the garbage collector do release the data not
-// needed anymore.
 func (hl *THashList) Clear() bool {
 	for hash, sl := range *hl {
 		sl.clear()
@@ -181,7 +176,7 @@ func (hl *THashList) Len() int {
 // Load reads the given `aFilename` returning the data structure
 // read from the file and a possible error condition.
 //
-// This method reads one line of the file at a time.
+// If there is an error, it will be of type *PathError.
 //
 // `aFilename` is the name of the file to read.
 func (hl *THashList) Load(aFilename string) (*THashList, error) {
@@ -326,7 +321,7 @@ func (hl *THashList) String() string {
 // LoadList returns a new `THashList` instance after reading
 // the given file.
 //
-// In case of an I/O error when reading the file it is returned.
+// If there is an error, it will be of type *PathError.
 //
 // `aFilename` is the name of the file to read.
 func LoadList(aFilename string) (*THashList, error) {
