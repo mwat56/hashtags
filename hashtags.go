@@ -24,7 +24,8 @@ type (
 	// A map indexed by `tHash` holding a `tStrList`
 	tHashMap map[tHash]*tSourceList
 
-	// THashList is a list of hashes pointing to sources
+	// THashList is a list of `#hashtags` and `@mentions`
+	// pointing to sources (occurances).
 	THashList tHashMap
 )
 
@@ -103,28 +104,33 @@ func (sl *tSourceList) String() string {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-// Add appends `aID` to the list indexed by `aHash`.
+// `add()`` appends `aID` to the list indexed by `aMapIdx`.
 //
-// If either `aHash` or `aID` are empty strings they are silently
+// If either `aMapIdx` or `aID` are empty strings they are silently
 // ignored (i.e. this method does nothing).
 //
-// `aHash` is the list index to lookup.
+// `aDelim` is the start character of words to use (i.e. either '@' or '#').
+//
+// `aMapIdx` is the list index to lookup.
 //
 // `aID` is to be added to the hash list.
-func (hl *THashList) Add(aHash, aID string) *THashList {
-	if (0 == len(aHash)) || (0 == len(aID)) {
+func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
+	if (0 == len(aMapIdx)) || (0 == len(aID)) {
 		return hl
 	}
-	if sl, ok := (*hl)[aHash]; ok {
-		(*hl)[aHash] = sl.add(aID)
+	if aMapIdx[0] != aDelim {
+		aMapIdx = string(aDelim) + aMapIdx
+	}
+	if sl, ok := (*hl)[aMapIdx]; ok {
+		(*hl)[aMapIdx] = sl.add(aID)
 	} else {
 		sl := make(tSourceList, 1)
 		sl[0] = aID
-		(*hl)[aHash] = &sl
+		(*hl)[aMapIdx] = &sl
 	}
 
 	return hl
-} // Add()
+} // add()
 
 // Clear empties the internal data structures.
 func (hl *THashList) Clear() bool {
@@ -136,30 +142,34 @@ func (hl *THashList) Clear() bool {
 	return (0 == len(*hl))
 } // Clear()
 
+// HashAdd appends `aID` to the list indexed by `aHash`.
+//
+// If either `aHash` or `aID` are empty strings they are silently
+// ignored (i.e. this method does nothing).
+//
+// `aHash` is the list index to lookup.
+//
+// `aID` is to be added to the hash list.
+func (hl *THashList) HashAdd(aHash, aID string) *THashList {
+	return hl.add('#', aHash, aID)
+} // HashAdd()
+
 // HashLen returns the number of sources stored for `aHash`.
 //
 // `aHash` identifies the sources list to lookup.
 func (hl *THashList) HashLen(aHash string) int {
-	if sl, ok := (*hl)[aHash]; ok {
-		return len(*sl)
-	}
-
-	return -1
+	return hl.idxLen('#', aHash)
 } // HashLen()
 
-// HashList returns a list of strings associates with 'aHash`.
+// HashList returns a list of strings associates with `aHash`.
 //
 // `aHash` identifies the sources list to lookup.
-func (hl *THashList) HashList(aHash string) (rList []string) {
-	if sl, ok := (*hl)[aHash]; ok {
-		rList = []string(*sl)
-	}
-
-	return
+func (hl *THashList) HashList(aHash string) []string {
+	return hl.list('#', aHash)
 } // HashList()
 
 // HashParse searches `aText` for #hashtags and if found
-// adds it with `aID` to the list.
+// adds them with `aID` to the list.
 //
 // `aID` is the ID to add to the list.
 //
@@ -168,10 +178,59 @@ func (hl *THashList) HashParse(aID string, aText []byte) *THashList {
 	return hl.parse('#', aID, aText)
 } // HashParse()
 
-// Len returns the current length of the list.
+// HashRemove deletes `aID` from the list of `aHash`.
+//
+// `aHash` identifies the sources list to lookup.
+//
+// `aID` is the source to remove from the list.
+func (hl *THashList) HashRemove(aHash, aID string) *THashList {
+	return hl.remove('#', aHash, aID)
+} // HashRemove()
+
+// `idxLen()` returns the number of sources stored for `aMapIdx`.
+//
+// `aDelim` is the start character of words to use (i.e. either '@' or '#').
+//
+// `aMapIdx` identifies the sources list to lookup.
+func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
+	if 0 == len(aMapIdx) {
+		return -1
+	}
+	if aMapIdx[0] != aDelim {
+		aMapIdx = string(aDelim) + aMapIdx
+	}
+	if sl, ok := (*hl)[aMapIdx]; ok {
+		return len(*sl)
+	}
+
+	return -1
+} // idxLen()
+
+// Len returns the current length of the list i.e. how many #hashtags
+// and/or @mentions are currently stored in the list.
 func (hl *THashList) Len() int {
 	return len(*hl)
 } // Len()
+
+// `list()` returns a list of strings associates with `aMapIdx`.
+//
+// `aDelim` is the start of words to search (i.e. either '@' or '#').
+//
+// `aMapIdx` identifies the sources list to lookup.
+func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
+	if 0 == len(aMapIdx) {
+		return
+	}
+	if aMapIdx[0] != aDelim {
+		aMapIdx = string(aDelim) + aMapIdx
+	}
+	if sl, ok := (*hl)[aMapIdx]; ok {
+		sl.sort()
+		rList = []string(*sl)
+	}
+
+	return
+} // list()
 
 // Load reads the given `aFilename` returning the data structure
 // read from the file and a possible error condition.
@@ -191,6 +250,32 @@ func (hl *THashList) Load(aFilename string) (*THashList, error) {
 	return hl, err
 } // Load()
 
+// HashAdd appends `aID` to the list indexed by `aMention`.
+//
+// If either `aMention` or `aID` are empty strings they are silently
+// ignored (i.e. this method does nothing).
+//
+// `aMention` is the list index to lookup.
+//
+// `aID` is to be added to the hash list.
+func (hl *THashList) MenzionAdd(aMention, aID string) *THashList {
+	return hl.add('@', aMention, aID)
+} // MentionAdd()
+
+// MentionLen returns the number of sources stored for `aMention`.
+//
+// `aMention` identifies the sources list to lookup.
+func (hl *THashList) MentionLen(aMention string) int {
+	return hl.idxLen('@', aMention)
+} // MentionLen()
+
+// MentionList returns a list of strings associates with `aHash`.
+//
+// `aMention` identifies the sources list to lookup.
+func (hl *THashList) MentionList(aMention string) []string {
+	return hl.list('@', aMention)
+} // MentionList()
+
 // MentionParse searches `aText` for @mentions and if found
 // adds it with `aID` to the list.
 //
@@ -201,6 +286,15 @@ func (hl *THashList) MentionParse(aID string, aText []byte) *THashList {
 	return hl.parse('@', aID, aText)
 } // MentionParse()
 
+// MentionRemove deletes `aID` from the list of `aMention`.
+//
+// `aMention` identifies the sources list to lookup.
+//
+// `aID` is the source to remove from the list.
+func (hl *THashList) MentionRemove(aMention, aID string) *THashList {
+	return hl.remove('@', aMention, aID)
+} // MentionRemove()
+
 // `parse()` checks whether `aText` contains strings starting with `aDelim`
 // and – if found – adds it to the list.
 //
@@ -209,7 +303,7 @@ func (hl *THashList) MentionParse(aID string, aText []byte) *THashList {
 // `aID` is the ID to add to the list.
 //
 // `aText` is the text to search.
-func (hl *THashList) parse(aDelim rune, aID string, aText []byte) *THashList {
+func (hl *THashList) parse(aDelim byte, aID string, aText []byte) *THashList {
 	re, err := regexp.Compile(`(?s)\W(\` + string(aDelim) + `\w+)`)
 	if nil != err {
 		return hl
@@ -220,7 +314,7 @@ func (hl *THashList) parse(aDelim rune, aID string, aText []byte) *THashList {
 	}
 	for _, sub := range matches {
 		if 0 < len(sub[1]) {
-			hl = hl.Add(string(sub[1]), aID)
+			hl = hl.add(sub[1][0], string(sub[1]), aID)
 		}
 	}
 
@@ -229,7 +323,7 @@ func (hl *THashList) parse(aDelim rune, aID string, aText []byte) *THashList {
 
 var (
 	// match: [aHashtag]
-	hashHeadRE = regexp.MustCompile(`^\[\s*([^\]]*?)\s*\]$`)
+	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
 )
 
 // `read()` parses a file written by `Store()` returning the
@@ -237,7 +331,7 @@ var (
 //
 // This method reads one line of the file at a time.
 func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
-	var section string
+	var mapIdx string
 
 	for lineRead := aScanner.Scan(); lineRead; lineRead = aScanner.Scan() {
 		line := aScanner.Text()
@@ -249,9 +343,9 @@ func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 		}
 
 		if matches := hashHeadRE.FindStringSubmatch(line); nil != matches {
-			section = strings.TrimSpace(matches[1])
+			mapIdx = strings.TrimSpace(matches[1])
 		} else {
-			hl.Add(section, line)
+			hl.add(mapIdx[0], mapIdx, line)
 		}
 	}
 	rErr = aScanner.Err()
@@ -259,26 +353,28 @@ func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 	return
 } // read()
 
-// RemoveSource deletes `aID` from the list of `aHash`.
+// `remove()` deletes `aID` from the list of `aMapIdx`.
 //
-// `aHash` identifies the sources list to lookup.
+// `aDelim` is the start of words to search (i.e. either '@' or '#').
+//
+// `aMapIdx` identifies the sources list to lookup.
 //
 // `aID` is the source to remove from the list.
-func (hl *THashList) RemoveSource(aHash, aID string) *THashList {
-	if (0 == len(aHash)) || (0 == len(aID)) {
+func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
+	if (0 == len(aMapIdx)) || (0 == len(aID)) {
 		return hl
 	}
-	sl, ok := (*hl)[aHash]
-	if !ok {
-		return hl
+	if aMapIdx[0] != aDelim {
+		aMapIdx = string(aDelim) + aMapIdx
 	}
-
-	if idx := sl.indexOf(aID); 0 <= idx {
-		sl.remove(idx)
+	if sl, ok := (*hl)[aMapIdx]; ok {
+		if idx := sl.indexOf(aID); 0 <= idx {
+			sl.remove(idx)
+		}
 	}
 
 	return hl
-} // RemoveSource()
+} // remove()
 
 // Store writes the whole list to `aFilename`
 // returning the number of bytes written and a possible error.
