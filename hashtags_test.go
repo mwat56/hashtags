@@ -85,59 +85,6 @@ func Test_tSourceList_removeID(t *testing.T) {
 	}
 } // Test_tSourceList_removeID()
 
-func Test_tSourceList_removeIdx(t *testing.T) {
-	sl1 := &tSourceList{
-		"one",
-		"two",
-		"three",
-		"four",
-		"five",
-	}
-	wl1 := &tSourceList{
-		"two",
-		"three",
-		"four",
-		"five",
-	}
-	wl2 := &tSourceList{
-		"two",
-		"three",
-		"five",
-	}
-	wl3 := &tSourceList{
-		"two",
-		"three",
-	}
-	wl4 := &tSourceList{
-		"two",
-	}
-	wl5 := &tSourceList{}
-	type args struct {
-		aIdx int
-	}
-	tests := []struct {
-		name string
-		sl   *tSourceList
-		args args
-		want *tSourceList
-	}{
-		// TODO: Add test cases.
-		{" 1", sl1, args{0}, wl1},
-		{" 2", sl1, args{2}, wl2},
-		{" 3", sl1, args{2}, wl3},
-		{" 4", sl1, args{1}, wl4},
-		{" 5", sl1, args{0}, wl5},
-		{" 6", sl1, args{0}, wl5},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.removeIdx(tt.args.aIdx); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("TSourceList.remove() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // Test_tSourceList_removeIdx()
-
 func Test_tSourceList_String(t *testing.T) {
 	sl1 := &tSourceList{
 		"one",

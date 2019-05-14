@@ -61,36 +61,30 @@ func (sl *tSourceList) indexOf(aID string) int {
 // `aID` is the string to look up.
 func (sl *tSourceList) removeID(aID string) *tSourceList {
 	idx := sl.indexOf(aID)
-	if 0 <= idx {
-		return sl.removeIdx(idx)
+	if 0 > idx {
+		return sl
 	}
 
-	return sl
-} // removeID()
-
-// `removeIdx()` deletes the source at index `aIdx`.
-//
-// `aIdx` the list index of the source to delete.
-func (sl *tSourceList) removeIdx(aIdx int) *tSourceList {
 	slen := len(*sl) - 1
 	if 0 > slen {
 		// can't remove from empty list …
 		return sl
 	}
-	if 0 == aIdx {
+
+	if 0 == idx {
 		if 0 == slen {
 			*sl = (*sl)[:0]
 		} else {
 			*sl = (*sl)[1:]
 		}
-	} else if slen == aIdx {
+	} else if slen == idx {
 		*sl = (*sl)[:slen]
 	} else {
-		*sl = append((*sl)[:aIdx], (*sl)[aIdx+1:]...)
+		*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 	}
 
 	return sl
-} // removeIdx()
+} // removeID()
 
 // `sort()` returns the sorted list.
 func (sl *tSourceList) sort() *tSourceList {
@@ -197,7 +191,7 @@ func (hl *THashList) HashLen(aHash string) int {
 	return hl.idxLen('#', aHash)
 } // HashLen()
 
-// HashList returns a list of strings associates with `aHash`.
+// HashList returns a list of IDs associated with `aHash`.
 //
 // `aHash` identifies the sources list to lookup.
 func (hl *THashList) HashList(aHash string) []string {
@@ -320,7 +314,7 @@ func (hl *THashList) LenTotal() int {
 	return result
 } // LenTotal()
 
-// `list()` returns a list of strings associates with `aMapIdx`.
+// `list()` returns a list of IDs associated with `aMapIdx`.
 //
 // `aDelim` is the start of words to search (i.e. either '@' or '#').
 //
@@ -377,7 +371,7 @@ func (hl *THashList) MentionLen(aMention string) int {
 	return hl.idxLen('@', aMention)
 } // MentionLen()
 
-// MentionList returns a list of strings associates with `aHash`.
+// MentionList returns a list of IDs associated with `aHash`.
 //
 // `aMention` identifies the sources list to lookup.
 func (hl *THashList) MentionList(aMention string) []string {
