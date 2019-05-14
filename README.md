@@ -22,6 +22,8 @@ The only condition is that it is unique as far as the program using this package
 
     //TODO
 
+_Note_ that both `#hashtag` and `@mention` are stored lower-cased to allow for case-insensitive search.
+
 ## Licence
 
     Copyright © 2019  M.Watermann, 10247 Berlin, Germany

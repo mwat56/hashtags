@@ -233,45 +233,84 @@ func TestTHashList_Clear(t *testing.T) {
 } // TestTHashList_Clear()
 
 func TestTHashList_HashAdd(t *testing.T) {
-	hl1 := NewList()
-	h1 := "#hash"
-	s1 := "asource"
-	s2 := "source2"
-	h3 := "#another"
+	hash1, hash2 := "#hash1", "#hash2"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hash1: &tSourceList{id2},
+		hash2: &tSourceList{id1},
+	}
+	wl1 := &THashList{
+		hash1: &tSourceList{id2, id1},
+		hash2: &tSourceList{id1},
+	}
+	wl2 := &THashList{
+		hash1: &tSourceList{id2, id1},
+		hash2: &tSourceList{id2, id1},
+	}
+	wl3 := &THashList{
+		hash1: &tSourceList{id2, id3, id1},
+		hash2: &tSourceList{id2, id1},
+	}
 	type args struct {
-		aHash   string
-		aSource string
+		aHash string
+		aID   string
 	}
 	tests := []struct {
 		name string
 		hl   *THashList
 		args args
-		want int //*THashList
+		want *THashList
 	}{
 		// TODO: Add test cases.
-		{" 0", hl1, args{h1, ""}, 0},
-		{" 1", hl1, args{h1, s1}, 1},
-		{" 2", hl1, args{h1, s2}, 1},
-		{" 3", hl1, args{h3, s2}, 2},
-		{" 4", hl1, args{"", s2}, 2},
+		{" 1", hl1, args{hash1, id1}, wl1},
+		{" 2", wl1, args{hash2, id2}, wl2},
+		{" 3", wl2, args{hash1, id3}, wl3},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.HashAdd(tt.args.aHash, tt.args.aSource).Len(); got != tt.want {
+			if got := tt.hl.HashAdd(tt.args.aHash, tt.args.aID); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("THashList.HashAdd() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 } // TestTHashList_HashAdd()
 
+func TestTHashList_HashLen(t *testing.T) {
+	hash1, hash2 := "#hash1", "#hash2"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hash1: &tSourceList{id2},
+		hash2: &tSourceList{id3, id1},
+	}
+	type args struct {
+		aHash string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want int
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{hash1}, 1},
+		{" 2", hl1, args{hash2}, 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.HashLen(tt.args.aHash); got != tt.want {
+				t.Errorf("THashList.HashLen() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_HashLen()
+
 func TestTHashList_HashList(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := "id_c", "id_a"
-	hl1 := NewList().
-		HashAdd(hash1, id1).
-		HashAdd(hash2, id2).
-		HashAdd(hash2, id1).
-		HashAdd(hash1, id2)
+	hl1 := &THashList{
+		hash1: &tSourceList{id2, id1},
+		hash2: &tSourceList{id2, id1},
+	}
 	wl1 := []string{
 		id2,
 		id1,

@@ -156,6 +156,7 @@ func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
 	if (0 == len(aMapIdx)) || (0 == len(aID)) {
 		return hl
 	}
+	aMapIdx = strings.ToLower(aMapIdx) // prepare for case-insensitive search
 	if aMapIdx[0] != aDelim {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
@@ -255,7 +256,7 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 	}
 	for _, sub := range matches {
 		if 0 < len(sub[2]) {
-			hl.add0(string(sub[2]), aID)
+			hl.add0(strings.ToLower(string(sub[2])), aID)
 		}
 	}
 
@@ -323,6 +324,7 @@ func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 	if 0 == len(aMapIdx) {
 		return -1
 	}
+	aMapIdx = strings.ToLower(aMapIdx)
 	if aMapIdx[0] != aDelim {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
@@ -358,6 +360,7 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	if 0 == len(aMapIdx) {
 		return
 	}
+	aMapIdx = strings.ToLower(aMapIdx)
 	if aMapIdx[0] != aDelim {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
@@ -460,6 +463,7 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 	if (0 == len(aMapIdx)) || (0 == len(aID)) {
 		return hl
 	}
+	aMapIdx = strings.ToLower(aMapIdx)
 	if aMapIdx[0] != aDelim {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
