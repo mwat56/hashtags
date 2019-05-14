@@ -150,13 +150,13 @@ func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
 
 // Clear empties the internal data structures:
 // all `#hashtags` and `@mentions` are deleted.
-func (hl *THashList) Clear() bool {
+func (hl *THashList) Clear() *THashList {
 	for mapIdx, sl := range *hl {
 		sl.clear()
 		delete(*hl, mapIdx)
 	}
 
-	return (0 == len(*hl))
+	return hl
 } // Clear()
 
 // HashAdd appends `aID` to the list indexed by `aHash`.
@@ -228,6 +228,16 @@ func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 func (hl *THashList) Len() int {
 	return len(*hl)
 } // Len()
+
+// LenTotal returns the length of all #hashtag/@mention lists together.
+func (hl *THashList) LenTotal() int {
+	result := len(*hl)
+	for _, sl := range *hl {
+		result += len(*sl)
+	}
+
+	return result
+} // LenTotal()
 
 // `list()` returns a list of strings associates with `aMapIdx`.
 //

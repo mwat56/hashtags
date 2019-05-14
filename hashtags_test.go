@@ -104,14 +104,14 @@ func TestTHashList_Clear(t *testing.T) {
 	tests := []struct {
 		name string
 		hl   *THashList
-		want bool
+		want int
 	}{
 		// TODO: Add test cases.
-		{" 1", hl1, true},
+		{" 1", hl1, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.Clear(); got != tt.want {
+			if got := tt.hl.Clear().Len(); got != tt.want {
 				t.Errorf("THashList.Clear() = %v, want %v", got, tt.want)
 			}
 		})
@@ -176,6 +176,40 @@ func TestTHashList_Len(t *testing.T) {
 		})
 	}
 } // TestTHashList_Len()
+
+func TestTHashList_LenTotal(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := NewList().
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
+	hl2 := NewList().
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2).
+		HashAdd(hash3, id1).
+		HashAdd(hash3, id2).
+		HashAdd(hash3, id3)
+	tests := []struct {
+		name       string
+		hl         *THashList
+		wantRCount int
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, 6},
+		{" 2", hl2, 10},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotRCount := tt.hl.LenTotal(); gotRCount != tt.wantRCount {
+				t.Errorf("THashList.LenTotal() = %v, want %v", gotRCount, tt.wantRCount)
+			}
+		})
+	}
+} // TestTHashList_LenTotal()
 
 func TestTHashList_Load(t *testing.T) {
 	fn := "hashlist.db"
