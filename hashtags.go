@@ -213,6 +213,22 @@ func (hl *THashList) HashRemove(aHash, aID string) *THashList {
 	return hl.remove('#', aHash, aID)
 } // HashRemove()
 
+// IDlist returns a list of #hashtags and @mentions associated with `aID`.
+func (hl *THashList) IDlist(aID string) (rList []string) {
+	for mapIdx, sl := range *hl {
+		if 0 <= sl.indexOf(aID) {
+			rList = append(rList, mapIdx)
+		}
+	}
+	if 0 < len(rList) {
+		sort.Slice(rList, func(i, j int) bool {
+			return (rList[i] < rList[j]) // ascending
+		})
+	}
+
+	return
+} // IDlist()
+
 // IDparse checks whether `aText` contains strings starting with `[@|#]`
 // and – if found – adds them to the list.
 //
