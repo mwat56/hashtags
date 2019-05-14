@@ -85,6 +85,45 @@ func Test_tSourceList_removeID(t *testing.T) {
 	}
 } // Test_tSourceList_removeID()
 
+func Test_tSourceList_renameID(t *testing.T) {
+	sl1 := &tSourceList{
+		"one",
+		"two",
+		"three",
+	}
+	wl1 := &tSourceList{
+		"four",
+		"one",
+		"two",
+	}
+	wl2 := &tSourceList{
+		"one",
+		"six",
+		"two",
+	}
+	type args struct {
+		aOldID string
+		aNewID string
+	}
+	tests := []struct {
+		name string
+		sl   *tSourceList
+		args args
+		want *tSourceList
+	}{
+		// TODO: Add test cases.
+		{" 1", sl1, args{"three", "four"}, wl1},
+		{" 2", sl1, args{"four", "six"}, wl2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.sl.renameID(tt.args.aOldID, tt.args.aNewID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("tSourceList.renameID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // Test_tSourceList_renameID()
+
 func Test_tSourceList_String(t *testing.T) {
 	sl1 := &tSourceList{
 		"one",
@@ -423,6 +462,53 @@ func TestTHashList_IDremove(t *testing.T) {
 		})
 	}
 } // TestTHashList_IDremove()
+
+func TestTHashList_IDrename(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3, id4, id5, id6 := "id_e", "id_a", "id_c", "id_g", "id_j", "id_k"
+	hl1 := &THashList{
+		hash1: &tSourceList{id3, id1},
+		hash2: &tSourceList{id2, id3},
+		hash3: &tSourceList{id3, id1},
+	}
+	wl1 := &THashList{
+		hash1: &tSourceList{id3, id4},
+		hash2: &tSourceList{id2, id3},
+		hash3: &tSourceList{id3, id4},
+	}
+	wl2 := &THashList{
+		hash1: &tSourceList{id3, id4},
+		hash2: &tSourceList{id3, id5},
+		hash3: &tSourceList{id3, id4},
+	}
+	wl3 := &THashList{
+		hash1: &tSourceList{id4, id6},
+		hash2: &tSourceList{id5, id6},
+		hash3: &tSourceList{id4, id6},
+	}
+	type args struct {
+		aOldID string
+		aNewID string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{id1, id4}, wl1},
+		{" 2", wl1, args{id2, id5}, wl2},
+		{" 3", wl2, args{id3, id6}, wl3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.IDrename(tt.args.aOldID, tt.args.aNewID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.IDrename() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_IDrename()
 
 func TestTHashList_IDupdate(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"

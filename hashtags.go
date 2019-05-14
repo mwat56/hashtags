@@ -86,6 +86,25 @@ func (sl *tSourceList) removeID(aID string) *tSourceList {
 	return sl
 } // removeID()
 
+// `renameID()` replaces all occurances of `aOldID` by `aNewID`.
+//
+// This method is intended for rare cases when the ID of a document
+// gets changed.
+//
+// `aOldID` is to be replaced in this list.
+//
+// `aNewID` is the replacement in this list.
+func (sl *tSourceList) renameID(aOldID, aNewID string) *tSourceList {
+	for idx, id := range *sl {
+		if id == aOldID {
+			(*sl)[idx] = aNewID
+			return sl.sort()
+		}
+	}
+
+	return sl
+} // renameID()
+
 // `sort()` returns the sorted list.
 func (sl *tSourceList) sort() *tSourceList {
 	sort.Slice(*sl, func(i, j int) bool {
@@ -256,6 +275,22 @@ func (hl *THashList) IDremove(aID string) *THashList {
 
 	return hl
 } // IDremove()
+
+// IDrename replaces all occurances of `aOldID` by `aNewID`.
+//
+// This method is intended for rare cases when the ID of a document
+// gets changed.
+//
+// `aOldID` is to be replaced in all lists.
+//
+// `aNewID` is the replacement in all lists.
+func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
+	for _, sl := range *hl {
+		sl.renameID(aOldID, aNewID)
+	}
+
+	return hl
+} // IDrename()
 
 // IDupdate checks `aText` removing all #hashtags/@mentions no longer
 // present and adds #hashtags/@mentions new in `aText`.
