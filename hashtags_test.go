@@ -5,6 +5,166 @@ import (
 	"testing"
 )
 
+func Test_tSourceList_indexOf(t *testing.T) {
+	sl1 := &tSourceList{
+		"one",
+		"two",
+		"three",
+		"four",
+		"five",
+	}
+	type args struct {
+		aID string
+	}
+	tests := []struct {
+		name string
+		sl   *tSourceList
+		args args
+		want int
+	}{
+		// TODO: Add test cases.
+		{" 1", sl1, args{"one"}, 0},
+		{" 2", sl1, args{"two"}, 1},
+		{" 3", sl1, args{"three"}, 2},
+		{" 4", sl1, args{"four"}, 3},
+		{" 5", sl1, args{"five"}, 4},
+		{" 6", sl1, args{"six"}, -1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.sl.indexOf(tt.args.aID); got != tt.want {
+				t.Errorf("tSourceList.indexOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // Test_tSourceList_indexOf()
+
+func Test_tSourceList_removeID(t *testing.T) {
+	sl1 := &tSourceList{
+		"one",
+		"two",
+		"three",
+		"four",
+		"five",
+	}
+	wl1 := &tSourceList{
+		"two",
+		"three",
+		"four",
+		"five",
+	}
+	wl2 := &tSourceList{
+		"two",
+		"three",
+		"four",
+	}
+	wl3 := &tSourceList{
+		"two",
+		"four",
+	}
+	type args struct {
+		aID string
+	}
+	tests := []struct {
+		name string
+		sl   *tSourceList
+		args args
+		want *tSourceList
+	}{
+		// TODO: Add test cases.
+		{" 1", sl1, args{"one"}, wl1},
+		{" 2", sl1, args{"five"}, wl2},
+		{" 3", sl1, args{"three"}, wl3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.sl.removeID(tt.args.aID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("tSourceList.IDremove() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // Test_tSourceList_removeID()
+
+func Test_tSourceList_removeIdx(t *testing.T) {
+	sl1 := &tSourceList{
+		"one",
+		"two",
+		"three",
+		"four",
+		"five",
+	}
+	wl1 := &tSourceList{
+		"two",
+		"three",
+		"four",
+		"five",
+	}
+	wl2 := &tSourceList{
+		"two",
+		"three",
+		"five",
+	}
+	wl3 := &tSourceList{
+		"two",
+		"three",
+	}
+	wl4 := &tSourceList{
+		"two",
+	}
+	wl5 := &tSourceList{}
+	type args struct {
+		aIdx int
+	}
+	tests := []struct {
+		name string
+		sl   *tSourceList
+		args args
+		want *tSourceList
+	}{
+		// TODO: Add test cases.
+		{" 1", sl1, args{0}, wl1},
+		{" 2", sl1, args{2}, wl2},
+		{" 3", sl1, args{2}, wl3},
+		{" 4", sl1, args{1}, wl4},
+		{" 5", sl1, args{0}, wl5},
+		{" 6", sl1, args{0}, wl5},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.sl.removeIdx(tt.args.aIdx); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("TSourceList.remove() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // Test_tSourceList_removeIdx()
+
+func Test_tSourceList_String(t *testing.T) {
+	sl1 := &tSourceList{
+		"one",
+		"two",
+		"three",
+	}
+	wl1 := "one\nthree\ntwo"
+	sl2 := &tSourceList{}
+	wl2 := ""
+	tests := []struct {
+		name string
+		sl   *tSourceList
+		want string
+	}{
+		// TODO: Add test cases.
+		{" 1", sl1, wl1},
+		{" 2", sl2, wl2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.sl.String(); got != tt.want {
+				t.Errorf("TSourceList.String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // Test_tSourceList_String()
+
 func TestLoadList(t *testing.T) {
 	fn := "hashlist.db"
 	hash1, hash2 := "#hash1", "#hash2"
@@ -61,6 +221,31 @@ func TestNewList(t *testing.T) {
 	}
 } // TestNewList()
 
+func TestTHashList_Clear(t *testing.T) {
+	hash1, hash2 := "#hash1", "#hash2"
+	id1, id2 := "id_c", "id_a"
+	hl1 := NewList().
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
+	tests := []struct {
+		name string
+		hl   *THashList
+		want int
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.Clear().Len(); got != tt.want {
+				t.Errorf("THashList.Clear() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_Clear()
+
 func TestTHashList_HashAdd(t *testing.T) {
 	hl1 := NewList()
 	h1 := "#hash"
@@ -92,31 +277,6 @@ func TestTHashList_HashAdd(t *testing.T) {
 		})
 	}
 } // TestTHashList_HashAdd()
-
-func TestTHashList_Clear(t *testing.T) {
-	hash1, hash2 := "#hash1", "#hash2"
-	id1, id2 := "id_c", "id_a"
-	hl1 := NewList().
-		HashAdd(hash1, id1).
-		HashAdd(hash2, id2).
-		HashAdd(hash2, id1).
-		HashAdd(hash1, id2)
-	tests := []struct {
-		name string
-		hl   *THashList
-		want int
-	}{
-		// TODO: Add test cases.
-		{" 1", hl1, 0},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.Clear().Len(); got != tt.want {
-				t.Errorf("THashList.Clear() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_Clear()
 
 func TestTHashList_HashList(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
@@ -151,6 +311,166 @@ func TestTHashList_HashList(t *testing.T) {
 		})
 	}
 } // TestTHashList_HashList()
+
+func TestTHashList_HashRemove(t *testing.T) {
+	hash1, hash2 := "#hash1", "#hash2"
+	id1, id2 := "id_c", "id_a"
+	hl1 := NewList().
+		HashAdd(hash1, id1).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash1, id2)
+	type args struct {
+		aHash string
+		aID   string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want int //*THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{hash1, id1}, 1},
+		{" 2", hl1, args{hash1, id2}, -1},
+		{" 3", hl1, args{hash2, id1}, 1},
+		{" 4", hl1, args{hash2, id2}, -1},
+		{" 5", hl1, args{hash1, id1}, -1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.HashRemove(tt.args.aHash, tt.args.aID).HashLen(tt.args.aHash); got != tt.want {
+				t.Errorf("THashList.HashRemove() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_HashRemove()
+
+func TestTHashList_IDparse(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := NewList()
+	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + " blabla")
+	wl1 := &THashList{
+		hash1: &tSourceList{id1},
+		hash3: &tSourceList{id1},
+	}
+	hl2 := &THashList{
+		hash1: &tSourceList{id3},
+		hash2: &tSourceList{id3},
+		hash3: &tSourceList{id3},
+	}
+	tx2 := []byte("blabla " + hash2 + " blabla " + hash3 + " blabla")
+	wl2 := &THashList{
+		hash1: &tSourceList{id3},
+		hash2: &tSourceList{id2, id3},
+		hash3: &tSourceList{id2, id3},
+	}
+	type args struct {
+		aID   string
+		aText []byte
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{id1, tx1}, wl1},
+		{" 2", hl2, args{id2, tx2}, wl2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.IDparse(tt.args.aID, tt.args.aText); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.IDparse() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_IDparse()
+
+func TestTHashList_IDremove(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hash1: &tSourceList{id1, id3},
+		hash2: &tSourceList{id2, id3},
+		hash3: &tSourceList{id1, id3},
+	}
+	wl1 := &THashList{
+		hash1: &tSourceList{id3},
+		hash2: &tSourceList{id2, id3},
+		hash3: &tSourceList{id3},
+	}
+	wl2 := &THashList{
+		hash1: &tSourceList{id3},
+		hash2: &tSourceList{id3},
+		hash3: &tSourceList{id3},
+	}
+	wl3 := NewList()
+	type args struct {
+		aID string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{id1}, wl1},
+		{" 2", wl1, args{id2}, wl2},
+		{" 3", wl2, args{id3}, wl3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.IDremove(tt.args.aID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.IDremove() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_IDremove()
+
+func TestTHashList_IDupdate(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hash1: &tSourceList{id1, id2, id3},
+		hash2: &tSourceList{id1, id2},
+	}
+	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + " blabla")
+	wl1 := &THashList{
+		hash1: &tSourceList{id1, id2, id3},
+		hash2: &tSourceList{id2},
+		hash3: &tSourceList{id1},
+	}
+	tx2 := []byte("blabla blabla blabla")
+	wl2 := &THashList{
+		hash1: &tSourceList{id1, id3},
+		hash3: &tSourceList{id1},
+	}
+	type args struct {
+		aID   string
+		aText []byte
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{id1, tx1}, wl1},
+		{" 2", hl1, args{id2, tx2}, wl2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.IDupdate(tt.args.aID, tt.args.aText); got.String() != tt.want.String() {
+				t.Errorf("THashList.Update() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_IDupdate()
 
 func TestTHashList_Len(t *testing.T) {
 	hl1 := NewList()
@@ -251,71 +571,44 @@ func TestTHashList_Load(t *testing.T) {
 	}
 } // TestTHashList_Load()
 
-func TestTHashList_parse(t *testing.T) {
-	hl1 := NewList()
-	s1 := []byte("What a #tag1,\n#tag2 and#tag3")
-	s2 := []byte("Helle @mention!\nDid you see @other or@another?")
+func TestTHashList_remove(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hash1: &tSourceList{id1, id3},
+		hash2: &tSourceList{id2, id3},
+		hash3: &tSourceList{id1, id3},
+	}
+	wl1 := &THashList{
+		hash1: &tSourceList{id3},
+		hash2: &tSourceList{id2, id3},
+		hash3: &tSourceList{id1, id3},
+	}
+	wl2 := &THashList{
+		hash1: &tSourceList{id3},
+		hash2: &tSourceList{id3},
+		hash3: &tSourceList{id1, id3},
+	}
+	wl3 := &THashList{
+		hash1: &tSourceList{id3},
+		hash2: &tSourceList{id3},
+		hash3: &tSourceList{id1},
+	}
+	wl4 := &THashList{
+		hash1: &tSourceList{id3},
+		hash2: &tSourceList{id3},
+	}
+	wl5 := &THashList{
+		hash2: &tSourceList{id3},
+	}
+	wl6 := &THashList{
+		hash2: &tSourceList{id3},
+	}
+	wl7 := NewList()
 	type args struct {
-		aDelim byte
-		aID    string
-		aText  []byte
-	}
-	tests := []struct {
-		name string
-		hl   *THashList
-		args args
-		want int
-	}{
-		// TODO: Add test cases.
-		{" 1", hl1, args{'#', "fn1", s1}, 2},
-		{" 2", hl1, args{'@', "fn2", s2}, 4},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.parse(tt.args.aDelim, tt.args.aID, tt.args.aText).Len(); got != tt.want {
-				t.Errorf("THashList.parse() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_parse()
-
-func TestTHashList_HashRemove(t *testing.T) {
-	hash1, hash2 := "#hash1", "#hash2"
-	id1, id2 := "id_c", "id_a"
-	hl1 := NewList().
-		HashAdd(hash1, id1).
-		HashAdd(hash2, id2).
-		HashAdd(hash2, id1).
-		HashAdd(hash1, id2)
-	type args struct {
-		aHash string
-		aID   string
-	}
-	tests := []struct {
-		name string
-		hl   *THashList
-		args args
-		want int //*THashList
-	}{
-		// TODO: Add test cases.
-		{" 1", hl1, args{hash1, id1}, 1},
-		{" 2", hl1, args{hash1, id2}, -1},
-		{" 3", hl1, args{hash2, id1}, 1},
-		{" 4", hl1, args{hash2, id2}, -1},
-		{" 5", hl1, args{hash1, id1}, -1},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.HashRemove(tt.args.aHash, tt.args.aID).HashLen(tt.args.aHash); got != tt.want {
-				t.Errorf("THashList.HashRemove() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_HashRemove()
-
-func TestTHashList_RemoveID(t *testing.T) {
-	type args struct {
-		aID string
+		aDelim  byte
+		aMapIdx string
+		aID     string
 	}
 	tests := []struct {
 		name string
@@ -324,15 +617,22 @@ func TestTHashList_RemoveID(t *testing.T) {
 		want *THashList
 	}{
 		// TODO: Add test cases.
+		{" 1", hl1, args{'#', hash1, id1}, wl1},
+		{" 2", wl1, args{'#', hash2, id2}, wl2},
+		{" 3", wl2, args{'#', hash3, id3}, wl3},
+		{" 4", wl3, args{'#', hash3, id1}, wl4},
+		{" 5", wl4, args{'#', hash1, id3}, wl5},
+		{" 6", wl5, args{'#', hash1, id3}, wl6},
+		{" 7", wl6, args{'#', hash2, id3}, wl7},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.RemoveID(tt.args.aID); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("THashList.RemoveID() = %v, want %v", got, tt.want)
+			if got := tt.hl.remove(tt.args.aDelim, tt.args.aMapIdx, tt.args.aID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.remove() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-} // TestTHashList_RemoveID()
+} // TestTHashList_remove()
 
 func TestTHashList_Store(t *testing.T) {
 	fn := "hashlist.db"
@@ -396,163 +696,3 @@ func TestTHashList_String(t *testing.T) {
 		})
 	}
 } // TestTHashList_String()
-
-func Test_tSourceList_indexOf(t *testing.T) {
-	sl1 := &tSourceList{
-		"one",
-		"two",
-		"three",
-		"four",
-		"five",
-	}
-	type args struct {
-		aID string
-	}
-	tests := []struct {
-		name string
-		sl   *tSourceList
-		args args
-		want int
-	}{
-		// TODO: Add test cases.
-		{" 1", sl1, args{"one"}, 0},
-		{" 2", sl1, args{"two"}, 1},
-		{" 3", sl1, args{"three"}, 2},
-		{" 4", sl1, args{"four"}, 3},
-		{" 5", sl1, args{"five"}, 4},
-		{" 6", sl1, args{"six"}, -1},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.indexOf(tt.args.aID); got != tt.want {
-				t.Errorf("tSourceList.indexOf() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // Test_tSourceList_indexOf()
-
-func Test_tSourceList_removeID(t *testing.T) {
-	sl1 := &tSourceList{
-		"one",
-		"two",
-		"three",
-		"four",
-		"five",
-	}
-	wl1 := &tSourceList{
-		"two",
-		"three",
-		"four",
-		"five",
-	}
-	wl2 := &tSourceList{
-		"two",
-		"three",
-		"four",
-	}
-	wl3 := &tSourceList{
-		"two",
-		"four",
-	}
-	type args struct {
-		aID string
-	}
-	tests := []struct {
-		name string
-		sl   *tSourceList
-		args args
-		want *tSourceList
-	}{
-		// TODO: Add test cases.
-		{" 1", sl1, args{"one"}, wl1},
-		{" 2", sl1, args{"five"}, wl2},
-		{" 3", sl1, args{"three"}, wl3},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.removeID(tt.args.aID); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("tSourceList.removeID() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // Test_tSourceList_removeID()
-
-func Test_tSourceList_removeIdx(t *testing.T) {
-	sl1 := &tSourceList{
-		"one",
-		"two",
-		"three",
-		"four",
-		"five",
-	}
-	wl1 := &tSourceList{
-		"two",
-		"three",
-		"four",
-		"five",
-	}
-	wl2 := &tSourceList{
-		"two",
-		"three",
-		"five",
-	}
-	wl3 := &tSourceList{
-		"two",
-		"three",
-	}
-	wl4 := &tSourceList{
-		"two",
-	}
-	wl5 := &tSourceList{}
-	type args struct {
-		aIdx int
-	}
-	tests := []struct {
-		name string
-		sl   *tSourceList
-		args args
-		want *tSourceList
-	}{
-		// TODO: Add test cases.
-		{" 1", sl1, args{0}, wl1},
-		{" 2", sl1, args{2}, wl2},
-		{" 3", sl1, args{2}, wl3},
-		{" 4", sl1, args{1}, wl4},
-		{" 5", sl1, args{0}, wl5},
-		{" 6", sl1, args{0}, wl5},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.removeIdx(tt.args.aIdx); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("TSourceList.remove() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // Test_tSourceList_removeIdx()
-
-func Test_tSourceList_String(t *testing.T) {
-	sl1 := &tSourceList{
-		"one",
-		"two",
-		"three",
-	}
-	wl1 := "one\nthree\ntwo"
-	sl2 := &tSourceList{}
-	wl2 := ""
-	tests := []struct {
-		name string
-		sl   *tSourceList
-		want string
-	}{
-		// TODO: Add test cases.
-		{" 1", sl1, wl1},
-		{" 2", sl2, wl2},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.String(); got != tt.want {
-				t.Errorf("TSourceList.String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // Test_tSourceList_String()
