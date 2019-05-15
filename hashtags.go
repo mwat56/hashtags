@@ -139,7 +139,7 @@ var (
 	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
 
 	// match: #hashtag|@mention
-	hashMentionRE = regexp.MustCompile(`(^|\W)([\@\#]\w+)(\W|$)`)
+	hashMentionRE = regexp.MustCompile(`\b?([@#][0-9A-Za-z_\.\-]+)`)
 )
 
 // `add()` appends `aID` to the list associated with `aMapIdx`.
@@ -255,8 +255,8 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 		return hl
 	}
 	for _, sub := range matches {
-		if 0 < len(sub[2]) {
-			hl.add0(strings.ToLower(string(sub[2])), aID)
+		if 0 < len(sub[1]) {
+			hl.add0(strings.ToLower(string(sub[1])), aID)
 		}
 	}
 
@@ -307,8 +307,8 @@ func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 		return hl
 	}
 	for _, sub := range matches {
-		if 0 < len(sub[2]) {
-			hl = hl.add(sub[2][0], string(sub[2]), aID)
+		if 0 < len(sub[1]) {
+			hl = hl.add(sub[1][0], string(sub[1]), aID)
 		}
 	}
 

@@ -233,7 +233,7 @@ func TestTHashList_Clear(t *testing.T) {
 } // TestTHashList_Clear()
 
 func TestTHashList_HashAdd(t *testing.T) {
-	hash1, hash2 := "#hash1", "#hash2"
+	hash1, hash2 := "#hash1", "#zensurheberrecht"
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hash1: &tSourceList{id2},
@@ -437,6 +437,11 @@ func TestTHashList_IDparse(t *testing.T) {
 		hash2: &tSourceList{id2, id3},
 		hash3: &tSourceList{id2, id3},
 	}
+	hl3 := NewList()
+	tx3 := []byte("\n> #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
+	wl3 := &THashList{
+		"#zensurheberrecht": &tSourceList{id3},
+	}
 	type args struct {
 		aID   string
 		aText []byte
@@ -450,6 +455,7 @@ func TestTHashList_IDparse(t *testing.T) {
 		// TODO: Add test cases.
 		{" 1", hl1, args{id1, tx1}, wl1},
 		{" 2", hl2, args{id2, tx2}, wl2},
+		{" 3", hl3, args{id3, tx3}, wl3},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -754,7 +760,7 @@ func TestTHashList_remove(t *testing.T) {
 
 func TestTHashList_Store(t *testing.T) {
 	fn := "hashlist.db"
-	hash1, hash2 := "#hash1", "#hash2"
+	hash1, hash2 := "#hash1", "#Zensurheberrecht"
 	id1, id2 := "id_c", "id_a"
 	hl1 := NewList().
 		HashAdd(hash1, id1).
@@ -772,7 +778,7 @@ func TestTHashList_Store(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{" 1", hl1, args{fn}, 38, false},
+		{" 1", hl1, args{fn}, 49, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
