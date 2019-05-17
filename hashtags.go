@@ -192,6 +192,30 @@ func (hl *THashList) Clear() *THashList {
 	return hl
 } // Clear()
 
+type (
+	// TCountItem holds a #hashtag/@mention and its number of occurances.
+	//
+	// @see CountedList()
+	TCountItem = struct {
+		Count int    // number of IDs for this #hashtag/@mention
+		Tag   string // name of #hashtag/@mention
+	}
+)
+
+// CountedList returns a list of #hashtags/@mentions and their respective count.
+func (hl *THashList) CountedList() (rList []TCountItem) {
+	for mapIdx, sl := range *hl {
+		rList = append(rList, TCountItem{len(*sl), mapIdx})
+	}
+	if 0 < len(rList) {
+		sort.Slice(rList, func(i, j int) bool {
+			return (rList[i].Tag < rList[j].Tag)
+		})
+	}
+
+	return
+} // CountedList()
+
 // HashAdd appends `aID` to the list indexed by `aHash`.
 //
 // If either `aHash` or `aID` are empty strings they are silently
