@@ -134,14 +134,6 @@ type (
 	THashList tHashMap
 )
 
-var (
-	// match: [#Hashtag|@mention]
-	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
-
-	// match: #hashtag|@mention
-	hashMentionRE = regexp.MustCompile(`\b?([@#][0-9A-Za-z_\.\-]+)`)
-)
-
 // `add()` appends `aID` to the list associated with `aMapIdx`.
 //
 // If either `aMapIdx` or `aID` are empty strings they are silently
@@ -266,6 +258,11 @@ func (hl *THashList) IDlist(aID string) (rList []string) {
 
 	return
 } // IDlist()
+
+var (
+	// match: #hashtag|@mention
+	hashMentionRE = regexp.MustCompile(`(?i)\b?([@#][\wÄÖÜß-]+)`)
+)
 
 // IDparse checks whether `aText` contains strings starting with `[@|#]`
 // and – if found – adds them to the list.
@@ -448,6 +445,11 @@ func (hl *THashList) MentionList(aMention string) []string {
 func (hl *THashList) MentionRemove(aMention, aID string) *THashList {
 	return hl.remove('@', aMention, aID)
 } // MentionRemove()
+
+var (
+	// match: [#Hashtag|@mention]
+	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
+)
 
 // `read()` parses a file written by `Store()` returning the
 // number of bytes read and a possible error.

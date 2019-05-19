@@ -2,6 +2,7 @@ package hashtags
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -272,23 +273,23 @@ func TestTHashList_CountedList(t *testing.T) {
 } // TestTHashList_CountedList()
 
 func TestTHashList_HashAdd(t *testing.T) {
-	hash1, hash2 := "#hash1", "@mention1"
+	hash1, hash2 := "#hash2", "#hash1"
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hash1: &tSourceList{id2},
 		hash2: &tSourceList{id1},
 	}
 	wl1 := &THashList{
-		hash1: &tSourceList{id2, id1},
 		hash2: &tSourceList{id1},
+		hash1: &tSourceList{id2, id1},
 	}
 	wl2 := &THashList{
-		hash1: &tSourceList{id2, id1},
 		hash2: &tSourceList{id2, id1},
+		hash1: &tSourceList{id2, id1},
 	}
 	wl3 := &THashList{
-		hash1: &tSourceList{id2, id3, id1},
 		hash2: &tSourceList{id2, id1},
+		hash1: &tSourceList{id2, id3, id1},
 	}
 	type args struct {
 		aHash string
@@ -457,28 +458,30 @@ func TestTHashList_IDlist(t *testing.T) {
 } // TestTHashList_IDlist()
 
 func TestTHashList_IDparse(t *testing.T) {
-	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	hash1, hash2, hash3 := "#HÄSCH1", "#hash2", "#hash3"
+	lh1 := strings.ToLower(hash1)
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := NewList()
-	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + " blabla")
+	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + ". Blabla")
 	wl1 := &THashList{
-		hash1: &tSourceList{id1},
+		lh1:   &tSourceList{id1},
 		hash3: &tSourceList{id1},
 	}
 	hl2 := &THashList{
-		hash1: &tSourceList{id3},
+		lh1:   &tSourceList{id3},
 		hash2: &tSourceList{id3},
 		hash3: &tSourceList{id3},
 	}
-	tx2 := []byte("blabla " + hash2 + " blabla " + hash3 + " blabla")
+	tx2 := []byte("blabla " + hash2 + ". Blabla " + hash3 + " blabla")
 	wl2 := &THashList{
-		hash1: &tSourceList{id3},
+		lh1:   &tSourceList{id3},
 		hash2: &tSourceList{id2, id3},
 		hash3: &tSourceList{id2, id3},
 	}
 	hl3 := NewList()
-	tx3 := []byte("\n> #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
+	tx3 := []byte("\n> #KurzErklÄrt #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
 	wl3 := &THashList{
+		"#kurzerklärt":      &tSourceList{id3},
 		"#zensurheberrecht": &tSourceList{id3},
 	}
 	type args struct {
