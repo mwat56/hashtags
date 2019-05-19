@@ -17,18 +17,35 @@ You can use `Go` to install this package for you:
 ## Usage
 
 In principle for each `#hashtag` (or `@mention`) a list of IDs is maintained.
-These IDs can be any (string) data that identifies the text in which the `#hashtag` was found, e.g. a filename or some database record reference.
+These IDs can be any (string) data that identifies the text in which the `#hashtag` (or `@mention`) was found, e.g. a filename or some database record reference.
 The only condition is that it is unique as far as the program using this package is concerned.
-
-    //TODO
 
 _Note_ that both `#hashtag` and `@mention` are stored lower-cased to allow for case-insensitive search.
 
+To get a `THashList` instance there are two ways:
+
+    htl := hashtags.NewList()
+        // _OR_
+    fName :="mytags.lst"
+    htl, err := hashtags.LoadList(fName)
+    if nil != err {
+        log.PrintF("Problem loading file '%s': %v", fName, err)
+    }
+        // …
+        // do something with the list
+        // …
+    written, err := htl.Store(fName)
+    if nil != err {
+        log.PrintF("Problem writing file '%s': %v", fName, err)
+    }
+
+For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/go-hashtags).
+
 ## Licence
 
-    Copyright © 2019  M.Watermann, 10247 Berlin, Germany
-                    All rights reserved
-                EMail : <support@mwat.de>
+        Copyright © 2019 M.Watermann, 10247 Berlin, Germany
+                        All rights reserved
+                    EMail : <support@mwat.de>
 
 > This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 >
