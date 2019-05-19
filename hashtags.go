@@ -201,7 +201,8 @@ func (hl *THashList) CountedList() (rList []TCountItem) {
 	}
 	if 0 < len(rList) {
 		sort.Slice(rList, func(i, j int) bool {
-			return (rList[i].Tag < rList[j].Tag)
+			// ignore [#@] for sorting
+			return (rList[i].Tag[1:] < rList[j].Tag[1:])
 		})
 	}
 
