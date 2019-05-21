@@ -208,6 +208,48 @@ func TestNewList(t *testing.T) {
 	}
 } // TestNewList()
 
+func TestTHashList_Checksum(t *testing.T) {
+	hash1, hash2 := "#hash1", "#hash2"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hash1: &tSourceList{id2},
+		hash2: &tSourceList{id3, id1},
+	}
+	h1a := NewList().
+		HashAdd(hash1, id2).
+		HashAdd(hash2, id1).
+		HashAdd(hash2, id3)
+	w1 := h1a.Checksum()
+	hl2 := &THashList{
+		hash1: &tSourceList{id1, id2},
+		hash2: &tSourceList{id2, id3},
+	}
+	h2a := NewList().
+		HashAdd(hash1, id1).
+		HashAdd(hash1, id2).
+		HashAdd(hash2, id2).
+		HashAdd(hash2, id3).
+		HashAdd(hash1, id2).
+		HashAdd(hash2, id3)
+	w2 := h2a.Checksum()
+	tests := []struct {
+		name     string
+		hl       *THashList
+		wantRSum uint32
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, w1},
+		{" 2", hl2, w2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotRSum := tt.hl.Checksum(); gotRSum != tt.wantRSum {
+				t.Errorf("THashList.Checksum() = %v, want %v", gotRSum, tt.wantRSum)
+			}
+		})
+	}
+} // TestTHashList_Checksum()
+
 func TestTHashList_Clear(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := "id_c", "id_a"

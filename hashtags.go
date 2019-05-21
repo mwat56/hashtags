@@ -8,6 +8,7 @@ package hashtags
 
 import (
 	"bufio"
+	"hash/crc32"
 	"os"
 	"regexp"
 	"sort"
@@ -19,14 +20,12 @@ type (
 	tSourceList []string
 )
 
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
 // `add()` appends 'aID` to the list
 //
 // `aID` the source ID to add to the list.
 func (sl *tSourceList) add(aID string) *tSourceList {
-	for _, s := range *sl {
-		if s == aID {
+	for _, id := range *sl {
+		if id == aID {
 			// already in list
 			return sl
 		}
@@ -173,6 +172,17 @@ func (hl *THashList) add0(aMapIdx, aID string) *THashList {
 	return hl
 } // add0()
 
+// Checksum returns the list's CRC32 checksum.
+//
+// This method can be used to get a kind of 'footprint'.
+func (hl *THashList) Checksum() uint32 {
+	table := crc32.MakeTable(crc32.Castagnoli)
+
+	// we use `String()` because it sorts internally thus
+	// generating reproducable results:
+	return crc32.Update(0, table, []byte(hl.String()))
+} // Checksum()
+
 // Clear empties the internal data structures:
 // all `#hashtags` and `@mentions` are deleted.
 func (hl *THashList) Clear() *THashList {
@@ -209,7 +219,7 @@ func (hl *THashList) CountedList() (rList []TCountItem) {
 	return
 } // CountedList()
 
-// HashAdd appends `aID` to the list indexed by `aHash`.
+// HashAdd appends `aID` to the list of `aHash`.
 //
 // If either `aHash` or `aID` are empty strings they are silently
 // ignored (i.e. this method does nothing).
@@ -221,23 +231,23 @@ func (hl *THashList) HashAdd(aHash, aID string) *THashList {
 	return hl.add('#', aHash, aID)
 } // HashAdd()
 
-// HashLen returns the number of sources stored for `aHash`.
+// HashLen returns the number of IDs stored for `aHash`.
 //
-// `aHash` identifies the sources list to lookup.
+// `aHash` identifies the ID list to lookup.
 func (hl *THashList) HashLen(aHash string) int {
 	return hl.idxLen('#', aHash)
 } // HashLen()
 
 // HashList returns a list of IDs associated with `aHash`.
 //
-// `aHash` identifies the sources list to lookup.
+// `aHash` identifies the ID list to lookup.
 func (hl *THashList) HashList(aHash string) []string {
 	return hl.list('#', aHash)
 } // HashList()
 
 // HashRemove deletes `aID` from the list of `aHash`.
 //
-// `aHash` identifies the sources list to lookup.
+// `aHash` identifies the ID list to lookup.
 //
 // `aID` is the source to remove from the list.
 func (hl *THashList) HashRemove(aHash, aID string) *THashList {
@@ -266,7 +276,7 @@ var (
 )
 
 // IDparse checks whether `aText` contains strings starting with `[@|#]`
-// and – if found – adds them to the list.
+// and – if found – adds them to the respective list.
 //
 // `aID` is the ID to add to the list.
 //
@@ -302,7 +312,7 @@ func (hl *THashList) IDremove(aID string) *THashList {
 // IDrename replaces all occurances of `aOldID` by `aNewID`.
 //
 // This method is intended for rare cases when the ID of a document
-// gets changed.
+// needs to get changed.
 //
 // `aOldID` is to be replaced in all lists.
 //
@@ -337,11 +347,11 @@ func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 	return hl
 } // IDupdate()
 
-// `idxLen()` returns the number of sources stored for `aMapIdx`.
+// `idxLen()` returns the number of IDs stored for `aMapIdx`.
 //
-// `aDelim` is the start character of words to use (i.e. either '@' or '#').
+// `aDelim` is the first character of words to use (i.e. either '@' or '#').
 //
-// `aMapIdx` identifies the sources list to lookup.
+// `aMapIdx` identifies the ID list to lookup.
 func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 	if 0 == len(aMapIdx) {
 		return -1
@@ -397,7 +407,7 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 // Load reads the given `aFilename` returning the data structure
 // read from the file and a possible error condition.
 //
-// If there is an error, it will be of type *PathError.
+// If there is an error, it will be of type `*PathError`.
 //
 // `aFilename` is the name of the file to read.
 func (hl *THashList) Load(aFilename string) (*THashList, error) {
@@ -412,10 +422,10 @@ func (hl *THashList) Load(aFilename string) (*THashList, error) {
 	return hl, err
 } // Load()
 
-// MentionAdd appends `aID` to the list indexed by `aMention`.
+// MentionAdd appends `aID` to the list of `aMention`.
 //
-// If either `aMention` or `aID` are empty strings they are silently
-// ignored (i.e. this method does nothing).
+// If either `aMention` or `aID` are empty strings they are
+// silently ignored (i.e. this method does nothing).
 //
 // `aMention` is the list index to lookup.
 //
@@ -424,23 +434,23 @@ func (hl *THashList) MentionAdd(aMention, aID string) *THashList {
 	return hl.add('@', aMention, aID)
 } // MentionAdd()
 
-// MentionLen returns the number of sources stored for `aMention`.
+// MentionLen returns the number of IDs stored for `aMention`.
 //
-// `aMention` identifies the sources list to lookup.
+// `aMention` identifies the ID list to lookup.
 func (hl *THashList) MentionLen(aMention string) int {
 	return hl.idxLen('@', aMention)
 } // MentionLen()
 
 // MentionList returns a list of IDs associated with `aHash`.
 //
-// `aMention` identifies the sources list to lookup.
+// `aMention` identifies the ID list to lookup.
 func (hl *THashList) MentionList(aMention string) []string {
 	return hl.list('@', aMention)
 } // MentionList()
 
 // MentionRemove deletes `aID` from the list of `aMention`.
 //
-// `aMention` identifies the sources list to lookup.
+// `aMention` identifies the ID list to lookup.
 //
 // `aID` is the source to remove from the list.
 func (hl *THashList) MentionRemove(aMention, aID string) *THashList {
@@ -523,7 +533,7 @@ func (hl *THashList) Store(aFilename string) (int, error) {
 func (hl *THashList) String() string {
 	var (
 		result string
-		tmp    []string
+		tmp    tSourceList
 	)
 	for hash := range *hl {
 		tmp = append(tmp, hash)
