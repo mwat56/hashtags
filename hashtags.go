@@ -552,6 +552,51 @@ func (hl *THashList) String() string {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+type (
+	// TWalkFunc is used by `Walk()` when visiting an entry
+	// in the #hashtag/@mention lists.
+	//
+	// see `Walk()`
+	TWalkFunc func(aHash, aID string) (rValid bool)
+
+	// THashWalker is used by `Walker()` when visiting an entry
+	// in the #hashtag/@mentions lists.
+	//
+	// see `Walker()`
+	THashWalker interface {
+		Walk(aHash, aID string) (rValid bool)
+	}
+)
+
+// Walk traverses through all entries in the #hashtag/@mention lists
+// calling `aFunc` for each entry.
+//
+// `aFunc` is the function called for each ID in all lists.
+func (hl *THashList) Walk(aFunc TWalkFunc) {
+	for hash, sl := range *hl {
+		for _, id := range *sl {
+			if !aFunc(hash, id) {
+				sl.removeID(id)
+			}
+		}
+	}
+	for hash, sl := range *hl {
+		if 0 == len(*sl) {
+			delete(*hl, hash)
+		}
+	}
+} // Walk()
+
+// Walker traverses through all entries in the INI list sections
+// calling `aWalker` for each entry.
+//
+// `aWalker` is an object implementing the `TIniWalker` interface.
+func (hl *THashList) Walker(aWalker THashWalker) {
+	hl.Walk(aWalker.Walk)
+} // Walker()
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 // LoadList returns a new `THashList` instance after reading
 // the given file.
 //
