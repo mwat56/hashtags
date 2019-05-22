@@ -3,6 +3,7 @@ package hashtags
 import (
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -243,6 +244,7 @@ func TestTHashList_Checksum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			atomic.StoreUint32(&µChange, 0)
 			if gotRSum := tt.hl.Checksum(); gotRSum != tt.wantRSum {
 				t.Errorf("THashList.Checksum() = %v, want %v", gotRSum, tt.wantRSum)
 			}

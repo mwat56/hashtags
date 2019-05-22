@@ -13,11 +13,22 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync/atomic"
 )
 
 type (
 	// `tSourceList` is a slice of strings
 	tSourceList []string
+)
+
+var (
+	// Cache checksum to avoid expensive computations.
+	//
+	// NOTE: This is package/global flag (which is usually in bad taste).
+	// It will break if an application uses several different `THashList`
+	// instances (Why would one do that?) which would all share the same
+	// `µChange` flag and thus interfering whith each other.
+	µChange uint32
 )
 
 // `add()` appends 'aID` to the list
@@ -31,6 +42,7 @@ func (sl *tSourceList) add(aID string) *tSourceList {
 		}
 	}
 	*sl = append(*sl, aID)
+	atomic.StoreUint32(&µChange, 0)
 
 	return sl
 } // add()
@@ -38,6 +50,7 @@ func (sl *tSourceList) add(aID string) *tSourceList {
 // `clear()` removes all entries in this list.
 func (sl *tSourceList) clear() *tSourceList {
 	(*sl) = (*sl)[:0]
+	atomic.StoreUint32(&µChange, 0)
 
 	return sl
 } // clear()
@@ -81,6 +94,7 @@ func (sl *tSourceList) removeID(aID string) *tSourceList {
 	} else {
 		*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 	}
+	atomic.StoreUint32(&µChange, 0)
 
 	return sl
 } // removeID()
@@ -97,6 +111,7 @@ func (sl *tSourceList) renameID(aOldID, aNewID string) *tSourceList {
 	for idx, id := range *sl {
 		if id == aOldID {
 			(*sl)[idx] = aNewID
+			atomic.StoreUint32(&µChange, 0)
 			return sl.sort()
 		}
 	}
@@ -109,6 +124,7 @@ func (sl *tSourceList) sort() *tSourceList {
 	sort.Slice(*sl, func(i, j int) bool {
 		return ((*sl)[i] < (*sl)[j]) // ascending
 	})
+	atomic.StoreUint32(&µChange, 0)
 
 	return sl
 } // sort()
@@ -168,6 +184,7 @@ func (hl *THashList) add0(aMapIdx, aID string) *THashList {
 		sl[0] = aID
 		(*hl)[aMapIdx] = &sl
 	}
+	atomic.StoreUint32(&µChange, 0)
 
 	return hl
 } // add0()
@@ -176,11 +193,14 @@ func (hl *THashList) add0(aMapIdx, aID string) *THashList {
 //
 // This method can be used to get a kind of 'footprint'.
 func (hl *THashList) Checksum() uint32 {
-	table := crc32.MakeTable(crc32.Castagnoli)
-
+	if 0 != atomic.LoadUint32(&µChange) {
+		return µChange
+	}
 	// we use `String()` because it sorts internally thus
-	// generating reproducable results:
-	return crc32.Update(0, table, []byte(hl.String()))
+	// generating reproducible results:
+	atomic.StoreUint32(&µChange, crc32.Update(0, crc32.MakeTable(crc32.Castagnoli), []byte(hl.String())))
+
+	return µChange
 } // Checksum()
 
 // Clear empties the internal data structures:
@@ -190,6 +210,7 @@ func (hl *THashList) Clear() *THashList {
 		sl.clear()
 		delete(*hl, mapIdx)
 	}
+	atomic.StoreUint32(&µChange, 0)
 
 	return hl
 } // Clear()
@@ -305,6 +326,7 @@ func (hl *THashList) IDremove(aID string) *THashList {
 			delete(*hl, mapIdx)
 		}
 	}
+	atomic.StoreUint32(&µChange, 0)
 
 	return hl
 } // IDremove()
@@ -419,6 +441,7 @@ func (hl *THashList) Load(aFilename string) (*THashList, error) {
 
 	scanner := bufio.NewScanner(file)
 	_, err = hl.read(scanner)
+
 	return hl, err
 } // Load()
 
@@ -484,6 +507,7 @@ func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 			hl.add(mapIdx[0], mapIdx, line)
 		}
 	}
+	atomic.StoreUint32(&µChange, 0)
 	rErr = aScanner.Err()
 
 	return
@@ -510,6 +534,7 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 			delete(*hl, aMapIdx)
 		}
 	}
+	atomic.StoreUint32(&µChange, 0)
 
 	return hl
 } // remove()
@@ -564,7 +589,7 @@ type (
 	//
 	// see `Walker()`
 	THashWalker interface {
-		Walk(aHash, aID string) (rValid bool)
+		Walk(aHash, aID string) bool
 	}
 )
 
@@ -583,6 +608,7 @@ func (hl *THashList) Walk(aFunc TWalkFunc) {
 	for hash, sl := range *hl {
 		if 0 == len(*sl) {
 			delete(*hl, hash)
+			atomic.StoreUint32(&µChange, 0)
 		}
 	}
 } // Walk()
@@ -611,7 +637,7 @@ func LoadList(aFilename string) (*THashList, error) {
 
 // NewList returns a new `THashList` instance.
 func NewList() *THashList {
-	result := make(THashList, 32)
+	result := make(THashList, 64)
 
 	return &result
 } // NewList()
