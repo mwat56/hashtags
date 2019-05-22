@@ -17,18 +17,27 @@ import (
 )
 
 type (
-	// `tSourceList` is a slice of strings
+	// `tSourceList` is storing the IDs of #hashtags/@mentions.
 	tSourceList []string
-)
 
-var (
-	// Cache checksum to avoid expensive computations.
+	// `tHashMap` is indexed by #hashtags/@mentions holding a `tSourceList`.
+	tHashMap map[string]tSourceList
+
+	// TCountItem holds a #hashtag/@mention and its number of occurances.
 	//
-	// NOTE: This is package/global flag (which is usually in bad taste).
-	// It will break if an application uses several different `THashList`
-	// instances (Why would one do that?) which would all share the same
-	// `µChange` flag and thus interfering whith each other.
-	µChange uint32
+	// @see CountedList()
+	TCountItem = struct {
+		Count int    // number of IDs for this #hashtag/@mention
+		Tag   string // name of #hashtag/@mention
+	}
+
+	// THashList is a list of `#hashtags` and `@mentions`
+	// pointing to sources (IDs).
+	THashList struct {
+		hl      tHashMap
+		µChange uint32
+		µCounts []TCountItem
+	}
 )
 
 // `add()` appends 'aID` to the list
@@ -42,7 +51,6 @@ func (sl *tSourceList) add(aID string) *tSourceList {
 		}
 	}
 	*sl = append(*sl, aID)
-	atomic.StoreUint32(&µChange, 0)
 
 	return sl
 } // add()
@@ -50,7 +58,6 @@ func (sl *tSourceList) add(aID string) *tSourceList {
 // `clear()` removes all entries in this list.
 func (sl *tSourceList) clear() *tSourceList {
 	(*sl) = (*sl)[:0]
-	atomic.StoreUint32(&µChange, 0)
 
 	return sl
 } // clear()
@@ -94,7 +101,6 @@ func (sl *tSourceList) removeID(aID string) *tSourceList {
 	} else {
 		*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 	}
-	atomic.StoreUint32(&µChange, 0)
 
 	return sl
 } // removeID()
@@ -111,7 +117,6 @@ func (sl *tSourceList) renameID(aOldID, aNewID string) *tSourceList {
 	for idx, id := range *sl {
 		if id == aOldID {
 			(*sl)[idx] = aNewID
-			atomic.StoreUint32(&µChange, 0)
 			return sl.sort()
 		}
 	}
@@ -124,7 +129,6 @@ func (sl *tSourceList) sort() *tSourceList {
 	sort.Slice(*sl, func(i, j int) bool {
 		return ((*sl)[i] < (*sl)[j]) // ascending
 	})
-	atomic.StoreUint32(&µChange, 0)
 
 	return sl
 } // sort()
@@ -139,15 +143,6 @@ func (sl *tSourceList) String() string {
 } // String()
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-type (
-	// A map indexed by a string holding a `tStrList`
-	tHashMap map[string]*tSourceList
-
-	// THashList is a list of `#hashtags` and `@mentions`
-	// pointing to sources (occurances).
-	THashList tHashMap
-)
 
 // `add()` appends `aID` to the list associated with `aMapIdx`.
 //
@@ -177,14 +172,14 @@ func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
 //
 // `aID` is to be added to the hash list.
 func (hl *THashList) add0(aMapIdx, aID string) *THashList {
-	if sl, ok := (*hl)[aMapIdx]; ok {
-		(*hl)[aMapIdx] = sl.add(aID).sort()
+	if sl, ok := hl.hl[aMapIdx]; ok {
+		hl.hl[aMapIdx] = *sl.add(aID).sort()
 	} else {
 		sl := make(tSourceList, 1, 32)
 		sl[0] = aID
-		(*hl)[aMapIdx] = &sl
+		hl.hl[aMapIdx] = sl
 	}
-	atomic.StoreUint32(&µChange, 0)
+	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // add0()
@@ -193,51 +188,45 @@ func (hl *THashList) add0(aMapIdx, aID string) *THashList {
 //
 // This method can be used to get a kind of 'footprint'.
 func (hl *THashList) Checksum() uint32 {
-	if 0 != atomic.LoadUint32(&µChange) {
-		return µChange
+	if 0 != atomic.LoadUint32(&hl.µChange) {
+		return hl.µChange
 	}
 	// we use `String()` because it sorts internally thus
 	// generating reproducible results:
-	atomic.StoreUint32(&µChange, crc32.Update(0, crc32.MakeTable(crc32.Castagnoli), []byte(hl.String())))
+	atomic.StoreUint32(&hl.µChange, crc32.Update(0, crc32.MakeTable(crc32.Castagnoli), []byte(hl.String())))
 
-	return µChange
+	return hl.µChange
 } // Checksum()
 
 // Clear empties the internal data structures:
 // all `#hashtags` and `@mentions` are deleted.
 func (hl *THashList) Clear() *THashList {
-	for mapIdx, sl := range *hl {
+	for mapIdx, sl := range hl.hl {
 		sl.clear()
-		delete(*hl, mapIdx)
+		delete(hl.hl, mapIdx)
 	}
-	atomic.StoreUint32(&µChange, 0)
+	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // Clear()
 
-type (
-	// TCountItem holds a #hashtag/@mention and its number of occurances.
-	//
-	// @see CountedList()
-	TCountItem = struct {
-		Count int    // number of IDs for this #hashtag/@mention
-		Tag   string // name of #hashtag/@mention
-	}
-)
-
 // CountedList returns a list of #hashtags/@mentions and their respective count.
-func (hl *THashList) CountedList() (rList []TCountItem) {
-	for mapIdx, sl := range *hl {
-		rList = append(rList, TCountItem{len(*sl), mapIdx})
+func (hl *THashList) CountedList() []TCountItem {
+	if (0 != atomic.LoadUint32(&hl.µChange)) && (0 < len(hl.µCounts)) {
+		return hl.µCounts
 	}
-	if 0 < len(rList) {
-		sort.Slice(rList, func(i, j int) bool {
+	hl.µCounts = make([]TCountItem, 0, len(hl.hl))
+	for mapIdx, sl := range hl.hl {
+		hl.µCounts = append(hl.µCounts, TCountItem{len(sl), mapIdx})
+	}
+	if 0 < len(hl.µCounts) {
+		sort.Slice(hl.µCounts, func(i, j int) bool {
 			// ignore [#@] for sorting
-			return (rList[i].Tag[1:] < rList[j].Tag[1:])
+			return (hl.µCounts[i].Tag[1:] < hl.µCounts[j].Tag[1:])
 		})
 	}
 
-	return
+	return hl.µCounts
 } // CountedList()
 
 // HashAdd appends `aID` to the list of `aHash`.
@@ -277,7 +266,7 @@ func (hl *THashList) HashRemove(aHash, aID string) *THashList {
 
 // IDlist returns a list of #hashtags and @mentions associated with `aID`.
 func (hl *THashList) IDlist(aID string) (rList []string) {
-	for mapIdx, sl := range *hl {
+	for mapIdx, sl := range hl.hl {
 		if 0 <= sl.indexOf(aID) {
 			rList = append(rList, mapIdx)
 		}
@@ -320,13 +309,13 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 //
 // `aID` is to be deleted from all lists.
 func (hl *THashList) IDremove(aID string) *THashList {
-	for mapIdx, sl := range *hl {
-		sl.removeID(aID)
-		if 0 == len(*sl) {
-			delete(*hl, mapIdx)
+	for mapIdx, sl := range hl.hl {
+		hl.hl[mapIdx] = *sl.removeID(aID)
+		if 0 == len(hl.hl[mapIdx]) {
+			delete(hl.hl, mapIdx)
 		}
 	}
-	atomic.StoreUint32(&µChange, 0)
+	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // IDremove()
@@ -340,9 +329,10 @@ func (hl *THashList) IDremove(aID string) *THashList {
 //
 // `aNewID` is the replacement in all lists.
 func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
-	for _, sl := range *hl {
+	for _, sl := range hl.hl {
 		sl.renameID(aOldID, aNewID)
 	}
+	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // IDrename()
@@ -382,8 +372,8 @@ func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 	if aMapIdx[0] != aDelim {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
-	if sl, ok := (*hl)[aMapIdx]; ok {
-		return len(*sl)
+	if sl, ok := (hl.hl)[aMapIdx]; ok {
+		return len(sl)
 	}
 
 	return -1
@@ -392,14 +382,14 @@ func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 // Len returns the current length of the list i.e. how many #hashtags
 // and @mentions are currently stored in the list.
 func (hl *THashList) Len() int {
-	return len(*hl)
+	return len(hl.hl)
 } // Len()
 
 // LenTotal returns the length of all #hashtag/@mention lists together.
 func (hl *THashList) LenTotal() int {
-	result := len(*hl)
-	for _, sl := range *hl {
-		result += len(*sl)
+	result := len(hl.hl)
+	for _, sl := range hl.hl {
+		result += len(sl)
 	}
 
 	return result
@@ -418,9 +408,9 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	if aMapIdx[0] != aDelim {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
-	if sl, ok := (*hl)[aMapIdx]; ok {
+	if sl, ok := hl.hl[aMapIdx]; ok {
 		sl.sort()
-		rList = []string(*sl)
+		rList = []string(sl)
 	}
 
 	return
@@ -507,7 +497,7 @@ func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 			hl.add(mapIdx[0], mapIdx, line)
 		}
 	}
-	atomic.StoreUint32(&µChange, 0)
+	atomic.StoreUint32(&hl.µChange, 0)
 	rErr = aScanner.Err()
 
 	return
@@ -528,13 +518,13 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 	if aMapIdx[0] != aDelim {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
-	if sl, ok := (*hl)[aMapIdx]; ok {
-		sl.removeID(aID)
-		if 0 == len(*sl) {
-			delete(*hl, aMapIdx)
+	if sl, ok := hl.hl[aMapIdx]; ok {
+		hl.hl[aMapIdx] = *sl.removeID(aID)
+		if 0 == len(hl.hl[aMapIdx]) {
+			delete(hl.hl, aMapIdx)
 		}
 	}
-	atomic.StoreUint32(&µChange, 0)
+	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // remove()
@@ -560,7 +550,7 @@ func (hl *THashList) String() string {
 		result string
 		tmp    tSourceList
 	)
-	for hash := range *hl {
+	for hash := range hl.hl {
 		tmp = append(tmp, hash)
 	}
 	// sort the order of hashtags to get a reproducible result
@@ -568,7 +558,7 @@ func (hl *THashList) String() string {
 		return (tmp[i] < tmp[j]) // ascending
 	})
 	for _, hash := range tmp {
-		sl, _ := (*hl)[hash]
+		sl, _ := hl.hl[hash]
 		result += "[" + hash + "]\n" + sl.String() + "\n"
 	}
 
@@ -598,17 +588,18 @@ type (
 //
 // `aFunc` is the function called for each ID in all lists.
 func (hl *THashList) Walk(aFunc TWalkFunc) {
-	for hash, sl := range *hl {
-		for _, id := range *sl {
+	for hash, sl := range hl.hl {
+		for _, id := range sl {
 			if !aFunc(hash, id) {
 				sl.removeID(id)
+				atomic.StoreUint32(&hl.µChange, 0)
 			}
 		}
 	}
-	for hash, sl := range *hl {
-		if 0 == len(*sl) {
-			delete(*hl, hash)
-			atomic.StoreUint32(&µChange, 0)
+	for hash, sl := range hl.hl {
+		if 0 == len(sl) {
+			delete(hl.hl, hash)
+			atomic.StoreUint32(&hl.µChange, 0)
 		}
 	}
 } // Walk()
@@ -637,7 +628,9 @@ func LoadList(aFilename string) (*THashList, error) {
 
 // NewList returns a new `THashList` instance.
 func NewList() *THashList {
-	result := make(THashList, 64)
+	result := THashList{
+		hl: make(tHashMap, 64),
+	}
 
 	return &result
 } // NewList()
