@@ -31,12 +31,21 @@ type (
 		Tag   string // name of #hashtag/@mention
 	}
 
+	// A list of `TCountItem`s
+	tCountList []TCountItem
+
+	// Data cache for `CountedList()`
+	tCountCache struct {
+		µCRC    uint32
+		µCounts tCountList
+	}
+
 	// THashList is a list of `#hashtags` and `@mentions`
 	// pointing to sources (IDs).
 	THashList struct {
 		hl      tHashMap
 		µChange uint32
-		µCounts []TCountItem
+		µCC     tCountCache
 	}
 )
 
@@ -210,23 +219,28 @@ func (hl *THashList) Clear() *THashList {
 	return hl
 } // Clear()
 
-// CountedList returns a list of #hashtags/@mentions and their respective count.
+// CountedList returns a list of #hashtags/@mentions with
+// their respective count of associated IDs.
 func (hl *THashList) CountedList() []TCountItem {
-	if (0 != atomic.LoadUint32(&hl.µChange)) && (0 < len(hl.µCounts)) {
-		return hl.µCounts
-	}
-	hl.µCounts = make([]TCountItem, 0, len(hl.hl))
-	for mapIdx, sl := range hl.hl {
-		hl.µCounts = append(hl.µCounts, TCountItem{len(sl), mapIdx})
-	}
-	if 0 < len(hl.µCounts) {
-		sort.Slice(hl.µCounts, func(i, j int) bool {
-			// ignore [#@] for sorting
-			return (hl.µCounts[i].Tag[1:] < hl.µCounts[j].Tag[1:])
-		})
+	if (hl.µCC.µCRC == hl.µChange) && (0 < len(hl.µCC.µCounts)) {
+		return hl.µCC.µCounts
 	}
 
-	return hl.µCounts
+	hl.µCC.µCounts = nil
+	hl.µCC.µCRC = hl.µChange
+	result := make(tCountList, 0, len(hl.hl))
+	for mapIdx, sl := range hl.hl {
+		result = append(result, TCountItem{len(sl), mapIdx})
+	}
+	if 0 < len(result) {
+		sort.Slice(result, func(i, j int) bool {
+			// ignore [#@] for sorting
+			return (result[i].Tag[1:] < result[j].Tag[1:])
+		})
+	}
+	hl.µCC.µCounts = result
+
+	return result
 } // CountedList()
 
 // HashAdd appends `aID` to the list of `aHash`.
@@ -555,7 +569,8 @@ func (hl *THashList) String() string {
 	}
 	// sort the order of hashtags to get a reproducible result
 	sort.Slice(tmp, func(i, j int) bool {
-		return (tmp[i] < tmp[j]) // ascending
+		// ignore leading [@#] when sorting
+		return (tmp[i][1:] < tmp[j][1:]) // ascending
 	})
 	for _, hash := range tmp {
 		sl, _ := hl.hl[hash]
