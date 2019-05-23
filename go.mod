@@ -1,4 +1,4 @@
-module github.com/mwat56/go-hashtags
+module github.com/mwat56/hashtags
 
 go 1.12
 

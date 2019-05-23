@@ -1,7 +1,7 @@
 # HashTags
 
-[![GoDoc](https://godoc.org/github.com/mwat56/go-hashtags?status.svg)](https://godoc.org/github.com/mwat56/go-hashtags)
-[![License](https://img.shields.io/eclipse-marketplace/l/notepad4e.svg)](https://github.com/mwat56/go-hashtags/blob/master/LICENSE)
+[![GoDoc](https://godoc.org/github.com/mwat56/hashtags?status.svg)](https://godoc.org/github.com/mwat56/hashtags)
+[![License](https://img.shields.io/eclipse-marketplace/l/notepad4e.svg)](https://github.com/mwat56/hashtags/blob/master/LICENSE)
 
 ## Purpose
 
@@ -13,7 +13,7 @@ It provides the `THashList` class which can be used to parse texts for the occur
 
 You can use `Go` to install this package for you:
 
-    go get -u github.com/mwat56/go-hashtags
+    go get -u github.com/mwat56/hashtags
 
 ## Usage
 
@@ -38,7 +38,7 @@ To get a `THashList` instance there's a simple way:
         log.PrintF("Problem writing file '%s': %v", fName, err)
     }
 
-For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/go-hashtags).
+For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/hashtags).
 
 ## Licence
 
