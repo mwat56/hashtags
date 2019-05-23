@@ -244,6 +244,11 @@ func (hl *THashList) CountedList() []TCountItem {
 	return result
 } // CountedList()
 
+// Filename returns the configured filename for reading/storing this list.
+func (hl *THashList) Filename() string {
+	return hl.fn
+} // Filename()
+
 // HashAdd appends `aID` to the list of `aHash`.
 //
 // If either `aHash` or `aID` are empty strings they are silently
@@ -545,6 +550,13 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 
 	return hl
 } // remove()
+
+// SetFilename sets `aFilename` to use by this list.
+func (hl *THashList) SetFilename(aFilename string) *THashList {
+	hl.fn = aFilename
+
+	return hl
+} // SetFilename()
 
 // Store writes the whole list to the configured filen
 // returning the number of bytes written and a possible error.
