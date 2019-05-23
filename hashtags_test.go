@@ -205,8 +205,8 @@ func TestTHashList_Checksum(t *testing.T) {
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id2},
-			hash2: tSourceList{id3, id1},
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id3, id1},
 		},
 	}
 	h1a, _ := New(fn)
@@ -216,8 +216,8 @@ func TestTHashList_Checksum(t *testing.T) {
 	w1 := h1a.Checksum()
 	hl2 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id1, id2},
-			hash2: tSourceList{id2, id3},
+			hash1: &tSourceList{id1, id2},
+			hash2: &tSourceList{id2, id3},
 		},
 	}
 	h2a, _ := New(fn)
@@ -278,8 +278,8 @@ func TestTHashList_CountedList(t *testing.T) {
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id2},
-			hash2: tSourceList{id1, id3},
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id3},
 		},
 	}
 	wl1 := []TCountItem{
@@ -288,9 +288,9 @@ func TestTHashList_CountedList(t *testing.T) {
 	}
 	hl2 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id2},
-			hash2: tSourceList{id1, id3},
-			hash3: tSourceList{id1, id2, id3},
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id3},
+			hash3: &tSourceList{id1, id2, id3},
 		},
 	}
 	wl2 := []TCountItem{
@@ -321,26 +321,26 @@ func TestTHashList_HashAdd(t *testing.T) {
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id2},
-			hash2: tSourceList{id1},
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1},
 		},
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
-			hash2: tSourceList{id1},
-			hash1: tSourceList{id2, id1},
+			hash2: &tSourceList{id1},
+			hash1: &tSourceList{id2, id1},
 		},
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
-			hash2: tSourceList{id2, id1},
-			hash1: tSourceList{id2, id1},
+			hash2: &tSourceList{id2, id1},
+			hash1: &tSourceList{id2, id1},
 		},
 	}
 	wl3 := &THashList{
 		hl: tHashMap{
-			hash2: tSourceList{id2, id1},
-			hash1: tSourceList{id2, id3, id1},
+			hash2: &tSourceList{id2, id1},
+			hash1: &tSourceList{id2, id3, id1},
 		},
 	}
 	type args struct {
@@ -372,8 +372,8 @@ func TestTHashList_HashLen(t *testing.T) {
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id2},
-			hash2: tSourceList{id3, id1},
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id3, id1},
 		},
 	}
 	type args struct {
@@ -403,8 +403,8 @@ func TestTHashList_HashList(t *testing.T) {
 	id1, id2 := "id_c", "id_a"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id2, id1},
-			hash2: tSourceList{id2, id1},
+			hash1: &tSourceList{id2, id1},
+			hash2: &tSourceList{id2, id1},
 		},
 	}
 	wl1 := []string{
@@ -439,27 +439,27 @@ func TestTHashList_HashRemove(t *testing.T) {
 	id1, id2 := "id_c", "id_a"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id1, id2},
-			hash2: tSourceList{id1, id2},
+			hash1: &tSourceList{id1, id2},
+			hash2: &tSourceList{id1, id2},
 		},
 		fn: fn,
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id2},
-			hash2: tSourceList{id1, id2},
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id2},
 		},
 		fn: fn,
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
-			hash2: tSourceList{id1, id2},
+			hash2: &tSourceList{id1, id2},
 		},
 		fn: fn,
 	}
 	wl3 := &THashList{
 		hl: tHashMap{
-			hash2: tSourceList{id2},
+			hash2: &tSourceList{id2},
 		},
 		fn: fn,
 	}
@@ -495,9 +495,9 @@ func TestTHashList_IDlist(t *testing.T) {
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id1, id2},
-			hash2: tSourceList{id2, id3},
-			hash3: tSourceList{id1, id3},
+			hash1: &tSourceList{id1, id2},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id1, id3},
 		},
 	}
 	var wl0 []string
@@ -537,31 +537,31 @@ func TestTHashList_IDparse(t *testing.T) {
 	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + ". Blabla")
 	wl1 := &THashList{
 		hl: tHashMap{
-			lh1:   tSourceList{id1},
-			hash3: tSourceList{id1},
+			lh1:   &tSourceList{id1},
+			hash3: &tSourceList{id1},
 		},
 	}
 	hl2 := &THashList{
 		hl: tHashMap{
-			lh1:   tSourceList{id3},
-			hash2: tSourceList{id3},
-			hash3: tSourceList{id3},
+			lh1:   &tSourceList{id3},
+			hash2: &tSourceList{id3},
+			hash3: &tSourceList{id3},
 		},
 	}
 	tx2 := []byte("blabla " + hash2 + ". Blabla " + hash3 + " blabla")
 	wl2 := &THashList{
 		hl: tHashMap{
-			lh1:   tSourceList{id3},
-			hash2: tSourceList{id2, id3},
-			hash3: tSourceList{id2, id3},
+			lh1:   &tSourceList{id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id2, id3},
 		},
 	}
 	hl3, _ := New("")
 	tx3 := []byte("\n> #KurzErklÄrt #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
 	wl3 := &THashList{
 		hl: tHashMap{
-			"#kurzerklärt":      tSourceList{id3},
-			"#zensurheberrecht": tSourceList{id3},
+			"#kurzerklärt":      &tSourceList{id3},
+			"#zensurheberrecht": &tSourceList{id3},
 		},
 	}
 	type args struct {
@@ -594,23 +594,23 @@ func TestTHashList_IDremove(t *testing.T) {
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id1, id3},
-			hash2: tSourceList{id2, id3},
-			hash3: tSourceList{id1, id3},
+			hash1: &tSourceList{id1, id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id1, id3},
 		},
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3},
-			hash2: tSourceList{id2, id3},
-			hash3: tSourceList{id3},
+			hash1: &tSourceList{id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id3},
 		},
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3},
-			hash2: tSourceList{id3},
-			hash3: tSourceList{id3},
+			hash1: &tSourceList{id3},
+			hash2: &tSourceList{id3},
+			hash3: &tSourceList{id3},
 		},
 	}
 	wl3, _ := New("")
@@ -642,30 +642,30 @@ func TestTHashList_IDrename(t *testing.T) {
 	id1, id2, id3, id4, id5, id6 := "id_e", "id_a", "id_c", "id_g", "id_j", "id_k"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3, id1},
-			hash2: tSourceList{id2, id3},
-			hash3: tSourceList{id3, id1},
+			hash1: &tSourceList{id3, id1},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id3, id1},
 		},
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3, id4},
-			hash2: tSourceList{id2, id3},
-			hash3: tSourceList{id3, id4},
+			hash1: &tSourceList{id3, id4},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id3, id4},
 		},
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3, id4},
-			hash2: tSourceList{id3, id5},
-			hash3: tSourceList{id3, id4},
+			hash1: &tSourceList{id3, id4},
+			hash2: &tSourceList{id3, id5},
+			hash3: &tSourceList{id3, id4},
 		},
 	}
 	wl3 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id4, id6},
-			hash2: tSourceList{id5, id6},
-			hash3: tSourceList{id4, id6},
+			hash1: &tSourceList{id4, id6},
+			hash2: &tSourceList{id5, id6},
+			hash3: &tSourceList{id4, id6},
 		},
 	}
 	type args struct {
@@ -697,23 +697,23 @@ func TestTHashList_IDupdate(t *testing.T) {
 	id1, id2, id3 := "id_c", "id_a", "id_b"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id1, id2, id3},
-			hash2: tSourceList{id1, id2},
+			hash1: &tSourceList{id1, id2, id3},
+			hash2: &tSourceList{id1, id2},
 		},
 	}
 	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + " blabla")
 	wl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id1, id2, id3},
-			hash2: tSourceList{id2},
-			hash3: tSourceList{id1},
+			hash1: &tSourceList{id1, id2, id3},
+			hash2: &tSourceList{id2},
+			hash3: &tSourceList{id1},
 		},
 	}
 	tx2 := []byte("blabla blabla blabla")
 	wl2 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id1, id3},
-			hash3: tSourceList{id1},
+			hash1: &tSourceList{id1, id3},
+			hash3: &tSourceList{id1},
 		},
 	}
 	type args struct {
@@ -849,46 +849,46 @@ func TestTHashList_remove(t *testing.T) {
 	id1, id2, id3 := "id_3", "id_1", "id_2"
 	hl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id1, id3},
-			hash2: tSourceList{id2, id3},
-			hash3: tSourceList{id1, id3},
+			hash1: &tSourceList{id1, id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id1, id3},
 		},
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3},
-			hash2: tSourceList{id2, id3},
-			hash3: tSourceList{id1, id3},
+			hash1: &tSourceList{id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id1, id3},
 		},
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3},
-			hash2: tSourceList{id3},
-			hash3: tSourceList{id1, id3},
+			hash1: &tSourceList{id3},
+			hash2: &tSourceList{id3},
+			hash3: &tSourceList{id1, id3},
 		},
 	}
 	wl3 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3},
-			hash2: tSourceList{id3},
-			hash3: tSourceList{id1},
+			hash1: &tSourceList{id3},
+			hash2: &tSourceList{id3},
+			hash3: &tSourceList{id1},
 		},
 	}
 	wl4 := &THashList{
 		hl: tHashMap{
-			hash1: tSourceList{id3},
-			hash2: tSourceList{id3},
+			hash1: &tSourceList{id3},
+			hash2: &tSourceList{id3},
 		},
 	}
 	wl5 := &THashList{
 		hl: tHashMap{
-			hash2: tSourceList{id3},
+			hash2: &tSourceList{id3},
 		},
 	}
 	wl6 := &THashList{
 		hl: tHashMap{
-			hash2: tSourceList{id3},
+			hash2: &tSourceList{id3},
 		},
 	}
 	wl7, _ := New("")

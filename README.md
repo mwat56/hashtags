@@ -1,6 +1,7 @@
 # HashTags
 
 [![GoDoc](https://godoc.org/github.com/mwat56/go-hashtags?status.svg)](https://godoc.org/github.com/mwat56/go-hashtags)
+[![License](https://img.shields.io/eclipse-marketplace/l/notepad4e.svg)](https://github.com/mwat56/go-hashtags/blob/master/LICENSE)
 
 ## Purpose
 

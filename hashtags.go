@@ -21,7 +21,7 @@ type (
 	tSourceList []string
 
 	// `tHashMap` is indexed by #hashtags/@mentions holding a `tSourceList`.
-	tHashMap map[string]tSourceList
+	tHashMap map[string]*tSourceList
 
 	// TCountItem holds a #hashtag/@mention and its number of occurances.
 	//
@@ -183,11 +183,11 @@ func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
 // `aID` is to be added to the hash list.
 func (hl *THashList) add0(aMapIdx, aID string) *THashList {
 	if sl, ok := hl.hl[aMapIdx]; ok {
-		hl.hl[aMapIdx] = *sl.add(aID).sort()
+		sl.add(aID).sort()
 	} else {
 		sl := make(tSourceList, 1, 32)
 		sl[0] = aID
-		hl.hl[aMapIdx] = sl
+		hl.hl[aMapIdx] = &sl
 	}
 	atomic.StoreUint32(&hl.µChange, 0)
 
@@ -201,7 +201,7 @@ func (hl *THashList) Checksum() uint32 {
 	if 0 != atomic.LoadUint32(&hl.µChange) {
 		return hl.µChange
 	}
-	// we use `String()` because it sorts internally thus
+	// We use `String()` because it sorts internally thus
 	// generating reproducible results:
 	atomic.StoreUint32(&hl.µChange, crc32.Update(0, crc32.MakeTable(crc32.Castagnoli), []byte(hl.String())))
 
@@ -231,7 +231,7 @@ func (hl *THashList) CountedList() []TCountItem {
 	hl.µCC.µCRC = hl.µChange
 	result := make(tCountList, 0, len(hl.hl))
 	for mapIdx, sl := range hl.hl {
-		result = append(result, TCountItem{len(sl), mapIdx})
+		result = append(result, TCountItem{len(*sl), mapIdx})
 	}
 	if 0 < len(result) {
 		sort.Slice(result, func(i, j int) bool {
@@ -312,6 +312,13 @@ var (
 //
 // `aText` is the text to search.
 func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
+	oldCRC := hl.Checksum()
+	defer func() {
+		if oldCRC != atomic.LoadUint32(&hl.µChange) {
+			hl.Store()
+		}
+	}()
+
 	matches := hashMentionRE.FindAllSubmatch(aText, -1)
 	if (nil == matches) || (0 >= len(matches)) {
 		return hl
@@ -329,9 +336,16 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 //
 // `aID` is to be deleted from all lists.
 func (hl *THashList) IDremove(aID string) *THashList {
+	oldCRC := hl.Checksum()
+	defer func() {
+		if oldCRC != atomic.LoadUint32(&hl.µChange) {
+			hl.Store()
+		}
+	}()
+
 	for mapIdx, sl := range hl.hl {
-		hl.hl[mapIdx] = *sl.removeID(aID)
-		if 0 == len(hl.hl[mapIdx]) {
+		sl.removeID(aID)
+		if 0 == len(*hl.hl[mapIdx]) {
 			delete(hl.hl, mapIdx)
 		}
 	}
@@ -353,6 +367,7 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 		sl.renameID(aOldID, aNewID)
 	}
 	atomic.StoreUint32(&hl.µChange, 0)
+	hl.Store()
 
 	return hl
 } // IDrename()
@@ -366,6 +381,14 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 	hl.IDremove(aID)
 
+	oldCRC := hl.Checksum()
+	defer func() {
+		if oldCRC != atomic.LoadUint32(&hl.µChange) {
+			hl.Store()
+		}
+	}()
+
+	hl.IDremove(aID)
 	matches := hashMentionRE.FindAllSubmatch(aText, -1)
 	if (nil == matches) || (0 >= len(matches)) {
 		return hl
@@ -393,7 +416,7 @@ func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
 	if sl, ok := (hl.hl)[aMapIdx]; ok {
-		return len(sl)
+		return len(*sl)
 	}
 
 	return -1
@@ -409,7 +432,7 @@ func (hl *THashList) Len() int {
 func (hl *THashList) LenTotal() int {
 	result := len(hl.hl)
 	for _, sl := range hl.hl {
-		result += len(sl)
+		result += len(*sl)
 	}
 
 	return result
@@ -430,7 +453,7 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	}
 	if sl, ok := hl.hl[aMapIdx]; ok {
 		sl.sort()
-		rList = []string(sl)
+		rList = []string(*sl)
 	}
 
 	return
@@ -541,12 +564,12 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 		aMapIdx = string(aDelim) + aMapIdx
 	}
 	if sl, ok := hl.hl[aMapIdx]; ok {
-		hl.hl[aMapIdx] = *sl.removeID(aID)
-		if 0 == len(hl.hl[aMapIdx]) {
+		sl.removeID(aID)
+		if 0 == len(*hl.hl[aMapIdx]) {
 			delete(hl.hl, aMapIdx)
 		}
+		atomic.StoreUint32(&hl.µChange, 0)
 	}
-	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // remove()
@@ -618,8 +641,15 @@ type (
 //
 // `aFunc` is the function called for each ID in all lists.
 func (hl *THashList) Walk(aFunc TWalkFunc) {
+	oldCRC := hl.Checksum()
+	defer func() {
+		if oldCRC != atomic.LoadUint32(&hl.µChange) {
+			hl.Store()
+		}
+	}()
+
 	for hash, sl := range hl.hl {
-		for _, id := range sl {
+		for _, id := range *sl {
 			if !aFunc(hash, id) {
 				sl.removeID(id)
 				atomic.StoreUint32(&hl.µChange, 0)
@@ -627,7 +657,7 @@ func (hl *THashList) Walk(aFunc TWalkFunc) {
 		}
 	}
 	for hash, sl := range hl.hl {
-		if 0 == len(sl) {
+		if 0 == len(*sl) {
 			delete(hl.hl, hash)
 			atomic.StoreUint32(&hl.µChange, 0)
 		}
