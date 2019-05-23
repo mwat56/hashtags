@@ -16,25 +16,23 @@ You can use `Go` to install this package for you:
 
 ## Usage
 
-In principle for each `#hashtag` (or `@mention`) a list of _IDs_ is maintained.
+In principle for each `#hashtag` or `@mention` a list of _IDs_ is maintained.
 These _IDs_ can be any (string) data that identifies the text in which the `#hashtag` (or `@mention`) was found, e.g. a filename or some database record reference.
 The only condition is that it is unique as far as the program using this package is concerned.
 
 _Note_ that both `#hashtag` and `@mention` are stored lower-cased to allow for case-insensitive searches.
 
-To get a `THashList` instance there are two ways:
+To get a `THashList` instance there's a simple way:
 
-    htl := hashtags.NewList()
-        // _OR_
     fName := "mytags.lst"
-    htl, err := hashtags.LoadList(fName)
+    htl, err := hashtags.New(fName)
     if nil != err {
         log.PrintF("Problem loading file '%s': %v", fName, err)
     }
         // …
         // do something with the list
         // …
-    written, err := htl.Store(fName)
+    written, err := htl.Store()
     if nil != err {
         log.PrintF("Problem writing file '%s': %v", fName, err)
     }

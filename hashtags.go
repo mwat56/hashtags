@@ -41,8 +41,9 @@ type (
 	}
 
 	// THashList is a list of `#hashtags` and `@mentions`
-	// pointing to sources (IDs).
+	// pointing to sources (i.e. IDs).
 	THashList struct {
+		fn      string // the filename to use
 		hl      tHashMap
 		µChange uint32
 		µCC     tCountCache
@@ -430,21 +431,23 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	return
 } // list()
 
-// Load reads the given `aFilename` returning the data structure
+// Load reads the configured filen returning the data structure
 // read from the file and a possible error condition.
 //
+// If the hash file doesn't exist that is not considered an error.
 // If there is an error, it will be of type `*PathError`.
-//
-// `aFilename` is the name of the file to read.
-func (hl *THashList) Load(aFilename string) (*THashList, error) {
-	file, err := os.Open(aFilename)
+func (hl *THashList) Load() (*THashList, error) {
+	file, err := os.OpenFile(hl.fn, os.O_RDONLY, 0)
 	if nil != err {
+		if os.IsNotExist(err) {
+			return hl, nil
+		}
 		return hl, err
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	_, err = hl.read(scanner)
+	_, err = hl.Clear().read(scanner)
 
 	return hl, err
 } // Load()
@@ -543,14 +546,14 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 	return hl
 } // remove()
 
-// Store writes the whole list to `aFilename`
+// Store writes the whole list to the configured filen
 // returning the number of bytes written and a possible error.
 //
-// `aFilename` is the name of the file to write.
-func (hl *THashList) Store(aFilename string) (int, error) {
+// If there is an error, it will be of type `*PathError`.
+func (hl *THashList) Store() (int, error) {
 	s := hl.String()
-	file, err := os.Create(aFilename)
-	if err != nil {
+	file, err := os.OpenFile(hl.fn, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0664)
+	if nil != err {
 		return 0, err
 	}
 	defer file.Close()
@@ -629,25 +632,20 @@ func (hl *THashList) Walker(aWalker THashWalker) {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-// LoadList returns a new `THashList` instance after reading
+// New returns a new `THashList` instance after reading
 // the given file.
 //
+// If the hash file doesn't exist that is not considered an error.
 // If there is an error, it will be of type *PathError.
 //
-// `aFilename` is the name of the file to read.
-func LoadList(aFilename string) (*THashList, error) {
-	result := NewList()
-
-	return result.Load(aFilename)
-} // LoadList()
-
-// NewList returns a new `THashList` instance.
-func NewList() *THashList {
+// `aFilename` is the name of the file to use for reading and storing.
+func New(aFilename string) (*THashList, error) {
 	result := THashList{
+		fn: aFilename,
 		hl: make(tHashMap, 64),
 	}
 
-	return &result
-} // NewList()
+	return result.Load()
+} // New()
 
 /* EoF */
