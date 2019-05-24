@@ -198,12 +198,11 @@ func (hl *THashList) add0(aMapIdx, aID string) *THashList {
 //
 // This method can be used to get a kind of 'footprint'.
 func (hl *THashList) Checksum() uint32 {
-	if 0 != atomic.LoadUint32(&hl.µChange) {
-		return hl.µChange
+	if 0 == atomic.LoadUint32(&hl.µChange) {
+		// We use `String()` because it sorts internally
+		// thus generating reproducible results:
+		atomic.StoreUint32(&hl.µChange, crc32.Update(0, crc32.MakeTable(crc32.Castagnoli), []byte(hl.String())))
 	}
-	// We use `String()` because it sorts internally thus
-	// generating reproducible results:
-	atomic.StoreUint32(&hl.µChange, crc32.Update(0, crc32.MakeTable(crc32.Castagnoli), []byte(hl.String())))
 
 	return hl.µChange
 } // Checksum()
@@ -223,12 +222,12 @@ func (hl *THashList) Clear() *THashList {
 // CountedList returns a list of #hashtags/@mentions with
 // their respective count of associated IDs.
 func (hl *THashList) CountedList() []TCountItem {
-	if (hl.µCC.µCRC == hl.µChange) && (0 < len(hl.µCC.µCounts)) {
+	if (hl.Checksum() == hl.µCC.µCRC) && (0 < len(hl.µCC.µCounts)) {
 		return hl.µCC.µCounts
 	}
 
 	hl.µCC.µCounts = nil
-	hl.µCC.µCRC = hl.µChange
+	hl.µCC.µCRC = atomic.LoadUint32(&hl.µChange)
 	result := make(tCountList, 0, len(hl.hl))
 	for mapIdx, sl := range hl.hl {
 		result = append(result, TCountItem{len(*sl), mapIdx})
