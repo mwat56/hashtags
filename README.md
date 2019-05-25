@@ -3,6 +3,12 @@
 [![GoDoc](https://godoc.org/github.com/mwat56/hashtags?status.svg)](https://godoc.org/github.com/mwat56/hashtags)
 [![License](https://img.shields.io/eclipse-marketplace/l/notepad4e.svg)](https://github.com/mwat56/hashtags/blob/master/LICENSE)
 
+- [HashTags](#hashtags)
+	- [Purpose](#purpose)
+	- [Installation](#installation)
+	- [Usage](#usage)
+	- [Licence](#licence)
+
 ## Purpose
 
 Sometimes one might want to search and find socalled `#hashtags` or `@mentions` in your texts (in a broader sense) and store them for later retrieval.
@@ -18,7 +24,7 @@ You can use `Go` to install this package for you:
 ## Usage
 
 In principle for each `#hashtag` or `@mention` a list of _IDs_ is maintained.
-These _IDs_ can be any (string) data that identifies the text in which the `#hashtag` (or `@mention`) was found, e.g. a filename or some database record reference.
+These _IDs_ can be any (string) data that identifies the text in which the `#hashtag` or `@mention` was found, e.g. a filename or some database record reference.
 The only condition is that it is unique as far as the program using this package is concerned.
 
 _Note_ that both `#hashtag` and `@mention` are stored lower-cased to allow for case-insensitive searches.
