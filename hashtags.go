@@ -167,8 +167,7 @@ func (sl *tSourceList) String() string {
 //
 // `aID` is to be added to the hash list.
 func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
+	// the mutex.Lock is done by the callers
 
 	if (0 == len(aMapIdx)) || (0 == len(aID)) {
 		return hl
@@ -290,6 +289,9 @@ func (hl *THashList) Filename() string {
 //
 // `aID` is to be added to the hash list.
 func (hl *THashList) HashAdd(aHash, aID string) *THashList {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
 	return hl.add('#', aHash, aID)
 } // HashAdd()
 
@@ -392,7 +394,7 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 } // IDrename()
 
 // IDupdate checks `aText` removing all #hashtags/@mentions no longer
-// present and adds #hashtags/@mentions new in `aText`.
+// present and adding #hashtags/@mentions new in `aText`.
 //
 // `aID` is the ID to update.
 //
@@ -408,19 +410,7 @@ func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 		}
 	}()
 
-	hl.removeID(aID)
-
-	matches := hashMentionRE.FindAllSubmatch(aText, -1)
-	if (nil == matches) || (0 >= len(matches)) {
-		return hl
-	}
-	for _, sub := range matches {
-		if 0 < len(sub[1]) {
-			hl = hl.add0(string(sub[1]), aID)
-		}
-	}
-
-	return hl
+	return hl.updateID(aID, aText)
 } // IDupdate()
 
 // `idxLen()` returns the number of IDs stored for `aMapIdx`.
@@ -525,6 +515,9 @@ func (hl *THashList) Load() (*THashList, error) {
 //
 // `aID` is to be added to the hash list.
 func (hl *THashList) MentionAdd(aMention, aID string) *THashList {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
 	return hl.add('@', aMention, aID)
 } // MentionAdd()
 
@@ -571,7 +564,7 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 	}
 	for _, sub := range matches {
 		if 0 < len(sub[1]) {
-			hl.add0(strings.ToLower(string(sub[1])), aID)
+			hl.add(sub[1][0], string(sub[1]), aID)
 		}
 	}
 
@@ -699,7 +692,7 @@ func (hl *THashList) Store() (int, error) {
 
 // `string()` returns the whole list as a linefeed separated string.
 func (hl *THashList) string() string {
-	// the mutex.Lock is done by th caller
+	// the mutex.Lock is done by the caller
 	var (
 		result string
 		tmp    tSourceList
@@ -727,6 +720,29 @@ func (hl *THashList) String() string {
 
 	return hl.string()
 } // String()
+
+// `updateID()` checks `aText` removing all #hashtags/@mentions no longer
+// present and adds #hashtags/@mentions new in `aText`.
+//
+// `aID` is the ID to update.
+//
+// `aText` is the text to use.
+func (hl *THashList) updateID(aID string, aText []byte) *THashList {
+	// the mutex.Lock is done by the caller
+	hl.removeID(aID)
+
+	matches := hashMentionRE.FindAllSubmatch(aText, -1)
+	if (nil == matches) || (0 >= len(matches)) {
+		return hl
+	}
+	for _, sub := range matches {
+		if 0 < len(sub[1]) {
+			hl.add(sub[1][0], string(sub[1]), aID)
+		}
+	}
+
+	return hl
+} // updateID()
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
