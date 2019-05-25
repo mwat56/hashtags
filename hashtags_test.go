@@ -4,6 +4,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 )
@@ -208,6 +209,7 @@ func TestTHashList_Checksum(t *testing.T) {
 			hash1: &tSourceList{id2},
 			hash2: &tSourceList{id3, id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	h1a, _ := New(fn)
 	h1a.HashAdd(hash1, id2).
@@ -219,6 +221,7 @@ func TestTHashList_Checksum(t *testing.T) {
 			hash1: &tSourceList{id1, id2},
 			hash2: &tSourceList{id2, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	h2a, _ := New(fn)
 	h2a.HashAdd(hash1, id1).
@@ -281,6 +284,7 @@ func TestTHashList_CountedList(t *testing.T) {
 			hash1: &tSourceList{id2},
 			hash2: &tSourceList{id1, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl1 := []TCountItem{
 		TCountItem{1, hash1},
@@ -292,6 +296,7 @@ func TestTHashList_CountedList(t *testing.T) {
 			hash2: &tSourceList{id1, id3},
 			hash3: &tSourceList{id1, id2, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl2 := []TCountItem{
 		TCountItem{3, hash3},
@@ -324,24 +329,28 @@ func TestTHashList_HashAdd(t *testing.T) {
 			hash1: &tSourceList{id2},
 			hash2: &tSourceList{id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
 			hash2: &tSourceList{id1},
 			hash1: &tSourceList{id2, id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
 			hash2: &tSourceList{id2, id1},
 			hash1: &tSourceList{id2, id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl3 := &THashList{
 		hl: tHashMap{
 			hash2: &tSourceList{id2, id1},
 			hash1: &tSourceList{id2, id3, id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	type args struct {
 		aHash string
@@ -375,6 +384,7 @@ func TestTHashList_HashLen(t *testing.T) {
 			hash1: &tSourceList{id2},
 			hash2: &tSourceList{id3, id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	type args struct {
 		aHash string
@@ -406,6 +416,7 @@ func TestTHashList_HashList(t *testing.T) {
 			hash1: &tSourceList{id2, id1},
 			hash2: &tSourceList{id2, id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl1 := []string{
 		id2,
@@ -442,26 +453,30 @@ func TestTHashList_HashRemove(t *testing.T) {
 			hash1: &tSourceList{id1, id2},
 			hash2: &tSourceList{id1, id2},
 		},
-		fn: fn,
+		fn:  fn,
+		mtx: new(sync.RWMutex),
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
 			hash1: &tSourceList{id2},
 			hash2: &tSourceList{id1, id2},
 		},
-		fn: fn,
+		fn:  fn,
+		mtx: new(sync.RWMutex),
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
 			hash2: &tSourceList{id1, id2},
 		},
-		fn: fn,
+		fn:  fn,
+		mtx: new(sync.RWMutex),
 	}
 	wl3 := &THashList{
 		hl: tHashMap{
 			hash2: &tSourceList{id2},
 		},
-		fn: fn,
+		fn:  fn,
+		mtx: new(sync.RWMutex),
 	}
 	wl4, _ := New(fn)
 	type args struct {
@@ -499,6 +514,7 @@ func TestTHashList_IDlist(t *testing.T) {
 			hash2: &tSourceList{id2, id3},
 			hash3: &tSourceList{id1, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	var wl0 []string
 	wl1 := []string{hash1, hash3}
@@ -540,6 +556,7 @@ func TestTHashList_IDparse(t *testing.T) {
 			lh1:   &tSourceList{id1},
 			hash3: &tSourceList{id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	hl2 := &THashList{
 		hl: tHashMap{
@@ -547,6 +564,7 @@ func TestTHashList_IDparse(t *testing.T) {
 			hash2: &tSourceList{id3},
 			hash3: &tSourceList{id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	tx2 := []byte("blabla " + hash2 + ". Blabla " + hash3 + " blabla")
 	wl2 := &THashList{
@@ -555,6 +573,7 @@ func TestTHashList_IDparse(t *testing.T) {
 			hash2: &tSourceList{id2, id3},
 			hash3: &tSourceList{id2, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	hl3, _ := New("")
 	tx3 := []byte("\n> #KurzErklÄrt #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
@@ -563,6 +582,7 @@ func TestTHashList_IDparse(t *testing.T) {
 			"#kurzerklärt":      &tSourceList{id3},
 			"#zensurheberrecht": &tSourceList{id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	type args struct {
 		aID   string
@@ -598,6 +618,7 @@ func TestTHashList_IDremove(t *testing.T) {
 			hash2: &tSourceList{id2, id3},
 			hash3: &tSourceList{id1, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
@@ -605,6 +626,7 @@ func TestTHashList_IDremove(t *testing.T) {
 			hash2: &tSourceList{id2, id3},
 			hash3: &tSourceList{id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
@@ -612,6 +634,7 @@ func TestTHashList_IDremove(t *testing.T) {
 			hash2: &tSourceList{id3},
 			hash3: &tSourceList{id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl3, _ := New("")
 	type args struct {
@@ -646,6 +669,7 @@ func TestTHashList_IDrename(t *testing.T) {
 			hash2: &tSourceList{id2, id3},
 			hash3: &tSourceList{id3, id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
@@ -653,6 +677,7 @@ func TestTHashList_IDrename(t *testing.T) {
 			hash2: &tSourceList{id2, id3},
 			hash3: &tSourceList{id3, id4},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
@@ -660,6 +685,7 @@ func TestTHashList_IDrename(t *testing.T) {
 			hash2: &tSourceList{id3, id5},
 			hash3: &tSourceList{id3, id4},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl3 := &THashList{
 		hl: tHashMap{
@@ -667,6 +693,7 @@ func TestTHashList_IDrename(t *testing.T) {
 			hash2: &tSourceList{id5, id6},
 			hash3: &tSourceList{id4, id6},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	type args struct {
 		aOldID string
@@ -700,6 +727,7 @@ func TestTHashList_IDupdate(t *testing.T) {
 			hash1: &tSourceList{id1, id2, id3},
 			hash2: &tSourceList{id1, id2},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + " blabla")
 	wl1 := &THashList{
@@ -708,6 +736,7 @@ func TestTHashList_IDupdate(t *testing.T) {
 			hash2: &tSourceList{id2},
 			hash3: &tSourceList{id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	tx2 := []byte("blabla blabla blabla")
 	wl2 := &THashList{
@@ -715,6 +744,7 @@ func TestTHashList_IDupdate(t *testing.T) {
 			hash1: &tSourceList{id1, id3},
 			hash3: &tSourceList{id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	type args struct {
 		aID   string
@@ -853,6 +883,7 @@ func TestTHashList_remove(t *testing.T) {
 			hash2: &tSourceList{id2, id3},
 			hash3: &tSourceList{id1, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl1 := &THashList{
 		hl: tHashMap{
@@ -860,6 +891,7 @@ func TestTHashList_remove(t *testing.T) {
 			hash2: &tSourceList{id2, id3},
 			hash3: &tSourceList{id1, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl2 := &THashList{
 		hl: tHashMap{
@@ -867,6 +899,7 @@ func TestTHashList_remove(t *testing.T) {
 			hash2: &tSourceList{id3},
 			hash3: &tSourceList{id1, id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl3 := &THashList{
 		hl: tHashMap{
@@ -874,22 +907,26 @@ func TestTHashList_remove(t *testing.T) {
 			hash2: &tSourceList{id3},
 			hash3: &tSourceList{id1},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl4 := &THashList{
 		hl: tHashMap{
 			hash1: &tSourceList{id3},
 			hash2: &tSourceList{id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl5 := &THashList{
 		hl: tHashMap{
 			hash2: &tSourceList{id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl6 := &THashList{
 		hl: tHashMap{
 			hash2: &tSourceList{id3},
 		},
+		mtx: new(sync.RWMutex),
 	}
 	wl7, _ := New("")
 	type args struct {

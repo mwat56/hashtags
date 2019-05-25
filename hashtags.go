@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -45,6 +46,7 @@ type (
 	THashList struct {
 		fn      string // the filename to use
 		hl      tHashMap
+		mtx     *sync.RWMutex
 		µChange uint32
 		µCC     tCountCache
 	}
@@ -165,6 +167,9 @@ func (sl *tSourceList) String() string {
 //
 // `aID` is to be added to the hash list.
 func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
 	if (0 == len(aMapIdx)) || (0 == len(aID)) {
 		return hl
 	}
@@ -182,6 +187,8 @@ func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
 //
 // `aID` is to be added to the hash list.
 func (hl *THashList) add0(aMapIdx, aID string) *THashList {
+	// the mutex.Lock is done by the callers
+
 	if sl, ok := hl.hl[aMapIdx]; ok {
 		sl.add(aID).sort()
 	} else {
@@ -194,22 +201,33 @@ func (hl *THashList) add0(aMapIdx, aID string) *THashList {
 	return hl
 } // add0()
 
+// `checksum()` returns the list's CRC32 checksum.
+func (hl *THashList) checksum() uint32 {
+	// the mutex.Lock is done by the callers
+
+	if 0 == atomic.LoadUint32(&hl.µChange) {
+		// We use `string()` because it sorts internally
+		// thus generating reproducible results:
+		atomic.StoreUint32(&hl.µChange, crc32.Update(0, crc32.MakeTable(crc32.Castagnoli), []byte(hl.string())))
+	}
+
+	return hl.µChange
+} // checksum()
+
 // Checksum returns the list's CRC32 checksum.
 //
 // This method can be used to get a kind of 'footprint'.
 func (hl *THashList) Checksum() uint32 {
-	if 0 == atomic.LoadUint32(&hl.µChange) {
-		// We use `String()` because it sorts internally
-		// thus generating reproducible results:
-		atomic.StoreUint32(&hl.µChange, crc32.Update(0, crc32.MakeTable(crc32.Castagnoli), []byte(hl.String())))
-	}
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
 
-	return hl.µChange
+	return hl.checksum()
 } // Checksum()
 
-// Clear empties the internal data structures:
+// `clear()` empties the internal data structures:
 // all `#hashtags` and `@mentions` are deleted.
-func (hl *THashList) Clear() *THashList {
+func (hl *THashList) clear() *THashList {
+	// the mutex.Lock is done by the callers
 	for mapIdx, sl := range hl.hl {
 		sl.clear()
 		delete(hl.hl, mapIdx)
@@ -217,17 +235,29 @@ func (hl *THashList) Clear() *THashList {
 	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
+} // clear()
+
+// Clear empties the internal data structures:
+// all `#hashtags` and `@mentions` are deleted.
+func (hl *THashList) Clear() *THashList {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
+	return hl.clear()
 } // Clear()
 
 // CountedList returns a list of #hashtags/@mentions with
 // their respective count of associated IDs.
 func (hl *THashList) CountedList() []TCountItem {
-	if (hl.Checksum() == hl.µCC.µCRC) && (0 < len(hl.µCC.µCounts)) {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
+	if (hl.checksum() == hl.µCC.µCRC) && (0 < len(hl.µCC.µCounts)) {
 		return hl.µCC.µCounts
 	}
 
 	hl.µCC.µCounts = nil
-	hl.µCC.µCRC = atomic.LoadUint32(&hl.µChange)
+	hl.µCC.µCRC = hl.checksum()
 	result := make(tCountList, 0, len(hl.hl))
 	for mapIdx, sl := range hl.hl {
 		result = append(result, TCountItem{len(*sl), mapIdx})
@@ -245,6 +275,9 @@ func (hl *THashList) CountedList() []TCountItem {
 
 // Filename returns the configured filename for reading/storing this list.
 func (hl *THashList) Filename() string {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
 	return hl.fn
 } // Filename()
 
@@ -285,6 +318,9 @@ func (hl *THashList) HashRemove(aHash, aID string) *THashList {
 
 // IDlist returns a list of #hashtags and @mentions associated with `aID`.
 func (hl *THashList) IDlist(aID string) (rList []string) {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
 	for mapIdx, sl := range hl.hl {
 		if 0 <= sl.indexOf(aID) {
 			rList = append(rList, mapIdx)
@@ -311,46 +347,27 @@ var (
 //
 // `aText` is the text to search.
 func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
-	oldCRC := hl.Checksum()
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
+	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.Store()
+			hl.store()
 		}
 	}()
 
-	matches := hashMentionRE.FindAllSubmatch(aText, -1)
-	if (nil == matches) || (0 >= len(matches)) {
-		return hl
-	}
-	for _, sub := range matches {
-		if 0 < len(sub[1]) {
-			hl.add0(strings.ToLower(string(sub[1])), aID)
-		}
-	}
-
-	return hl
+	return hl.parseID(aID, aText)
 } // IDparse()
 
 // IDremove deletes all @hashtags/@mentions associated with `aID`.
 //
 // `aID` is to be deleted from all lists.
 func (hl *THashList) IDremove(aID string) *THashList {
-	oldCRC := hl.Checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.Store()
-		}
-	}()
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
 
-	for mapIdx, sl := range hl.hl {
-		sl.removeID(aID)
-		if 0 == len(*hl.hl[mapIdx]) {
-			delete(hl.hl, mapIdx)
-		}
-	}
-	atomic.StoreUint32(&hl.µChange, 0)
-
-	return hl
+	return hl.removeID(aID)
 } // IDremove()
 
 // IDrename replaces all occurances of `aOldID` by `aNewID`.
@@ -362,11 +379,14 @@ func (hl *THashList) IDremove(aID string) *THashList {
 //
 // `aNewID` is the replacement in all lists.
 func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
 	for _, sl := range hl.hl {
 		sl.renameID(aOldID, aNewID)
 	}
 	atomic.StoreUint32(&hl.µChange, 0)
-	hl.Store()
+	hl.store()
 
 	return hl
 } // IDrename()
@@ -378,23 +398,25 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 //
 // `aText` is the text to use.
 func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
-	hl.IDremove(aID)
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
 
-	oldCRC := hl.Checksum()
+	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.Store()
+			hl.store()
 		}
 	}()
 
-	hl.IDremove(aID)
+	hl.removeID(aID)
+
 	matches := hashMentionRE.FindAllSubmatch(aText, -1)
 	if (nil == matches) || (0 >= len(matches)) {
 		return hl
 	}
 	for _, sub := range matches {
 		if 0 < len(sub[1]) {
-			hl = hl.add(sub[1][0], string(sub[1]), aID)
+			hl = hl.add0(string(sub[1]), aID)
 		}
 	}
 
@@ -407,6 +429,9 @@ func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 //
 // `aMapIdx` identifies the ID list to lookup.
 func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
 	if 0 == len(aMapIdx) {
 		return -1
 	}
@@ -424,11 +449,17 @@ func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 // Len returns the current length of the list i.e. how many #hashtags
 // and @mentions are currently stored in the list.
 func (hl *THashList) Len() int {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
 	return len(hl.hl)
 } // Len()
 
 // LenTotal returns the length of all #hashtag/@mention lists together.
 func (hl *THashList) LenTotal() int {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
 	result := len(hl.hl)
 	for _, sl := range hl.hl {
 		result += len(*sl)
@@ -443,6 +474,9 @@ func (hl *THashList) LenTotal() int {
 //
 // `aMapIdx` identifies the sources list to lookup.
 func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
 	if 0 == len(aMapIdx) {
 		return
 	}
@@ -464,6 +498,9 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 // If the hash file doesn't exist that is not considered an error.
 // If there is an error, it will be of type `*PathError`.
 func (hl *THashList) Load() (*THashList, error) {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
 	file, err := os.OpenFile(hl.fn, os.O_RDONLY, 0)
 	if nil != err {
 		if os.IsNotExist(err) {
@@ -474,7 +511,7 @@ func (hl *THashList) Load() (*THashList, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	_, err = hl.Clear().read(scanner)
+	_, err = hl.clear().read(scanner)
 
 	return hl, err
 } // Load()
@@ -519,11 +556,34 @@ var (
 	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
 )
 
-// `read()` parses a file written by `Store()` returning the
+// `parseID()` checks whether `aText` contains strings starting
+// with `[@|#]` and – if found – adds them to the respective list.
+//
+// `aID` is the ID to add to the list.
+//
+// `aText` is the text to search.
+func (hl *THashList) parseID(aID string, aText []byte) *THashList {
+	// The mutex.Lock is done by the caller
+
+	matches := hashMentionRE.FindAllSubmatch(aText, -1)
+	if (nil == matches) || (0 >= len(matches)) {
+		return hl
+	}
+	for _, sub := range matches {
+		if 0 < len(sub[1]) {
+			hl.add0(strings.ToLower(string(sub[1])), aID)
+		}
+	}
+
+	return hl
+} // parseID()
+
+// `read()` parses a file written by `store()` returning the
 // number of bytes read and a possible error.
 //
 // This method reads one line of the file at a time.
 func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
+	// The mutex.Lock is done by the caller
 	var mapIdx string
 
 	for lineRead := aScanner.Scan(); lineRead; lineRead = aScanner.Scan() {
@@ -536,9 +596,9 @@ func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 		}
 
 		if matches := hashHeadRE.FindStringSubmatch(line); nil != matches {
-			mapIdx = strings.TrimSpace(matches[1])
+			mapIdx = strings.ToLower(strings.TrimSpace(matches[1]))
 		} else {
-			hl.add(mapIdx[0], mapIdx, line)
+			hl.add0(mapIdx, line)
 		}
 	}
 	atomic.StoreUint32(&hl.µChange, 0)
@@ -555,6 +615,9 @@ func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
 //
 // `aID` is the source to remove from the list.
 func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
 	if (0 == len(aMapIdx)) || (0 == len(aID)) {
 		return hl
 	}
@@ -573,19 +636,47 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 	return hl
 } // remove()
 
+// `removeID()` deletes all @hashtags/@mentions associated with `aID`.
+//
+// `aID` is to be deleted from all lists.
+func (hl *THashList) removeID(aID string) *THashList {
+	// The mutex.Lock is done by the callers
+	oldCRC := hl.checksum()
+	defer func() {
+		if oldCRC != atomic.LoadUint32(&hl.µChange) {
+			hl.store()
+		}
+	}()
+
+	for mapIdx, sl := range hl.hl {
+		sl.removeID(aID)
+		if 0 == len(*hl.hl[mapIdx]) {
+			delete(hl.hl, mapIdx)
+		}
+	}
+	atomic.StoreUint32(&hl.µChange, 0)
+
+	return hl
+} // IDremove()
+
 // SetFilename sets `aFilename` to use by this list.
 func (hl *THashList) SetFilename(aFilename string) *THashList {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
 	hl.fn = aFilename
 
 	return hl
 } // SetFilename()
 
-// Store writes the whole list to the configured filen
+// `store()` writes the whole list to the configured file
 // returning the number of bytes written and a possible error.
 //
 // If there is an error, it will be of type `*PathError`.
-func (hl *THashList) Store() (int, error) {
-	s := hl.String()
+func (hl *THashList) store() (int, error) {
+	// the mutex.Lock is done by the callers
+
+	s := hl.string()
 	file, err := os.OpenFile(hl.fn, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0664)
 	if nil != err {
 		return 0, err
@@ -593,10 +684,22 @@ func (hl *THashList) Store() (int, error) {
 	defer file.Close()
 
 	return file.Write([]byte(s))
+} // store()
+
+// Store writes the whole list to the configured file
+// returning the number of bytes written and a possible error.
+//
+// If there is an error, it will be of type `*PathError`.
+func (hl *THashList) Store() (int, error) {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
+	return hl.store()
 } // Store()
 
-// String returns the whole list as a linefeed separated string.
-func (hl *THashList) String() string {
+// `string()` returns the whole list as a linefeed separated string.
+func (hl *THashList) string() string {
+	// the mutex.Lock is done by th caller
 	var (
 		result string
 		tmp    tSourceList
@@ -615,6 +718,14 @@ func (hl *THashList) String() string {
 	}
 
 	return result
+} // string()
+
+// String returns the whole list as a linefeed separated string.
+func (hl *THashList) String() string {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
+	return hl.string()
 } // String()
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -638,26 +749,27 @@ type (
 // Walk traverses through all entries in the #hashtag/@mention lists
 // calling `aFunc` for each entry.
 //
+// If `aFunc` returns `false` when called the respective ID
+// will be removed from the associated #hashtag/@mention.
+//
 // `aFunc` is the function called for each ID in all lists.
 func (hl *THashList) Walk(aFunc TWalkFunc) {
-	oldCRC := hl.Checksum()
+	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.Store()
+			hl.store()
 		}
 	}()
 
 	for hash, sl := range hl.hl {
 		for _, id := range *sl {
-			if !aFunc(hash, id) {
-				sl.removeID(id)
-				atomic.StoreUint32(&hl.µChange, 0)
+			if aFunc(hash, id) {
+				continue
 			}
-		}
-	}
-	for hash, sl := range hl.hl {
-		if 0 == len(*sl) {
-			delete(hl.hl, hash)
+			sl.removeID(id)
+			if 0 == len(*sl) {
+				delete(hl.hl, hash)
+			}
 			atomic.StoreUint32(&hl.µChange, 0)
 		}
 	}
@@ -682,8 +794,9 @@ func (hl *THashList) Walker(aWalker THashWalker) {
 // `aFilename` is the name of the file to use for reading and storing.
 func New(aFilename string) (*THashList, error) {
 	result := THashList{
-		fn: aFilename,
-		hl: make(tHashMap, 64),
+		fn:  aFilename,
+		hl:  make(tHashMap, 64),
+		mtx: new(sync.RWMutex),
 	}
 
 	return result.Load()
