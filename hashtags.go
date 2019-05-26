@@ -337,11 +337,6 @@ func (hl *THashList) IDlist(aID string) (rList []string) {
 	return
 } // IDlist()
 
-var (
-	// match: #hashtag|@mention
-	hashMentionRE = regexp.MustCompile(`(?i)\b?([@#][\wÄÖÜß-]+)`)
-)
-
 // IDparse checks whether `aText` contains strings starting with `[@|#]`
 // and – if found – adds them to the respective list.
 //
@@ -547,6 +542,9 @@ func (hl *THashList) MentionRemove(aMention, aID string) *THashList {
 var (
 	// match: [#Hashtag|@mention]
 	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
+
+	// match: #hashtag|@mention
+	hashMentionRE = regexp.MustCompile(`(?i)\b?([@#][\wÄÖÜß-]+)`)
 )
 
 // `parseID()` checks whether `aText` contains strings starting
@@ -564,7 +562,13 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 	}
 	for _, sub := range matches {
 		if 0 < len(sub[1]) {
-			hl.add(sub[1][0], string(sub[1]), aID)
+			hash := string(sub[1])
+			// '_' can be both, part of the hashtag and italic markup
+			// so we must remove it if it's at the end:
+			if '_' == hash[len(hash)-1] {
+				hash = hash[:len(hash)-1]
+			}
+			hl.add(hash[0], hash, aID)
 		}
 	}
 

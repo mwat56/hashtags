@@ -1,3 +1,9 @@
+/*
+   Copyright © 2019 M.Watermann, 10247 Berlin, Germany
+                  All rights reserved
+              EMail : <support@mwat.de>
+*/
+
 package hashtags
 
 import (
@@ -544,70 +550,6 @@ func TestTHashList_IDlist(t *testing.T) {
 	}
 } // TestTHashList_IDlist()
 
-func TestTHashList_IDparse(t *testing.T) {
-	// fn := delDB("hashlist.db")
-	hash1, hash2, hash3 := "#HÄSCH1", "#hash2", "#hash3"
-	lh1 := strings.ToLower(hash1)
-	id1, id2, id3 := "id_c", "id_a", "id_b"
-	hl1, _ := New("")
-	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + ". Blabla")
-	wl1 := &THashList{
-		hl: tHashMap{
-			lh1:   &tSourceList{id1},
-			hash3: &tSourceList{id1},
-		},
-		mtx: new(sync.RWMutex),
-	}
-	hl2 := &THashList{
-		hl: tHashMap{
-			lh1:   &tSourceList{id3},
-			hash2: &tSourceList{id3},
-			hash3: &tSourceList{id3},
-		},
-		mtx: new(sync.RWMutex),
-	}
-	tx2 := []byte("blabla " + hash2 + ". Blabla " + hash3 + " blabla")
-	wl2 := &THashList{
-		hl: tHashMap{
-			lh1:   &tSourceList{id3},
-			hash2: &tSourceList{id2, id3},
-			hash3: &tSourceList{id2, id3},
-		},
-		mtx: new(sync.RWMutex),
-	}
-	hl3, _ := New("")
-	tx3 := []byte("\n> #KurzErklÄrt #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
-	wl3 := &THashList{
-		hl: tHashMap{
-			"#kurzerklärt":      &tSourceList{id3},
-			"#zensurheberrecht": &tSourceList{id3},
-		},
-		mtx: new(sync.RWMutex),
-	}
-	type args struct {
-		aID   string
-		aText []byte
-	}
-	tests := []struct {
-		name string
-		hl   *THashList
-		args args
-		want *THashList
-	}{
-		// TODO: Add test cases.
-		{" 1", hl1, args{id1, tx1}, wl1},
-		{" 2", hl2, args{id2, tx2}, wl2},
-		{" 3", hl3, args{id3, tx3}, wl3},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.IDparse(tt.args.aID, tt.args.aText); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("THashList.IDparse() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_IDparse()
-
 func TestTHashList_IDremove(t *testing.T) {
 	// fn := delDB("hashlist.db")
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
@@ -872,6 +814,87 @@ func TestTHashList_Load(t *testing.T) {
 		})
 	}
 } // TestTHashList_Load()
+
+func TestTHashList_parseID(t *testing.T) {
+	// fn := delDB("hashlist.db")
+	hash1, hash2, hash3 := "#HÄSCH1", "#hash2", "#hash3"
+	lh1 := strings.ToLower(hash1)
+	id1, id2, id3, id4 := "id_c", "id_a", "id_b", "id_d"
+	hl1, _ := New("")
+	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + ". Blabla")
+	wl1 := &THashList{
+		hl: tHashMap{
+			lh1:   &tSourceList{id1},
+			hash3: &tSourceList{id1},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	hl2 := &THashList{
+		hl: tHashMap{
+			lh1:   &tSourceList{id3},
+			hash2: &tSourceList{id3},
+			hash3: &tSourceList{id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	tx2 := []byte("blabla " + hash2 + ". Blabla " + hash3 + " blabla")
+	wl2 := &THashList{
+		hl: tHashMap{
+			lh1:   &tSourceList{id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id2, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	hl3, _ := New("")
+	tx3 := []byte("\n> #KurzErklärt #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
+	wl3 := &THashList{
+		hl: tHashMap{
+			"#kurzerklärt":      &tSourceList{id3},
+			"#zensurheberrecht": &tSourceList{id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	hl4, _ := New("")
+	tx4 := []byte("blabla **" + hash1 + "** blabla\n\n_" + hash3 + "_")
+	wl4 := &THashList{
+		hl: tHashMap{
+			lh1:   &tSourceList{id4},
+			hash3: &tSourceList{id4},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	type args struct {
+		aID   string
+		aText []byte
+	}
+	tests := []struct {
+		name   string
+		fields *THashList //fields
+		args   args
+		want   *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{id1, tx1}, wl1},
+		{" 2", hl2, args{id2, tx2}, wl2},
+		{" 3", hl3, args{id3, tx3}, wl3},
+		{" 4", hl4, args{id4, tx4}, wl4},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hl := &THashList{
+				fn:      tt.fields.fn,
+				hl:      tt.fields.hl,
+				mtx:     tt.fields.mtx,
+				µChange: tt.fields.µChange,
+				µCC:     tt.fields.µCC,
+			}
+			if got := hl.parseID(tt.args.aID, tt.args.aText); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.parseID() = '%v',\nwant '%v'", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_parseID()
 
 func TestTHashList_remove(t *testing.T) {
 	// fn := delDB("hashlist.db")
