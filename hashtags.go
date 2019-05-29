@@ -393,7 +393,7 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 		sl.renameID(aOldID, aNewID)
 	}
 	atomic.StoreUint32(&hl.µChange, 0)
-	go hl.store()
+	hl.store()
 
 	return hl
 } // IDrename()
@@ -411,7 +411,7 @@ func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			go hl.store()
+			hl.store()
 		}
 	}()
 
@@ -487,32 +487,6 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	return
 } // list()
 
-/*
-// Load reads the configured filen returning the data structure
-// read from the file and a possible error condition.
-//
-// If the hash file doesn't exist that is not considered an error.
-// If there is an error, it will be of type `*PathError`.
-func (hl *THashList) xLoad() (*THashList, error) {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
-
-	file, err := os.OpenFile(hl.fn, os.O_RDONLY, 0)
-	if nil != err {
-		if os.IsNotExist(err) {
-			return hl, nil
-		}
-		return hl, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	_, err = hl.clear().read(scanner)
-
-	return hl, err
-} // Load()
-*/
-
 // Load reads the configured filen returning the data structure
 // read from the file and a possible error condition.
 //
@@ -522,18 +496,6 @@ func (hl *THashList) Load() (*THashList, error) {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
 
-	if UseBinaryStorage {
-		return hl.loadBinary()
-	}
-
-	return hl.loadText()
-} // Load()
-
-// `loadBinary()` reads a file written by `storeBinary()` returning
-// the modified list and a possible error.
-func (hl *THashList) loadBinary() (*THashList, error) {
-	// The mutex.Lock is done by the caller
-
 	file, err := os.OpenFile(hl.fn, os.O_RDONLY, 0)
 	if nil != err {
 		if os.IsNotExist(err) {
@@ -542,43 +504,40 @@ func (hl *THashList) loadBinary() (*THashList, error) {
 		return hl, err
 	}
 	defer file.Close()
+	if UseBinaryStorage {
+		return hl.loadBinary(file)
+	}
+
+	return hl.loadText(file)
+} // Load()
+
+// `loadBinary()` reads a file written by `store()` returning
+// the modified list and a possible error.
+func (hl *THashList) loadBinary(aFile *os.File) (*THashList, error) {
+	// The mutex.Lock is done by the caller
 
 	var decodedMap tHashMap
-	decoder := gob.NewDecoder(file)
-
-	err = decoder.Decode(&decodedMap)
-	if err != nil {
+	decoder := gob.NewDecoder(aFile)
+	if err := decoder.Decode(&decodedMap); err != nil {
 		return hl, err
-	}
-	for _, sl := range decodedMap {
-		sl.sort()
 	}
 	hl.hl = decodedMap
 
-	return hl, err
+	return hl, nil
 } // loadBinary()
 
 // `loadText()` parses a file written by `store()` returning
 // the modified list and a possible error.
 //
 // This method reads one line of the file at a time.
-func (hl *THashList) loadText() (*THashList, error) {
+func (hl *THashList) loadText(aFile *os.File) (*THashList, error) {
 	// The mutex.Lock is done by the caller
-
-	file, err := os.OpenFile(hl.fn, os.O_RDONLY, 0)
-	if nil != err {
-		if os.IsNotExist(err) {
-			return hl, nil
-		}
-		return hl, err
-	}
-	defer file.Close()
 
 	var (
 		mapIdx string
 		rRead  int
 	)
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(aFile)
 	hl.clear()
 	for lineRead := scanner.Scan(); lineRead; lineRead = scanner.Scan() {
 		line := scanner.Text()
@@ -596,9 +555,8 @@ func (hl *THashList) loadText() (*THashList, error) {
 		}
 	}
 	atomic.StoreUint32(&hl.µChange, 0)
-	err = scanner.Err()
 
-	return hl, err
+	return hl, scanner.Err()
 } // loadText()
 
 // MentionAdd appends `aID` to the list of `aMention`.
@@ -718,7 +676,7 @@ func (hl *THashList) removeID(aID string) *THashList {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			go hl.store()
+			hl.store()
 		}
 	}()
 
@@ -853,7 +811,7 @@ func (hl *THashList) Walk(aFunc TWalkFunc) {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			go hl.store()
+			hl.store()
 		}
 	}()
 
