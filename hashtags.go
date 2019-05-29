@@ -360,7 +360,7 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			go hl.store()
+			hl.store()
 		}
 	}()
 
@@ -732,8 +732,8 @@ func (hl *THashList) store() (int, error) {
 //
 // If there is an error, it will be of type `*PathError`.
 func (hl *THashList) Store() (int, error) {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
 
 	return hl.store()
 } // Store()
@@ -811,7 +811,7 @@ func (hl *THashList) Walk(aFunc TWalkFunc) {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.store()
+			hl.Store()
 		}
 	}()
 
