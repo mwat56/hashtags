@@ -601,8 +601,11 @@ var (
 	// match: [#Hashtag|@mention]
 	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
 
+	// RegEx to identify a numeric HTML entity.
+	entityRE = regexp.MustCompile(`(#[0-9]+;)`)
+
 	// match: #hashtag|@mention
-	hashMentionRE = regexp.MustCompile(`(?i)\b?([@#][\wÄÖÜß-]+)(.?|$)`)
+	hashMentionRE = regexp.MustCompile(`(?i)\b?([@#][§\wÄÖÜß-]+)(.?|$)`)
 )
 
 // `parseID()` checks whether `aText` contains strings starting
@@ -626,10 +629,18 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 			if '_' == hash[len(hash)-1] {
 				hash = hash[:len(hash)-1]
 			}
-			if ('#' == hash[0]) && (0 < len(sub[2])) && ('"' == sub[2][0]) {
-				// double quote following a possible hashtag:
-				// most probably an URL#fragment, hence ignore it
-				continue
+			if '#' == hash[0] {
+				if 0 < len(sub[2]) {
+					if '"' == sub[2][0] {
+						// double quote following a possible hashtag: most
+						// probably an URL#fragment, hence leave it as is
+						continue
+					}
+					if (';' == sub[2][0]) && entityRE.MatchString(hash+";") {
+						// leave HTML entities as is
+						continue
+					}
+				}
 			}
 			hl.add(hash[0], hash, aID)
 		}

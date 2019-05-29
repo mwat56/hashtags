@@ -823,7 +823,7 @@ func TestTHashList_Load(t *testing.T) {
 
 func TestTHashList_parseID(t *testing.T) {
 	// fn := delDB("hashlist.db")
-	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "hash4"
+	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "#hash4"
 	lh1 := strings.ToLower(hash1)
 	id1, id2, id3, id4, id5 := "id_c", "id_a", "id_b", "id_d", "id_e"
 	hl1, _ := New("")
@@ -871,10 +871,11 @@ func TestTHashList_parseID(t *testing.T) {
 		mtx: new(sync.RWMutex),
 	}
 	hl5, _ := New("")
-	tx5 := []byte(`blabla **` + hash1 + `** blabla\n\<a href="page#` + hash4 + `">txt</a>`)
+	tx5 := []byte(`blabla&#39; **` + hash2 + `** blabla\n\<a href="page#` + hash3 + `">txt</a> ` + hash4)
 	wl5 := &THashList{
 		hl: tHashMap{
-			lh1: &tSourceList{id5},
+			hash2: &tSourceList{id5},
+			hash4: &tSourceList{id5},
 		},
 		mtx: new(sync.RWMutex),
 	}
