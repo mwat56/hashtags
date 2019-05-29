@@ -7,6 +7,7 @@
 package hashtags
 
 import (
+	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -777,6 +778,11 @@ func TestTHashList_LenTotal(t *testing.T) {
 } // TestTHashList_LenTotal()
 
 func TestTHashList_Load(t *testing.T) {
+	// hl1, _ := New("")
+	// hl1.SetFilename("load.txt")
+	// hl1.xLoad()
+	// hl1.SetFilename("load.db")
+	// hl1.store()
 	fn := delDB("hashlist.db")
 	fn2 := delDB(".does.not.exist")
 	hash1, hash2 := "#hash1", "#hash2"
@@ -786,7 +792,7 @@ func TestTHashList_Load(t *testing.T) {
 		HashAdd(hash2, id2).
 		HashAdd(hash2, id1).
 		HashAdd(hash1, id2)
-	hl1.Store()
+	hl1.store()
 	hl1.Clear()
 	hl2, _ := New(fn2)
 	hl3, _ := New("")
@@ -990,7 +996,7 @@ func TestTHashList_remove(t *testing.T) {
 	}
 } // TestTHashList_remove()
 
-func TestTHashList_Store(t *testing.T) {
+func TestTHashList_store(t *testing.T) {
 	fn := delDB("hashlist.db")
 	hash1, hash2 := "#hash1", "#Zensurheberrecht"
 	id1, id2 := "id_c", "id_a"
@@ -1011,12 +1017,12 @@ func TestTHashList_Store(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{" 1", hl1, 49, false},
+		{" 1", hl1, 91, false},
 		{" 2", hl2, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.hl.Store()
+			got, err := tt.hl.store()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("THashList.Store() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1055,3 +1061,53 @@ func TestTHashList_String(t *testing.T) {
 		})
 	}
 } // TestTHashList_String()
+
+func Benchmark_LoadTxT(b *testing.B) {
+	hl, _ := New("")
+	hl.SetFilename("load.txt")
+	UseBinaryStorage = false
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		if _, err := hl.Load(); nil != err {
+			log.Printf("LoadTxt(): %v", err)
+		}
+	}
+} // Benchmark_LoadTxt()
+
+func Benchmark_LoadBin(b *testing.B) {
+	hl, _ := New("")
+	hl.SetFilename("load.db")
+	UseBinaryStorage = true
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		if _, err := hl.Load(); nil != err {
+			log.Printf("LoadBin(): %v", err)
+		}
+	}
+} // Benchmark_LoadBin()
+
+func Benchmark_StoreTxt(b *testing.B) {
+	UseBinaryStorage = false
+	hl, _ := New("load.txt")
+	hl.Load()
+
+	for n := 0; n < b.N; n++ {
+		if _, err := hl.Store(); nil != err {
+			log.Printf("StoreTxt(): %v", err)
+		}
+	}
+} // Benchmark_StoreTxt()
+
+func Benchmark_StoreBin(b *testing.B) {
+	UseBinaryStorage = true
+	hl, _ := New("load.db")
+	hl.Load()
+
+	for n := 0; n < b.N; n++ {
+		if _, err := hl.Store(); nil != err {
+			log.Printf("StoreBin(): %v", err)
+		}
+	}
+} // Benchmark_StoreBin()

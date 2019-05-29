@@ -8,6 +8,7 @@ package hashtags
 
 import (
 	"bufio"
+	"encoding/gob"
 	"hash/crc32"
 	"os"
 	"regexp"
@@ -44,12 +45,21 @@ type (
 	// THashList is a list of `#hashtags` and `@mentions`
 	// pointing to sources (i.e. IDs).
 	THashList struct {
-		fn      string // the filename to use
-		hl      tHashMap
-		mtx     *sync.RWMutex
-		µChange uint32
-		µCC     tCountCache
+		fn      string        // the filename to use
+		hl      tHashMap      // the actual map list of sources/IDs
+		mtx     *sync.RWMutex // safeguard against concurrent accesses
+		µChange uint32        // internal change flag
+		µCC     tCountCache   // cache for `CountedList()`
 	}
+)
+
+var (
+	// UseBinaryStorage determines whether to use binary storage
+	// or not (i.e. plain text).
+	//
+	// Loading/storing binary data is about three times as fast with
+	// the `THashList` data than reading and parsing plain text data.
+	UseBinaryStorage = true
 )
 
 // `add()` appends 'aID` to the list
@@ -350,7 +360,7 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.store()
+			go hl.store()
 		}
 	}()
 
@@ -383,7 +393,7 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 		sl.renameID(aOldID, aNewID)
 	}
 	atomic.StoreUint32(&hl.µChange, 0)
-	hl.store()
+	go hl.store()
 
 	return hl
 } // IDrename()
@@ -401,7 +411,7 @@ func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.store()
+			go hl.store()
 		}
 	}()
 
@@ -477,12 +487,13 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	return
 } // list()
 
+/*
 // Load reads the configured filen returning the data structure
 // read from the file and a possible error condition.
 //
 // If the hash file doesn't exist that is not considered an error.
 // If there is an error, it will be of type `*PathError`.
-func (hl *THashList) Load() (*THashList, error) {
+func (hl *THashList) xLoad() (*THashList, error) {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
 
@@ -500,6 +511,95 @@ func (hl *THashList) Load() (*THashList, error) {
 
 	return hl, err
 } // Load()
+*/
+
+// Load reads the configured filen returning the data structure
+// read from the file and a possible error condition.
+//
+// If the hash file doesn't exist that is not considered an error.
+// If there is an error, it will be of type `*PathError`.
+func (hl *THashList) Load() (*THashList, error) {
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
+
+	if UseBinaryStorage {
+		return hl.loadBinary()
+	}
+
+	return hl.loadText()
+} // Load()
+
+// `loadBinary()` reads a file written by `storeBinary()` returning
+// the modified list and a possible error.
+func (hl *THashList) loadBinary() (*THashList, error) {
+	// The mutex.Lock is done by the caller
+
+	file, err := os.OpenFile(hl.fn, os.O_RDONLY, 0)
+	if nil != err {
+		if os.IsNotExist(err) {
+			return hl, nil
+		}
+		return hl, err
+	}
+	defer file.Close()
+
+	var decodedMap tHashMap
+	decoder := gob.NewDecoder(file)
+
+	err = decoder.Decode(&decodedMap)
+	if err != nil {
+		return hl, err
+	}
+	for _, sl := range decodedMap {
+		sl.sort()
+	}
+	hl.hl = decodedMap
+
+	return hl, err
+} // loadBinary()
+
+// `loadText()` parses a file written by `store()` returning
+// the modified list and a possible error.
+//
+// This method reads one line of the file at a time.
+func (hl *THashList) loadText() (*THashList, error) {
+	// The mutex.Lock is done by the caller
+
+	file, err := os.OpenFile(hl.fn, os.O_RDONLY, 0)
+	if nil != err {
+		if os.IsNotExist(err) {
+			return hl, nil
+		}
+		return hl, err
+	}
+	defer file.Close()
+
+	var (
+		mapIdx string
+		rRead  int
+	)
+	scanner := bufio.NewScanner(file)
+	hl.clear()
+	for lineRead := scanner.Scan(); lineRead; lineRead = scanner.Scan() {
+		line := scanner.Text()
+		rRead += len(line) + 1 // add trailing LF
+
+		line = strings.TrimSpace(line)
+		if 0 == len(line) {
+			continue
+		}
+
+		if matches := hashHeadRE.FindStringSubmatch(line); nil != matches {
+			mapIdx = strings.ToLower(strings.TrimSpace(matches[1]))
+		} else {
+			hl.add0(mapIdx, line)
+		}
+	}
+	atomic.StoreUint32(&hl.µChange, 0)
+	err = scanner.Err()
+
+	return hl, err
+} // loadText()
 
 // MentionAdd appends `aID` to the list of `aMention`.
 //
@@ -580,35 +680,6 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 	return hl
 } // parseID()
 
-// `read()` parses a file written by `store()` returning the
-// number of bytes read and a possible error.
-//
-// This method reads one line of the file at a time.
-func (hl *THashList) read(aScanner *bufio.Scanner) (rRead int, rErr error) {
-	// The mutex.Lock is done by the caller
-	var mapIdx string
-
-	for lineRead := aScanner.Scan(); lineRead; lineRead = aScanner.Scan() {
-		line := aScanner.Text()
-		rRead += len(line) + 1 // add trailing LF
-
-		line = strings.TrimSpace(line)
-		if 0 == len(line) {
-			continue
-		}
-
-		if matches := hashHeadRE.FindStringSubmatch(line); nil != matches {
-			mapIdx = strings.ToLower(strings.TrimSpace(matches[1]))
-		} else {
-			hl.add0(mapIdx, line)
-		}
-	}
-	atomic.StoreUint32(&hl.µChange, 0)
-	rErr = aScanner.Err()
-
-	return
-} // read()
-
 // `remove()` deletes `aID` from the list of `aMapIdx`.
 //
 // `aDelim` is the start character of words to use (i.e. either '@' or '#').
@@ -643,10 +714,11 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 // `aID` is to be deleted from all lists.
 func (hl *THashList) removeID(aID string) *THashList {
 	// The mutex.Lock is done by the callers
+
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.store()
+			go hl.store()
 		}
 	}()
 
@@ -678,14 +750,23 @@ func (hl *THashList) SetFilename(aFilename string) *THashList {
 func (hl *THashList) store() (int, error) {
 	// the mutex.Lock is done by the callers
 
-	s := hl.string()
 	file, err := os.OpenFile(hl.fn, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0664)
 	if nil != err {
 		return 0, err
 	}
 	defer file.Close()
 
-	return file.Write([]byte(s))
+	if UseBinaryStorage {
+		encoder := gob.NewEncoder(file)
+		if err = encoder.Encode(hl.hl); nil != err {
+			return 0, err
+		}
+		size, err := file.Seek(0, os.SEEK_END)
+
+		return int(size), err
+	}
+
+	return file.Write([]byte(hl.string()))
 } // store()
 
 // Store writes the whole list to the configured file
@@ -772,7 +853,7 @@ func (hl *THashList) Walk(aFunc TWalkFunc) {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.store()
+			go hl.store()
 		}
 	}()
 
