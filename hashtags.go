@@ -544,7 +544,7 @@ var (
 	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
 
 	// match: #hashtag|@mention
-	hashMentionRE = regexp.MustCompile(`(?i)\b?([@#][\wÄÖÜß-]+)`)
+	hashMentionRE = regexp.MustCompile(`(?i)\b?([@#][\wÄÖÜß-]+)(.?|$)`)
 )
 
 // `parseID()` checks whether `aText` contains strings starting
@@ -567,6 +567,11 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 			// so we must remove it if it's at the end:
 			if '_' == hash[len(hash)-1] {
 				hash = hash[:len(hash)-1]
+			}
+			if ('#' == hash[0]) && (0 < len(sub[2])) && ('"' == sub[2][0]) {
+				// double quote following a possible hashtag:
+				// most probably an URL#fragment, hence ignore it
+				continue
 			}
 			hl.add(hash[0], hash, aID)
 		}
@@ -735,17 +740,7 @@ func (hl *THashList) updateID(aID string, aText []byte) *THashList {
 	// the mutex.Lock is done by the caller
 	hl.removeID(aID)
 
-	matches := hashMentionRE.FindAllSubmatch(aText, -1)
-	if (nil == matches) || (0 >= len(matches)) {
-		return hl
-	}
-	for _, sub := range matches {
-		if 0 < len(sub[1]) {
-			hl.add(sub[1][0], string(sub[1]), aID)
-		}
-	}
-
-	return hl
+	return hl.parseID(aID, aText)
 } // updateID()
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */

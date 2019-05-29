@@ -817,9 +817,9 @@ func TestTHashList_Load(t *testing.T) {
 
 func TestTHashList_parseID(t *testing.T) {
 	// fn := delDB("hashlist.db")
-	hash1, hash2, hash3 := "#HÄSCH1", "#hash2", "#hash3"
+	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "hash4"
 	lh1 := strings.ToLower(hash1)
-	id1, id2, id3, id4 := "id_c", "id_a", "id_b", "id_d"
+	id1, id2, id3, id4, id5 := "id_c", "id_a", "id_b", "id_d", "id_e"
 	hl1, _ := New("")
 	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + ". Blabla")
 	wl1 := &THashList{
@@ -864,6 +864,14 @@ func TestTHashList_parseID(t *testing.T) {
 		},
 		mtx: new(sync.RWMutex),
 	}
+	hl5, _ := New("")
+	tx5 := []byte(`blabla **` + hash1 + `** blabla\n\<a href="page#` + hash4 + `">txt</a>`)
+	wl5 := &THashList{
+		hl: tHashMap{
+			lh1: &tSourceList{id5},
+		},
+		mtx: new(sync.RWMutex),
+	}
 	type args struct {
 		aID   string
 		aText []byte
@@ -879,6 +887,7 @@ func TestTHashList_parseID(t *testing.T) {
 		{" 2", hl2, args{id2, tx2}, wl2},
 		{" 3", hl3, args{id3, tx3}, wl3},
 		{" 4", hl4, args{id4, tx4}, wl4},
+		{" 5", hl5, args{id5, tx5}, wl5},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
