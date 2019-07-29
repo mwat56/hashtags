@@ -1,10 +1,10 @@
 # HashTags
 
-[![Golang](https://img.shields.io/badge/Language-Go-green.svg?style=flat)](https://golang.org)
-[![GoDoc](https://godoc.org/github.com/mwat56/hashtags?status.svg)](https://godoc.org/github.com/mwat56/hashtags)
+[![Golang](https://img.shields.io/badge/Language-Go-green.svg)](https://golang.org/)
+[![GoDoc](https://godoc.org/github.com/mwat56/hashtags?status.svg)](https://godoc.org/github.com/mwat56/hashtags/)
 [![Issues](https://img.shields.io/github/issues/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/issues?q=is%3Aopen+is%3Aissue)
 [![Size](https://img.shields.io/github/repo-size/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/)
-[![Tag](https://img.shields.io/github/tag/mwat56/hashtags.svg?style=flat-square)](https://github.com/mwat56/hashtags/tags)
+[![Tag](https://img.shields.io/github/tag/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/tags)
 [![License](https://img.shields.io/github/license/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/blob/master/LICENSE)
 
 - [HashTags](#hashtags)
@@ -15,9 +15,9 @@
 
 ## Purpose
 
-Sometimes one might want to search and find socalled `#hashtags` or `@mentions` in your texts (in a broader sense) and store them for later retrieval.
+Sometimes one might want to search and find socalled `#hashtags` or `@mentions` in ones texts (in a broader sense) and store them for later retrieval.
 This package offers that facility.
-It provides the `THashList` class which can be used to parse texts for the occurance of both `#hashtags` and `@mentions` and store the hits in an internal list for later lookup; that list can be both stored in a file and later read from a file.
+It provides the `THashList` class which can be used to parse texts for the occurance of both `#hashtags` and `@mentions` and store the hits in an internal list for later lookup; that list can be both, stored in a file and later read from a file.
 
 ## Installation
 
@@ -54,7 +54,7 @@ The advantage of the plain text format is that it can be inspected by any text r
 The advantage of the binary format is that it is about three times as fast when loading/storing data and it uses a few bytes less than the text format.
 For this reasons it's used by default (i.e. `UseBinaryStorage == true`); during development of your own application using this package, however, you might want to change to text format for diagnostic purposes.
 
-For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/hashtags).
+For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/hashtags/).
 
 ## Licence
 
