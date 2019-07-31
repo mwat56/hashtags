@@ -6,6 +6,8 @@
 
 package hashtags
 
+//lint:file-ignore ST1017 - I prefer Yoda conditions
+
 import (
 	"bufio"
 	"encoding/gob"
@@ -720,7 +722,7 @@ func (hl *THashList) SetFilename(aFilename string) *THashList {
 func (hl *THashList) store() (int, error) {
 	// the mutex.Lock is done by the callers
 
-	file, err := os.OpenFile(hl.fn, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0664)
+	file, err := os.OpenFile(hl.fn, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660) //#nosec G302
 	if nil != err {
 		return 0, err
 	}
@@ -766,7 +768,7 @@ func (hl *THashList) string() string {
 		return (tmp[i][1:] < tmp[j][1:]) // ascending
 	})
 	for _, hash := range tmp {
-		sl, _ := hl.hl[hash]
+		sl := hl.hl[hash]
 		result += "[" + hash + "]\n" + sl.String() + "\n"
 	}
 
