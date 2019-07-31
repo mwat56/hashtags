@@ -360,7 +360,7 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.store()
+			_, _ = hl.store()
 		}
 	}()
 
@@ -393,7 +393,7 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 		sl.renameID(aOldID, aNewID)
 	}
 	atomic.StoreUint32(&hl.µChange, 0)
-	hl.store()
+	_, _ = hl.store()
 
 	return hl
 } // IDrename()
@@ -411,7 +411,7 @@ func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.store()
+			_, _ = hl.store()
 		}
 	}()
 
@@ -687,7 +687,7 @@ func (hl *THashList) removeID(aID string) *THashList {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.store()
+			_, _ = hl.store()
 		}
 	}()
 
@@ -822,7 +822,7 @@ func (hl *THashList) Walk(aFunc TWalkFunc) {
 	oldCRC := hl.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.Store()
+			_, _ = hl.Store()
 		}
 	}()
 
