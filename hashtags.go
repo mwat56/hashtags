@@ -112,15 +112,16 @@ func (sl *tSourceList) removeID(aID string) *tSourceList {
 		return sl
 	}
 
-	if 0 == idx {
+	switch idx {
+	case 0:
 		if 0 == slen {
 			*sl = (*sl)[:0]
 		} else {
 			*sl = (*sl)[1:]
 		}
-	} else if slen == idx {
+	case slen:
 		*sl = (*sl)[:slen]
-	} else {
+	default:
 		*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 	}
 
