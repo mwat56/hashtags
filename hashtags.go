@@ -25,7 +25,7 @@ type (
 	// `tHashMap` is indexed by #hashtags/@mentions holding a `tSourceList`.
 	tHashMap map[string]*tSourceList
 
-	// TCountItem holds a #hashtag/@mention and its number of occurances.
+	// TCountItem holds a #hashtag/@mention and its number of occurrences.
 	//
 	// @see CountedList()
 	TCountItem = struct {
@@ -127,7 +127,7 @@ func (sl *tSourceList) removeID(aID string) *tSourceList {
 	return sl
 } // removeID()
 
-// `renameID()` replaces all occurances of `aOldID` by `aNewID`.
+// `renameID()` replaces all occurences of `aOldID` by `aNewID`.
 //
 // This method is intended for rare cases when the ID of a document
 // gets changed.
@@ -155,7 +155,7 @@ func (sl *tSourceList) sort() *tSourceList {
 	return sl
 } // sort()
 
-// String returns the list as a linefeed seperated string.
+// String returns the list as a linefeed separated string.
 //
 // (Implements `Stringer` interface)
 func (sl *tSourceList) String() string {
@@ -377,7 +377,7 @@ func (hl *THashList) IDremove(aID string) *THashList {
 	return hl.removeID(aID)
 } // IDremove()
 
-// IDrename replaces all occurances of `aOldID` by `aNewID`.
+// IDrename replaces all occurences of `aOldID` by `aNewID`.
 //
 // This method is intended for rare cases when the ID of a document
 // needs to get changed.
