@@ -127,7 +127,7 @@ func (sl *tSourceList) removeID(aID string) *tSourceList {
 	return sl
 } // removeID()
 
-// `renameID()` replaces all occurences of `aOldID` by `aNewID`.
+// `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
 //
 // This method is intended for rare cases when the ID of a document
 // gets changed.
@@ -377,7 +377,7 @@ func (hl *THashList) IDremove(aID string) *THashList {
 	return hl.removeID(aID)
 } // IDremove()
 
-// IDrename replaces all occurences of `aOldID` by `aNewID`.
+// IDrename replaces all occurrences of `aOldID` by `aNewID`.
 //
 // This method is intended for rare cases when the ID of a document
 // needs to get changed.
