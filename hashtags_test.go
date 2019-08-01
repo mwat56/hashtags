@@ -294,8 +294,8 @@ func TestTHashList_CountedList(t *testing.T) {
 		mtx: new(sync.RWMutex),
 	}
 	wl1 := []TCountItem{
-		TCountItem{1, hash1},
-		TCountItem{2, hash2},
+		{1, hash1},
+		{2, hash2},
 	}
 	hl2 := &THashList{
 		hl: tHashMap{
@@ -306,9 +306,9 @@ func TestTHashList_CountedList(t *testing.T) {
 		mtx: new(sync.RWMutex),
 	}
 	wl2 := []TCountItem{
-		TCountItem{3, hash3},
-		TCountItem{1, hash1},
-		TCountItem{2, hash2},
+		{3, hash3},
+		{1, hash1},
+		{2, hash2},
 	}
 	tests := []struct {
 		name      string
