@@ -52,8 +52,8 @@ To get a `THashList` instance there's a simple way:
 The package provides a boolean variable called `UseBinaryStorage` which is `true` by default.
 It determines whether the data written by `Store()` and read by `Load()` use plain text (i.e. `UseBinaryStorage = false`) or a binary data format.
 The advantage of the plain text format is that it can be inspected by any text related tool (like e.g. `diff`).
-The advantage of the binary format is that it is about three times as fast when loading/storing data and it uses a few bytes less than the text format.
-For this reasons it's used by default (i.e. `UseBinaryStorage == true`); during development of your own application using this package, however, you might want to change to text format for diagnostic purposes.
+The advantage of the binary format is that it is about three to four times as fast when loading/storing data and it uses a few bytes less than the text format.
+For this reasons it's used by default (i.e. `hashtags.UseBinaryStorage == true`); during development of your own application using this package, however, you might want to change to text format for diagnostic purposes.
 
 For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/hashtags/).
 

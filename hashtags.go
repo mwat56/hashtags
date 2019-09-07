@@ -66,7 +66,7 @@ var (
 
 // `add()` appends 'aID` to the list
 //
-// `aID` the source ID to add to the list.
+//	`aID` the source ID to add to the list.
 func (sl *tSourceList) add(aID string) *tSourceList {
 	for _, id := range *sl {
 		if id == aID {
@@ -88,7 +88,7 @@ func (sl *tSourceList) clear() *tSourceList {
 
 // `indexOf()` returns the list index of `aID`.
 //
-// `aID` is the string to look up.
+//	`aID` is the string to look up.
 func (sl *tSourceList) indexOf(aID string) int {
 	for result, id := range *sl {
 		if id == aID {
@@ -101,7 +101,7 @@ func (sl *tSourceList) indexOf(aID string) int {
 
 // `removeID()` deletes the list entry of `aID`.
 //
-// `aID` is the string to look up.
+//	`aID` is the string to look up.
 func (sl *tSourceList) removeID(aID string) *tSourceList {
 	idx := sl.indexOf(aID)
 	if 0 > idx {
@@ -135,9 +135,9 @@ func (sl *tSourceList) removeID(aID string) *tSourceList {
 // This method is intended for rare cases when the ID of a document
 // gets changed.
 //
-// `aOldID` is to be replaced in this list.
+//	`aOldID` is to be replaced in this list.
 //
-// `aNewID` is the replacement in this list.
+//	`aNewID` is the replacement in this list.
 func (sl *tSourceList) renameID(aOldID, aNewID string) *tSourceList {
 	for idx, id := range *sl {
 		if id == aOldID {
@@ -174,11 +174,11 @@ func (sl *tSourceList) String() string {
 // If either `aMapIdx` or `aID` are empty strings they are silently
 // ignored (i.e. this method does nothing).
 //
-// `aDelim` is the start character of words to use (i.e. either '@' or '#').
+//	`aDelim` is the start character of words to use (i.e. either '@' or '#').
 //
-// `aMapIdx` is the list index to lookup.
+//	`aMapIdx` is the list index to lookup.
 //
-// `aID` is to be added to the hash list.
+//	`aID` is to be added to the hash list.
 func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
 	// the mutex.Lock is done by the callers
 
@@ -195,9 +195,9 @@ func (hl *THashList) add(aDelim byte, aMapIdx, aID string) *THashList {
 
 // `add0()` appends `aID` to the list associated with `aMapIdx`.
 //
-// `aMapIdx` is the list index to lookup.
+//	`aMapIdx` is the list index to lookup.
 //
-// `aID` is to be added to the hash list.
+//	`aID` is to be added to the hash list.
 func (hl *THashList) add0(aMapIdx, aID string) *THashList {
 	// the mutex.Lock is done by the callers
 
@@ -298,9 +298,9 @@ func (hl *THashList) Filename() string {
 // If either `aHash` or `aID` are empty strings they are silently
 // ignored (i.e. this method does nothing).
 //
-// `aHash` is the list index to lookup.
+//	`aHash` is the list index to lookup.
 //
-// `aID` is to be added to the hash list.
+//	`aID` is to be added to the hash list.
 func (hl *THashList) HashAdd(aHash, aID string) *THashList {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
@@ -310,23 +310,23 @@ func (hl *THashList) HashAdd(aHash, aID string) *THashList {
 
 // HashLen returns the number of IDs stored for `aHash`.
 //
-// `aHash` identifies the ID list to lookup.
+//	`aHash` identifies the ID list to lookup.
 func (hl *THashList) HashLen(aHash string) int {
 	return hl.idxLen('#', aHash)
 } // HashLen()
 
 // HashList returns a list of IDs associated with `aHash`.
 //
-// `aHash` identifies the ID list to lookup.
+//	`aHash` identifies the ID list to lookup.
 func (hl *THashList) HashList(aHash string) []string {
 	return hl.list('#', aHash)
 } // HashList()
 
 // HashRemove deletes `aID` from the list of `aHash`.
 //
-// `aHash` identifies the ID list to lookup.
+//	`aHash` identifies the ID list to lookup.
 //
-// `aID` is the source to remove from the list.
+//	`aID` is the source to remove from the list.
 func (hl *THashList) HashRemove(aHash, aID string) *THashList {
 	return hl.remove('#', aHash, aID)
 } // HashRemove()
@@ -353,9 +353,9 @@ func (hl *THashList) IDlist(aID string) (rList []string) {
 // IDparse checks whether `aText` contains strings starting with `[@|#]`
 // and – if found – adds them to the respective list.
 //
-// `aID` is the ID to add to the list.
+//	`aID` is the ID to add to the list.
 //
-// `aText` is the text to search.
+//	`aText` is the text to search.
 func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
@@ -372,7 +372,7 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 
 // IDremove deletes all @hashtags/@mentions associated with `aID`.
 //
-// `aID` is to be deleted from all lists.
+//	`aID` is to be deleted from all lists.
 func (hl *THashList) IDremove(aID string) *THashList {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
@@ -385,9 +385,9 @@ func (hl *THashList) IDremove(aID string) *THashList {
 // This method is intended for rare cases when the ID of a document
 // needs to get changed.
 //
-// `aOldID` is to be replaced in all lists.
+//	`aOldID` is to be replaced in all lists.
 //
-// `aNewID` is the replacement in all lists.
+//	`aNewID` is the replacement in all lists.
 func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
@@ -404,9 +404,9 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 // IDupdate checks `aText` removing all #hashtags/@mentions no longer
 // present and adding #hashtags/@mentions new in `aText`.
 //
-// `aID` is the ID to update.
+//	`aID` is the ID to update.
 //
-// `aText` is the text to use.
+//	`aText` is the text to use.
 func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
@@ -423,9 +423,9 @@ func (hl *THashList) IDupdate(aID string, aText []byte) *THashList {
 
 // `idxLen()` returns the number of IDs stored for `aMapIdx`.
 //
-// `aDelim` is the first character of words to use (i.e. either '@' or '#').
+//	`aDelim` is the first character of words to use (i.e. either '@' or '#').
 //
-// `aMapIdx` identifies the ID list to lookup.
+//	`aMapIdx` identifies the ID list to lookup.
 func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 	hl.mtx.RLock()
 	defer hl.mtx.RUnlock()
@@ -468,9 +468,9 @@ func (hl *THashList) LenTotal() int {
 
 // `list()` returns a list of IDs associated with `aMapIdx`.
 //
-// `aDelim` is the start of words to search (i.e. either '@' or '#').
+//	`aDelim` is the start of words to search (i.e. either '@' or '#').
 //
-// `aMapIdx` identifies the sources list to lookup.
+//	`aMapIdx` identifies the sources list to lookup.
 func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	hl.mtx.RLock()
 	defer hl.mtx.RUnlock()
@@ -535,7 +535,6 @@ func (hl *THashList) loadBinary(aFile *os.File) (*THashList, error) {
 // This method reads one line of the file at a time.
 func (hl *THashList) loadText(aFile *os.File) (*THashList, error) {
 	// The mutex.Lock is done by the caller
-
 	var (
 		mapIdx string
 		rRead  int
@@ -551,7 +550,7 @@ func (hl *THashList) loadText(aFile *os.File) (*THashList, error) {
 			continue
 		}
 
-		if matches := hashHeadRE.FindStringSubmatch(line); nil != matches {
+		if matches := htHashHeadRE.FindStringSubmatch(line); nil != matches {
 			mapIdx = strings.ToLower(strings.TrimSpace(matches[1]))
 		} else {
 			hl.add0(mapIdx, line)
@@ -567,9 +566,9 @@ func (hl *THashList) loadText(aFile *os.File) (*THashList, error) {
 // If either `aMention` or `aID` are empty strings they are
 // silently ignored (i.e. this method does nothing).
 //
-// `aMention` is the list index to lookup.
+//	`aMention` is the list index to lookup.
 //
-// `aID` is to be added to the hash list.
+//	`aID` is to be added to the hash list.
 func (hl *THashList) MentionAdd(aMention, aID string) *THashList {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
@@ -579,48 +578,47 @@ func (hl *THashList) MentionAdd(aMention, aID string) *THashList {
 
 // MentionLen returns the number of IDs stored for `aMention`.
 //
-// `aMention` identifies the ID list to lookup.
+//	`aMention` identifies the ID list to lookup.
 func (hl *THashList) MentionLen(aMention string) int {
 	return hl.idxLen('@', aMention)
 } // MentionLen()
 
 // MentionList returns a list of IDs associated with `aHash`.
 //
-// `aMention` identifies the ID list to lookup.
+//	`aMention` identifies the ID list to lookup.
 func (hl *THashList) MentionList(aMention string) []string {
 	return hl.list('@', aMention)
 } // MentionList()
 
 // MentionRemove deletes `aID` from the list of `aMention`.
 //
-// `aMention` identifies the ID list to lookup.
+//	`aMention` identifies the ID list to lookup.
 //
-// `aID` is the source to remove from the list.
+//	`aID` is the source to remove from the list.
 func (hl *THashList) MentionRemove(aMention, aID string) *THashList {
 	return hl.remove('@', aMention, aID)
 } // MentionRemove()
 
 var (
-	// match: [#Hashtag|@mention]
-	hashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
-
-	// RegEx to identify a numeric HTML entity.
-	entityRE = regexp.MustCompile(`(#[0-9]+;)`)
+	// match: [#Hashtag|@Mention]
+	htHashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
 
 	// match: #hashtag|@mention
-	hashMentionRE = regexp.MustCompile(`(?i)\b?([@#][§\wÄÖÜß-]+)(.?|$)`)
+	htHashMentionRE = regexp.MustCompile(`(?i)\b?([@#][§\wÄÖÜß-]+)(.?|$)`)
+
+	// RegEx to identify a numeric HTML entity.
+	htEntityRE = regexp.MustCompile(`(#[0-9]+;)`)
 )
 
 // `parseID()` checks whether `aText` contains strings starting
 // with `[@|#]` and – if found – adds them to the respective list.
 //
-// `aID` is the ID to add to the list.
+//	`aID` is the ID to add to the list.
 //
-// `aText` is the text to search.
+//	`aText` is the text to search.
 func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 	// The mutex.Lock is done by the caller
-
-	matches := hashMentionRE.FindAllSubmatch(aText, -1)
+	matches := htHashMentionRE.FindAllSubmatch(aText, -1)
 	if (nil == matches) || (0 >= len(matches)) {
 		return hl
 	}
@@ -639,7 +637,7 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 						// probably an URL#fragment, hence leave it as is
 						continue
 					}
-					if (';' == sub[2][0]) && entityRE.MatchString(hash+";") {
+					if (';' == sub[2][0]) && htEntityRE.MatchString(hash+";") {
 						// leave HTML entities as is
 						continue
 					}
@@ -654,11 +652,11 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 
 // `remove()` deletes `aID` from the list of `aMapIdx`.
 //
-// `aDelim` is the start character of words to use (i.e. either '@' or '#').
+//	`aDelim` is the start character of words to use (i.e. either '@' or '#').
 //
-// `aMapIdx` identifies the sources list to lookup.
+//	`aMapIdx` identifies the sources list to lookup.
 //
-// `aID` is the source to remove from the list.
+//	`aID` is the source to remove from the list.
 func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
@@ -683,7 +681,7 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 
 // `removeID()` deletes all @hashtags/@mentions associated with `aID`.
 //
-// `aID` is to be deleted from all lists.
+//	`aID` is to be deleted from all lists.
 func (hl *THashList) removeID(aID string) *THashList {
 	// The mutex.Lock is done by the callers
 
@@ -786,9 +784,9 @@ func (hl *THashList) String() string {
 // `updateID()` checks `aText` removing all #hashtags/@mentions no longer
 // present and adds #hashtags/@mentions new in `aText`.
 //
-// `aID` is the ID to update.
+//	`aID` is the ID to update.
 //
-// `aText` is the text to use.
+//	`aText` is the text to use.
 func (hl *THashList) updateID(aID string, aText []byte) *THashList {
 	// the mutex.Lock is done by the caller
 	hl.removeID(aID)
@@ -820,7 +818,7 @@ type (
 // If `aFunc` returns `false` when called the respective ID
 // will be removed from the associated #hashtag/@mention.
 //
-// `aFunc` is the function called for each ID in all lists.
+//	`aFunc` is the function called for each ID in all lists.
 func (hl *THashList) Walk(aFunc TWalkFunc) {
 	oldCRC := hl.checksum()
 	defer func() {
@@ -846,7 +844,7 @@ func (hl *THashList) Walk(aFunc TWalkFunc) {
 // Walker traverses through all entries in the INI list sections
 // calling `aWalker` for each entry.
 //
-// `aWalker` is an object implementing the `TIniWalker` interface.
+//	`aWalker` is an object implementing the `TIniWalker` interface.
 func (hl *THashList) Walker(aWalker THashWalker) {
 	hl.Walk(aWalker.Walk)
 } // Walker()
@@ -859,7 +857,7 @@ func (hl *THashList) Walker(aWalker THashWalker) {
 // If the hash file doesn't exist that is not considered an error.
 // If there is an error, it will be of type *PathError.
 //
-// `aFilename` is the name of the file to use for reading and storing.
+//	`aFilename` is the name of the file to use for reading and storing.
 func New(aFilename string) (*THashList, error) {
 	result := THashList{
 		fn:  aFilename,
