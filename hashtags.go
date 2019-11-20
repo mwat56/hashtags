@@ -679,7 +679,7 @@ func (hl *THashList) remove(aDelim byte, aMapIdx, aID string) *THashList {
 	return hl
 } // remove()
 
-// `removeID()` deletes all @hashtags/@mentions associated with `aID`.
+// `removeID()` deletes all #hashtags/@mentions associated with `aID`.
 //
 //	`aID` is to be deleted from all lists.
 func (hl *THashList) removeID(aID string) *THashList {
