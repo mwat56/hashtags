@@ -1,4 +1,5 @@
 *~
+_config.yml
 *.db
 .git/
 load.*
