@@ -602,9 +602,12 @@ func (hl *THashList) MentionRemove(aMention, aID string) *THashList {
 var (
 	// match: [#Hashtag|@Mention]
 	htHashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
+	//                                        11111111111
 
 	// match: #hashtag|@mention
-	htHashMentionRE = regexp.MustCompile(`(?i)\b?([@#][§\wÄÖÜß-]+)(.?|$)`)
+	htHashMentionRE = regexp.MustCompile(
+		`(?ims)(?:^|\s|\W)?([@#][\w§ÄÖÜß-]+)(?:\W|$)`)
+	//                      111111111111111  222222
 
 	// RegEx to identify a numeric HTML entity.
 	htEntityRE = regexp.MustCompile(`(#[0-9]+;)`)
@@ -619,32 +622,34 @@ var (
 func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 	// The mutex.Lock is done by the caller
 	matches := htHashMentionRE.FindAllSubmatch(aText, -1)
-	if (nil == matches) || (0 >= len(matches)) {
+	if (nil == matches) || (0 == len(matches)) {
 		return hl
 	}
 	for _, sub := range matches {
-		if 0 < len(sub[1]) {
-			hash := string(sub[1])
-			// '_' can be both, part of the hashtag and italic markup
-			// so we must remove it if it's at the end:
-			if '_' == hash[len(hash)-1] {
-				hash = hash[:len(hash)-1]
-			}
-			if '#' == hash[0] {
-				if 0 < len(sub[2]) {
-					if '"' == sub[2][0] {
-						// double quote following a possible hashtag: most
-						// probably an URL#fragment, hence leave it as is
-						continue
-					}
-					if (';' == sub[2][0]) && htEntityRE.MatchString(hash+";") {
-						// leave HTML entities as is
-						continue
-					}
+		hash := string(sub[1])
+		if '_' == hash[len(hash)-1] {
+			// '_' can be both, part of the hashtag and italic
+			// markup so we must remove it if it's at the end:
+			hash = hash[:len(hash)-1]
+		}
+		if '#' == hash[0] {
+			// sub[0] is the match including prefix and postfix
+			switch sub[0][len(sub[0])-1] {
+			case '"':
+				// Double quote following a possible hashtag: most
+				// probably an URL#fragment, so check whether it's
+				// a quoted string:
+				if '"' != sub[0][0] {
+					continue // URL#fragment
+				}
+			case ';':
+				if htEntityRE.Match(sub[0]) {
+					// leave HTML entities as is
+					continue
 				}
 			}
-			hl.add(hash[0], hash, aID)
 		}
+		hl.add(hash[0], hash, aID)
 	}
 
 	return hl

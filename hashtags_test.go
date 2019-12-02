@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -777,57 +778,59 @@ func TestTHashList_LenTotal(t *testing.T) {
 	}
 } // TestTHashList_LenTotal()
 
-func TestTHashList_Load(t *testing.T) {
-	// hl1, _ := New("")
-	// hl1.SetFilename("load.txt")
-	// hl1.xLoad()
-	// hl1.SetFilename("load.db")
-	// hl1.store()
-	fn := delDB("hashlist.db")
-	fn2 := delDB(".does.not.exist")
-	hash1, hash2 := "#hash1", "#hash2"
-	id1, id2 := "id_c", "id_a"
-	hl1, _ := New(fn)
-	hl1.HashAdd(hash1, id1).
-		HashAdd(hash2, id2).
-		HashAdd(hash2, id1).
-		HashAdd(hash1, id2)
-	hl1.store()
-	hl1.Clear()
-	hl2, _ := New(fn2)
-	hl3, _ := New("")
+func funcHashMentionRE(aText string) int {
+	var XhtHashMentionRE = regexp.MustCompile(
+		`(?ims)(?:^|\s|\W)?([@#][\w§ÄÖÜß-]+)(?:\W|$)`)
+	matches := XhtHashMentionRE.FindAllStringSubmatch(aText, -1)
+
+	return len(matches)
+} // funcHashMentionRE()
+
+func Test_htHashMentionRE(t *testing.T) {
+	t1 := `1blabla #HÄSCH1 blabla #hash2. Blabla`
+	w1 := 2
+	t2 := `2blabla #hash2. Blabla "#hash3" blabla`
+	w2 := 2
+	t3 := `\n>#KurzErklärt #Zensurheberrecht verhindern\n`
+	w3 := 2
+	t4 := `4blabla **#HÄSCH1** blabla\n\n_#hash3_`
+	w4 := 2
+	t5 := `5blabla&#39; **#hash2** blabla\n<a href="page#hash3">txt</a> #hash4`
+	w5 := 4
+	t6 := `#hash3 blabla\n<a href="https://www.tagesspiegel.de/politik/martin-sonneborn-wirbt-fuer-moralische-integritaet-warum-ich-die-eu-kommission-ablehnen-werde/25263366.html#25263366">txt</a> #hash4`
+	w6 := 3
+	type args struct {
+		aText string
+	}
 	tests := []struct {
-		name    string
-		hl      *THashList
-		want    int
-		wantErr bool
+		name string
+		args args
+		want int
 	}{
 		// TODO: Add test cases.
-		{" 1", hl1, 2, false},
-		{" 2", hl2, 0, false},
-		{" 3", hl3, 0, false},
+		{" 1", args{t1}, w1},
+		{" 2", args{t2}, w2},
+		{" 3", args{t3}, w3},
+		{" 4", args{t4}, w4},
+		{" 5", args{t5}, w5},
+		{" 6", args{t6}, w6},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.hl.Load()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("THashList.Load() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got.Len() != tt.want {
-				t.Errorf("THashList.Load() = %v, want %v", got.Len(), tt.want)
+			if got := funcHashMentionRE(tt.args.aText); got != tt.want {
+				t.Errorf("funcHashMentionRE() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-} // TestTHashList_Load()
+} // Test_htHashMentionRE()
 
 func TestTHashList_parseID(t *testing.T) {
-	// fn := delDB("hashlist.db")
 	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "#hash4"
 	lh1 := strings.ToLower(hash1)
-	id1, id2, id3, id4, id5 := "id_c", "id_a", "id_b", "id_d", "id_e"
+	id1, id2, id3, id4, id5, id6 := "id_c", "id_a", "id_b", "id_d", "id_e", "id_f"
+	// --------------
 	hl1, _ := New("")
-	tx1 := []byte("blabla " + hash1 + " blabla " + hash3 + ". Blabla")
+	tx1 := []byte("1blabla " + hash1 + " blabla " + hash3 + ". Blabla")
 	wl1 := &THashList{
 		hl: tHashMap{
 			lh1:   &tSourceList{id1},
@@ -835,6 +838,7 @@ func TestTHashList_parseID(t *testing.T) {
 		},
 		mtx: new(sync.RWMutex),
 	}
+	// --------------
 	hl2 := &THashList{
 		hl: tHashMap{
 			lh1:   &tSourceList{id3},
@@ -843,7 +847,7 @@ func TestTHashList_parseID(t *testing.T) {
 		},
 		mtx: new(sync.RWMutex),
 	}
-	tx2 := []byte("blabla " + hash2 + ". Blabla " + hash3 + " blabla")
+	tx2 := []byte(`2blabla "` + hash2 + `". Blabla ` + hash3 + ` blabla`)
 	wl2 := &THashList{
 		hl: tHashMap{
 			lh1:   &tSourceList{id3},
@@ -852,8 +856,9 @@ func TestTHashList_parseID(t *testing.T) {
 		},
 		mtx: new(sync.RWMutex),
 	}
+	// --------------
 	hl3, _ := New("")
-	tx3 := []byte("\n> #KurzErklärt #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
+	tx3 := []byte("3\n> #KurzErklärt #Zensurheberrecht verhindern – \n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
 	wl3 := &THashList{
 		hl: tHashMap{
 			"#kurzerklärt":      &tSourceList{id3},
@@ -861,8 +866,9 @@ func TestTHashList_parseID(t *testing.T) {
 		},
 		mtx: new(sync.RWMutex),
 	}
+	// --------------
 	hl4, _ := New("")
-	tx4 := []byte("blabla **" + hash1 + "** blabla\n\n_" + hash3 + "_")
+	tx4 := []byte("4blabla **" + hash1 + "** blabla\n\n_" + hash3 + "_")
 	wl4 := &THashList{
 		hl: tHashMap{
 			lh1:   &tSourceList{id4},
@@ -870,12 +876,23 @@ func TestTHashList_parseID(t *testing.T) {
 		},
 		mtx: new(sync.RWMutex),
 	}
+	// --------------
 	hl5, _ := New("")
-	tx5 := []byte(`blabla&#39; **` + hash2 + `** blabla\n\<a href="page#` + hash3 + `">txt</a> ` + hash4)
+	tx5 := []byte(`5blabla&#39; **` + hash2 + `** blabla\n<a href="page#fragment">txt</a> ` + hash4)
 	wl5 := &THashList{
 		hl: tHashMap{
 			hash2: &tSourceList{id5},
 			hash4: &tSourceList{id5},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	// --------------
+	hl6, _ := New("")
+	tx6 := []byte(hash3 + ` blabla\n<a href="https://www.tagesspiegel.de/politik/martin-sonneborn-wirbt-fuer-moralische-integritaet-warum-ich-die-eu-kommission-ablehnen-werde/25263366.html#25263366">txt</a> ` + hash4)
+	wl6 := &THashList{
+		hl: tHashMap{
+			hash3: &tSourceList{id6},
+			hash4: &tSourceList{id6},
 		},
 		mtx: new(sync.RWMutex),
 	}
@@ -895,6 +912,7 @@ func TestTHashList_parseID(t *testing.T) {
 		{" 3", hl3, args{id3, tx3}, wl3},
 		{" 4", hl4, args{id4, tx4}, wl4},
 		{" 5", hl5, args{id5, tx5}, wl5},
+		{" 6", hl6, args{id6, tx6}, wl6},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
