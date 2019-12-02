@@ -896,6 +896,23 @@ func TestTHashList_parseID(t *testing.T) {
 		},
 		mtx: new(sync.RWMutex),
 	}
+	// --------------
+	hl7, _ := New("")
+	tx7 := []byte(`7 (https://www.faz.net/aktuell/politik/inland/jutta-ditfurth-zu-extinction-rebellion-irrationalismus-einer-endzeit-sekte-16422668.html?printPagedArticle=true#ageIndex_2)`)
+	wl7 := &THashList{
+		hl:  tHashMap{},
+		mtx: new(sync.RWMutex),
+	}
+	// --------------
+	hl8, _ := New("")
+	tx8 := []byte(`7
+> [Here's Everything You Need To Know](https://thehackernews.com/2018/12/australia-anti-encryption-bill.html#content)
+`)
+	wl8 := &THashList{
+		hl:  tHashMap{},
+		mtx: new(sync.RWMutex),
+	}
+
 	type args struct {
 		aID   string
 		aText []byte
@@ -907,6 +924,8 @@ func TestTHashList_parseID(t *testing.T) {
 		want   *THashList
 	}{
 		// TODO: Add test cases.
+		{" 8", hl8, args{`id8`, tx8}, wl8},
+		{" 7", hl7, args{`id7`, tx7}, wl7},
 		{" 1", hl1, args{id1, tx1}, wl1},
 		{" 2", hl2, args{id2, tx2}, wl2},
 		{" 3", hl3, args{id3, tx3}, wl3},

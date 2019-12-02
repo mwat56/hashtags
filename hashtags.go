@@ -610,7 +610,7 @@ var (
 	//                      111111111111111  222222
 
 	// RegEx to identify a numeric HTML entity.
-	htEntityRE = regexp.MustCompile(`(#[0-9]+;)`)
+	htEntityRE = regexp.MustCompile(`#[0-9]+;`)
 )
 
 // `parseID()` checks whether `aText` contains strings starting
@@ -626,6 +626,7 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 		return hl
 	}
 	for _, sub := range matches {
+		match0 := string(sub[0])
 		hash := string(sub[1])
 		if '_' == hash[len(hash)-1] {
 			// '_' can be both, part of the hashtag and italic
@@ -633,20 +634,26 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 			hash = hash[:len(hash)-1]
 		}
 		if '#' == hash[0] {
-			// sub[0] is the match including prefix and postfix
-			switch sub[0][len(sub[0])-1] {
+			// `match0` is the match including prefix and postfix
+			switch match0[len(match0)-1] {
 			case '"':
 				// Double quote following a possible hashtag: most
 				// probably an URL#fragment, so check whether it's
 				// a quoted string:
-				if '"' != sub[0][0] {
+				if '"' != match0[0] {
 					continue // URL#fragment
 				}
 			case ';':
-				if htEntityRE.Match(sub[0]) {
+				if htEntityRE.MatchString(match0) {
 					// leave HTML entities as is
 					continue
 				}
+			case ')':
+				// This is a tricky one: it can either be a normal
+				// right round bracket or the end of a Markdown link.
+				// Here we assume that it's the latter one and ignore
+				// this match:
+				continue
 			}
 		}
 		hl.add(hash[0], hash, aID)
