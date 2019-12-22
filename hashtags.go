@@ -606,8 +606,8 @@ var (
 
 	// match: #hashtag|@mention
 	htHashMentionRE = regexp.MustCompile(
-		`(?ims)(?:^|\s|\W)?([@#][\w§ÄÖÜß-]+)(?:\W|$)`)
-	//                      111111111111111  222222
+		`(?ims)(?:^|\s|[^\p{L}\d_])?([@#][\p{L}\d_§-]+)(?:[^\p{L}\d_]|$)`)
+	//                               11111111111111111  222222222222222
 
 	// RegEx to identify a numeric HTML entity.
 	htEntityRE = regexp.MustCompile(`#[0-9]+;`)

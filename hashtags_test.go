@@ -905,11 +905,23 @@ func TestTHashList_parseID(t *testing.T) {
 	}
 	// --------------
 	hl8, _ := New("")
-	tx8 := []byte(`7
+	tx8 := []byte(`8
 > [Here's Everything You Need To Know](https://thehackernews.com/2018/12/australia-anti-encryption-bill.html#content)
 `)
 	wl8 := &THashList{
 		hl:  tHashMap{},
+		mtx: new(sync.RWMutex),
+	}
+	// --------------
+	hl9, _ := New("")
+	tx9 := []byte(`9
+Bla *@Antoni_Comín* bla bla _#§219a_
+`)
+	wl9 := &THashList{
+		hl: tHashMap{
+			`@antoni_comín`: &tSourceList{`id9`},
+			`#§219a`:        &tSourceList{`id9`},
+		},
 		mtx: new(sync.RWMutex),
 	}
 
@@ -924,6 +936,7 @@ func TestTHashList_parseID(t *testing.T) {
 		want   *THashList
 	}{
 		// TODO: Add test cases.
+		{" 9", hl9, args{`id9`, tx9}, wl9},
 		{" 8", hl8, args{`id8`, tx8}, wl8},
 		{" 7", hl7, args{`id7`, tx7}, wl7},
 		{" 1", hl1, args{id1, tx1}, wl1},
