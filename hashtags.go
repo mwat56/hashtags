@@ -1,5 +1,5 @@
 /*
-   Copyright © 2019 M.Watermann, 10247 Berlin, Germany
+   Copyright © 2019, 2020 M.Watermann, 10247 Berlin, Germany
                   All rights reserved
               EMail : <support@mwat.de>
 */
@@ -108,21 +108,21 @@ func (sl *tSourceList) removeID(aID string) *tSourceList {
 		return sl
 	}
 
-	slen := len(*sl) - 1
-	if 0 > slen {
+	sLen := len(*sl) - 1
+	if 0 > sLen {
 		// can't remove from empty list …
 		return sl
 	}
 
 	switch idx {
 	case 0:
-		if 0 == slen {
+		if 0 == sLen {
 			*sl = (*sl)[:0]
 		} else {
 			*sl = (*sl)[1:]
 		}
-	case slen:
-		*sl = (*sl)[:slen]
+	case sLen:
+		*sl = (*sl)[:sLen]
 	default:
 		*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 	}
@@ -490,7 +490,7 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	return
 } // list()
 
-// Load reads the configured filen returning the data structure
+// Load reads the configured file returning the data structure
 // read from the file and a possible error condition.
 //
 // If the hash file doesn't exist that is not considered an error.

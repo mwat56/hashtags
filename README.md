@@ -59,7 +59,7 @@ For more details please refer to the [package documentation](https://godoc.org/g
 
 ## Licence
 
-        Copyright © 2019 M.Watermann, 10247 Berlin, Germany
+        Copyright © 2019, 2020 M.Watermann, 10247 Berlin, Germany
                         All rights reserved
                     EMail : <support@mwat.de>
 
