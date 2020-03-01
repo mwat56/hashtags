@@ -1,5 +1,5 @@
 /*
-   Copyright © 2019 M.Watermann, 10247 Berlin, Germany
+   Copyright © 2019, 2020 M.Watermann, 10247 Berlin, Germany
                   All rights reserved
               EMail : <support@mwat.de>
 */
@@ -179,7 +179,7 @@ func TestNew(t *testing.T) {
 		HashAdd(hash2, id2).
 		HashAdd(hash2, id1).
 		HashAdd(hash1, id2)
-	hl1.Store()
+	_, _ = hl1.Store()
 	hl2, _ := New(fn2)
 	type args struct {
 		aFilename string
@@ -1142,7 +1142,7 @@ func Benchmark_LoadBin(b *testing.B) {
 func Benchmark_StoreTxt(b *testing.B) {
 	UseBinaryStorage = false
 	hl, _ := New("load.txt")
-	hl.Load()
+	_, _ = hl.Load()
 
 	for n := 0; n < b.N; n++ {
 		if _, err := hl.Store(); nil != err {
@@ -1154,7 +1154,7 @@ func Benchmark_StoreTxt(b *testing.B) {
 func Benchmark_StoreBin(b *testing.B) {
 	UseBinaryStorage = true
 	hl, _ := New("load.db")
-	hl.Load()
+	_, _ = hl.Load()
 
 	for n := 0; n < b.N; n++ {
 		if _, err := hl.Store(); nil != err {

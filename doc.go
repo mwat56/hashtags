@@ -1,7 +1,7 @@
 /*
-Package hashtags implements simple #hashtag/@mentions handling.
+Package hashtags implements a simple #hashtag/@mentions handler.
 
-        Copyright © 2019 M.Watermann, 10247 Berlin, Germany
+        Copyright © 2019, 2020 M.Watermann, 10247 Berlin, Germany
                         All rights reserved
                     EMail : <support@mwat.de>
 
