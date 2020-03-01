@@ -762,13 +762,11 @@ func (hl *THashList) Store() (int, error) {
 	return hl.store()
 } // Store()
 
-// `string()` returns the whole list as a linefeed separated string.
+// `string()` returns the whole list as a newline separated string.
 func (hl *THashList) string() string {
 	// the mutex.Lock is done by the caller
-	var (
-		result string
-		tmp    tSourceList
-	)
+
+	tmp := make(tSourceList, 0, len(hl.hl))
 	for hash := range hl.hl {
 		tmp = append(tmp, hash)
 	}
@@ -777,6 +775,8 @@ func (hl *THashList) string() string {
 		// ignore leading [@#] when sorting
 		return (tmp[i][1:] < tmp[j][1:]) // ascending
 	})
+
+	var result string
 	for _, hash := range tmp {
 		sl := hl.hl[hash]
 		result += "[" + hash + "]\n" + sl.String() + "\n"
