@@ -57,6 +57,10 @@ For this reasons it's used by default (i.e. `hashtags.UseBinaryStorage == true`)
 
 For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/hashtags/).
 
+## Libraries
+
+No external libraries were used building `HashTags`.
+
 ## Licence
 
         Copyright © 2019, 2020 M.Watermann, 10247 Berlin, Germany

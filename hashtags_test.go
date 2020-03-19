@@ -719,10 +719,12 @@ func TestTHashList_Len(t *testing.T) {
 	hl2, _ := New(fn)
 	hl2.HashAdd("#hash", "source")
 	hl3, _ := New(fn)
-	hl3.HashAdd("#hash2", "source1")
+	hl3.HashAdd("#hash2", "source1").
+		HashAdd("#hash3", "source2")
 	hl4, _ := New(fn)
 	hl4.HashAdd("#hash2", "source1").
-		HashAdd("#hash3", "source2")
+		HashAdd("#hash3", "source2").
+		HashAdd("#hash4", "source3")
 	tests := []struct {
 		name string
 		hl   *THashList
@@ -731,8 +733,8 @@ func TestTHashList_Len(t *testing.T) {
 		// TODO: Add test cases.
 		{" 1", hl1, 0},
 		{" 2", hl2, 1},
-		{" 3", hl3, 1},
-		{" 4", hl4, 2},
+		{" 3", hl3, 2},
+		{" 4", hl4, 3},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1107,7 +1109,7 @@ func TestTHashList_String(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.hl.String(); got != tt.want {
-				t.Errorf("THashList.String() = %v, want %v", got, tt.want)
+				t.Errorf("THashList.String() = {%v},\nwant {%v}", got, tt.want)
 			}
 		})
 	}
