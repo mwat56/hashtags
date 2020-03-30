@@ -284,6 +284,48 @@ func TestTHashList_Clear(t *testing.T) {
 	}
 } // TestTHashList_Clear()
 
+func TestTHashList_count(t *testing.T) {
+	hash1, hash2, hash3, hash4 := "#hash1", "@mention2", "#another3", "@mention4"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash3: &tSourceList{id1, id2, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	hl2 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id3},
+			hash4: &tSourceList{id1, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	type args struct {
+		aDelim byte
+	}
+	tests := []struct {
+		name     string
+		hl       *THashList
+		args     args
+		wantRLen int
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{'#'}, 2},
+		{" 2", hl1, args{'@'}, 0},
+		{" 3", hl2, args{'#'}, 1},
+		{" 4", hl2, args{'@'}, 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotRLen := tt.hl.count(tt.args.aDelim); gotRLen != tt.wantRLen {
+				t.Errorf("THashList.count() = %v, want %v", gotRLen, tt.wantRLen)
+			}
+		})
+	}
+} // TestTHashList_count()
+
 func TestTHashList_CountedList(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "@mention1", "#another3"
 	id1, id2, id3 := "id_c", "id_a", "id_b"
@@ -383,6 +425,42 @@ func TestTHashList_HashAdd(t *testing.T) {
 		})
 	}
 } // TestTHashList_HashAdd()
+
+func TestTHashList_HashCount(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "@mention2", "#another3"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id2, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	hl2 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id2, id3},
+			hash3: &tSourceList{id1, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		want int
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, 1},
+		{" 2", hl2, 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.HashCount(); got != tt.want {
+				t.Errorf("THashList.HashCount() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_HashCount()
 
 func TestTHashList_HashLen(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
@@ -780,6 +858,226 @@ func TestTHashList_LenTotal(t *testing.T) {
 	}
 } // TestTHashList_LenTotal()
 
+func TestTHashList_MentionAdd(t *testing.T) {
+	hash1, hash2 := "@mention2", "@mention1"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	wl1 := &THashList{
+		hl: tHashMap{
+			hash2: &tSourceList{id1},
+			hash1: &tSourceList{id2, id1},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	wl2 := &THashList{
+		hl: tHashMap{
+			hash2: &tSourceList{id2, id1},
+			hash1: &tSourceList{id2, id1},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	wl3 := &THashList{
+		hl: tHashMap{
+			hash2: &tSourceList{id2, id1},
+			hash1: &tSourceList{id2, id3, id1},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	type args struct {
+		aHash string
+		aID   string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{hash1, id1}, wl1},
+		{" 2", wl1, args{hash2, id2}, wl2},
+		{" 3", wl2, args{hash1, id3}, wl3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.MentionAdd(tt.args.aHash, tt.args.aID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.MentionAdd() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_MentionAdd()
+
+func TestTHashList_MentionCount(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "@mention2", "@another3"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id2, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	hl2 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id2, id3},
+			hash3: &tSourceList{id1, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		want int
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, 1},
+		{" 2", hl2, 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.MentionCount(); got != tt.want {
+				t.Errorf("THashList.MentionCount() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_MentionCount()
+
+func TestTHashList_MentionLen(t *testing.T) {
+	hash1, hash2 := "@mention1", "@mention2"
+	id1, id2, id3 := "id_c", "id_a", "id_b"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id3, id1},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	type args struct {
+		aHash string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want int
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{hash1}, 1},
+		{" 2", hl1, args{hash2}, 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.MentionLen(tt.args.aHash); got != tt.want {
+				t.Errorf("THashList.MentionLen() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_MentionLen()
+
+func TestTHashList_MentionList(t *testing.T) {
+	hash1, hash2 := "@mention1", "@mention2"
+	id1, id2 := "id_c", "id_a"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2, id1},
+			hash2: &tSourceList{id2, id1},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	wl1 := []string{
+		id2,
+		id1,
+	}
+	type args struct {
+		aHash string
+	}
+	tests := []struct {
+		name      string
+		hl        *THashList
+		args      args
+		wantRList []string
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{hash1}, wl1},
+		{" 2", hl1, args{hash2}, wl1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotRList := tt.hl.MentionList(tt.args.aHash); !reflect.DeepEqual(gotRList, tt.wantRList) {
+				t.Errorf("THashList.MentionList() = %v, want %v", gotRList, tt.wantRList)
+			}
+		})
+	}
+} // TestTHashList_MentionList()
+
+func TestTHashList_MentionRemove(t *testing.T) {
+	fn := delDB("hashlist.db")
+	hash1, hash2 := "@mention1", "@mention2"
+	id1, id2 := "id_c", "id_a"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id1, id2},
+			hash2: &tSourceList{id1, id2},
+		},
+		fn:  fn,
+		mtx: new(sync.RWMutex),
+	}
+	wl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id2},
+			hash2: &tSourceList{id1, id2},
+		},
+		fn:  fn,
+		mtx: new(sync.RWMutex),
+	}
+	wl2 := &THashList{
+		hl: tHashMap{
+			hash2: &tSourceList{id1, id2},
+		},
+		fn:  fn,
+		mtx: new(sync.RWMutex),
+	}
+	wl3 := &THashList{
+		hl: tHashMap{
+			hash2: &tSourceList{id2},
+		},
+		fn:  fn,
+		mtx: new(sync.RWMutex),
+	}
+	wl4, _ := New(fn)
+	type args struct {
+		aHash string
+		aID   string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{hash1, id1}, wl1},
+		{" 2", hl1, args{hash1, id2}, wl2},
+		{" 3", hl1, args{hash2, id1}, wl3},
+		{" 4", hl1, args{hash2, id2}, wl4},
+		{" 5", hl1, args{hash1, id1}, wl4},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.MentionRemove(tt.args.aHash, tt.args.aID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.MentionRemove() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_MentionRemove()
+
 func funcHashMentionRE(aText string) int {
 	var XhtHashMentionRE = regexp.MustCompile(
 		`(?ims)(?:^|\s|\W)?([@#][\w§ÄÖÜß-]+)(?:\W|$)`)
@@ -1048,6 +1346,93 @@ func TestTHashList_remove(t *testing.T) {
 		})
 	}
 } // TestTHashList_remove()
+
+func TestTHashList_removeID(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3 := "id_3", "id_1", "id_2"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id1, id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id1, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	wl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	wl2 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id3},
+			hash2: &tSourceList{id3},
+			hash3: &tSourceList{id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	wl3 := &THashList{
+		hl:  tHashMap{},
+		mtx: new(sync.RWMutex),
+	}
+	type args struct {
+		aID string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{id1}, wl1},
+		{" 2", hl1, args{id2}, wl2},
+		{" 3", hl1, args{id3}, wl3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.removeID(tt.args.aID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("THashList.removeID() = %v,\nwant %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_removeID()
+
+func TestTHashList_SetFilename(t *testing.T) {
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3 := "id_3", "id_1", "id_2"
+	hl1 := &THashList{
+		hl: tHashMap{
+			hash1: &tSourceList{id1, id3},
+			hash2: &tSourceList{id2, id3},
+			hash3: &tSourceList{id1, id3},
+		},
+		mtx: new(sync.RWMutex),
+	}
+	type args struct {
+		aFilename string
+	}
+	tests := []struct {
+		name string
+		hl   *THashList
+		args args
+		want *THashList
+	}{
+		// TODO: Add test cases.
+		{" 1", hl1, args{`fn1.db`}, hl1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.hl.SetFilename(tt.args.aFilename)
+			if (nil == got) || (got.fn != tt.args.aFilename) {
+				t.Errorf("THashList.SetFilename() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_SetFilename()
 
 func TestTHashList_store(t *testing.T) {
 	fn := delDB("hashlist.db")

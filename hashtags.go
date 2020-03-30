@@ -254,6 +254,23 @@ func (hl *THashList) Clear() *THashList {
 	return hl.clear()
 } // Clear()
 
+// `count()` returns the number of hashtags (if `aDelim == '#'`) or
+// mentions (if `aDelim == '@'`).
+//
+//	`aDelim` is the start of words to search (i.e. either '@' or '#').
+func (hl *THashList) count(aDelim byte) (rLen int) {
+	hl.mtx.RLock()
+	defer hl.mtx.RUnlock()
+
+	for idx := range hl.hl {
+		if idx[0] == aDelim {
+			rLen++
+		}
+	}
+
+	return
+} // count()
+
 // CountedList returns a list of #hashtags/@mentions with
 // their respective count of associated IDs.
 func (hl *THashList) CountedList() []TCountItem {
@@ -305,6 +322,11 @@ func (hl *THashList) HashAdd(aHash, aID string) *THashList {
 
 	return hl.add('#', aHash, aID)
 } // HashAdd()
+
+// HashCount returns the number of hashtags in the list.
+func (hl *THashList) HashCount() int {
+	return hl.count('#')
+} // HashCount()
 
 // HashLen returns the number of IDs stored for `aHash`.
 //
@@ -584,6 +606,11 @@ func (hl *THashList) MentionAdd(aMention, aID string) *THashList {
 
 	return hl.add('@', aMention, aID)
 } // MentionAdd()
+
+// MentionCount returns the number of mentions in the list.
+func (hl *THashList) MentionCount() int {
+	return hl.count('@')
+} // MentionCount()
 
 // MentionLen returns the number of IDs stored for `aMention`.
 //
