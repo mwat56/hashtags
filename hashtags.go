@@ -21,7 +21,7 @@ import (
 )
 
 type (
-	// `tSourceList` is storing the IDs of #hashtags/@mentions.
+	// `tSourceList` is storing the IDs of a single #hashtag/@mention.
 	tSourceList []string
 
 	// `tHashMap` is indexed by #hashtags/@mentions holding a `tSourceList`.
@@ -273,7 +273,7 @@ func (hl *THashList) count(aDelim byte) (rLen int) {
 
 // CountedList returns a list of #hashtags/@mentions with
 // their respective count of associated IDs.
-func (hl *THashList) CountedList() []TCountItem {
+func (hl *THashList) CountedList() (rList []TCountItem) {
 	hl.mtx.Lock()
 	defer hl.mtx.Unlock()
 
@@ -283,19 +283,19 @@ func (hl *THashList) CountedList() []TCountItem {
 
 	hl.µCC.µCounts = nil
 	hl.µCC.µCRC = hl.checksum()
-	result := make(tCountList, 0, len(hl.hl))
+	rList = make(tCountList, 0, len(hl.hl))
 	for mapIdx, sl := range hl.hl {
-		result = append(result, TCountItem{len(*sl), mapIdx})
+		rList = append(rList, TCountItem{len(*sl), mapIdx})
 	}
-	if 0 < len(result) {
-		sort.Slice(result, func(i, j int) bool {
+	if 0 < len(rList) {
+		sort.Slice(rList, func(i, j int) bool {
 			// ignore [#@] for sorting
-			return (result[i].Tag[1:] < result[j].Tag[1:])
+			return (rList[i].Tag[1:] < rList[j].Tag[1:])
 		})
 	}
-	hl.µCC.µCounts = result
+	hl.µCC.µCounts = rList
 
-	return result
+	return
 } // CountedList()
 
 // Filename returns the configured filename for reading/storing this list.
@@ -498,14 +498,15 @@ func (hl *THashList) LenTotal() (rLen int) {
 
 // `list()` returns a list of IDs associated with `aMapIdx`.
 //
-//	`aDelim` is the start of words to search (i.e. either '@' or '#').
-//	`aMapIdx` identifies the sources list to lookup.
+//	`aDelim` The start of words to search (i.e. either '@' or '#').
+//	`aMapIdx` Name of the sources list to lookup.
 func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	if 0 == len(aMapIdx) {
 		return
 	}
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
+	// We need a R/W lock here since we change the used `tSourceList`.
+	hl.mtx.Lock()
+	defer hl.mtx.Unlock()
 
 	aMapIdx = strings.ToLower(aMapIdx)
 	if aMapIdx[0] != aDelim {
