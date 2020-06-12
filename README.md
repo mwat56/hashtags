@@ -6,7 +6,7 @@
 [![Issues](https://img.shields.io/github/issues/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/issues?q=is%3Aopen+is%3Aissue)
 [![Size](https://img.shields.io/github/repo-size/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/)
 [![Tag](https://img.shields.io/github/tag/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/tags)
-[![License](https://img.shields.io/github/license/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/mwat56/hashtags.svg)](https://github.com/mwat56/hashtags/blob/main/LICENSE)
 
 - [HashTags](#hashtags)
 	- [Purpose](#purpose)
