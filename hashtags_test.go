@@ -1126,6 +1126,7 @@ func Test_htHashMentionRE(t *testing.T) {
 
 func TestTHashList_parseID(t *testing.T) {
 	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "#hash4"
+	hyphTx1, hyphTx2, hyphTx3 := `#--------------`, `#---text ---`, `#-text-`
 	lh1 := strings.ToLower(hash1)
 	id1, id2, id3, id4, id5, id6 := "id_c", "id_a", "id_b", "id_d", "id_e", "id_f"
 	// --------------
@@ -1225,6 +1226,9 @@ Bla *@Antoni_Comín* bla bla _#§219a_
 		mtx: new(sync.RWMutex),
 	}
 
+	tmp := string(tx6) + "\n" + hyphTx1 + ` and ` + hyphTx2 + "\n" + hyphTx3
+	tx10 := []byte(tmp)
+
 	type args struct {
 		aID   string
 		aText []byte
@@ -1236,15 +1240,16 @@ Bla *@Antoni_Comín* bla bla _#§219a_
 		want   *THashList
 	}{
 		// TODO: Add test cases.
-		{" 9", hl9, args{`id9`, tx9}, wl9},
-		{" 8", hl8, args{`id8`, tx8}, wl8},
-		{" 7", hl7, args{`id7`, tx7}, wl7},
+		{"10", hl6, args{id6, tx10}, wl6},
 		{" 1", hl1, args{id1, tx1}, wl1},
 		{" 2", hl2, args{id2, tx2}, wl2},
 		{" 3", hl3, args{id3, tx3}, wl3},
 		{" 4", hl4, args{id4, tx4}, wl4},
 		{" 5", hl5, args{id5, tx5}, wl5},
 		{" 6", hl6, args{id6, tx6}, wl6},
+		{" 7", hl7, args{`id7`, tx7}, wl7},
+		{" 8", hl8, args{`id8`, tx8}, wl8},
+		{" 9", hl9, args{`id9`, tx9}, wl9},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

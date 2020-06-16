@@ -636,6 +636,9 @@ func (hl *THashList) MentionRemove(aMention, aID string) *THashList {
 } // MentionRemove()
 
 var (
+	// RegEx to identify a numeric HTML entity.
+	htEntityRE = regexp.MustCompile(`#[0-9]+;`)
+
 	// match: [#Hashtag|@Mention]
 	htHashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
 	//                                        11111111111
@@ -643,10 +646,10 @@ var (
 	// match: #hashtag|@mention
 	htHashMentionRE = regexp.MustCompile(
 		`(?ims)(?:^|\s|[^\p{L}\d_])?([@#][\p{L}\d_§-]+)(?:[^\p{L}\d_]|$)`)
-	//                               11111111111111111  222222222222222
+	//	                             11111111111111111  222222222222222
 
-	// RegEx to identify a numeric HTML entity.
-	htEntityRE = regexp.MustCompile(`#[0-9]+;`)
+	// RegEx to match texts like `#----`.
+	htHyphenRE = regexp.MustCompile(`#[^-]*--`)
 )
 
 // `parseID()` checks whether `aText` contains strings starting
@@ -672,22 +675,29 @@ func (hl *THashList) parseID(aID string, aText []byte) *THashList {
 			// `match0` is the match including prefix and postfix
 			switch match0[len(match0)-1] {
 			case '"':
-				// Double quote following a possible hashtag: most
-				// probably an URL#fragment, so check whether it's
-				// a quoted string:
+				// Double quote following a possible hashtag:
+				// most probably an URL#fragment, so check
+				// whether it's a quoted string:
 				if '"' != match0[0] {
 					continue // URL#fragment
 				}
+			case ')':
+				// This is a tricky one: it can either be a
+				// normal right round bracket or the end of
+				// a Markdown link. Here we assume that it's
+				// the latter one and ignore this match:
+				continue
+			case '-':
+				// A hyphen at the end of a hashtag:
+				// that's not part of an acceptable tag.
+				continue
 			case ';':
 				if htEntityRE.MatchString(match0) {
 					// leave HTML entities as is
 					continue
 				}
-			case ')':
-				// This is a tricky one: it can either be a normal
-				// right round bracket or the end of a Markdown link.
-				// Here we assume that it's the latter one and ignore
-				// this match:
+			}
+			if htHyphenRE.MatchString(hash) {
 				continue
 			}
 		}
