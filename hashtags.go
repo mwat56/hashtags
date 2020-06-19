@@ -12,6 +12,7 @@ import (
 	"bufio"
 	"encoding/gob"
 	"hash/crc32"
+	"io"
 	"os"
 	"regexp"
 	"sort"
@@ -552,7 +553,12 @@ func (hl *THashList) loadBinary(aFile *os.File) (*THashList, error) {
 	var decodedMap tHashMap
 	decoder := gob.NewDecoder(aFile)
 	if err := decoder.Decode(&decodedMap); err != nil {
-		return hl, err
+		// `decoder.Decode()` returns `io.EOF` if the input
+		// is at EOF which we do not consider an error here.
+		if err != io.EOF {
+			return hl, err
+		}
+		decodedMap = make(tHashMap, 64)
 	}
 	hl.hl = decodedMap
 
@@ -914,7 +920,7 @@ func (hl *THashList) Walker(aWalker THashWalker) {
 //
 //	`aFilename` is the name of the file to use for reading and storing.
 func New(aFilename string) (*THashList, error) {
-	result := THashList{
+	result := &THashList{
 		fn:  aFilename,
 		hl:  make(tHashMap, 64),
 		mtx: new(sync.RWMutex),
