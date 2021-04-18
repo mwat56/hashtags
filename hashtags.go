@@ -1,5 +1,5 @@
 /*
-   Copyright © 2019, 2020 M.Watermann, 10247 Berlin, Germany
+   Copyright © 2019, 2021 M.Watermann, 10247 Berlin, Germany
                   All rights reserved
               EMail : <support@mwat.de>
 */
@@ -651,7 +651,7 @@ var (
 
 	// match: #hashtag|@mention
 	htHashMentionRE = regexp.MustCompile(
-		`(?ims)(?:^|\s|[^\p{L}\d_])?([@#][\p{L}\d_§-]+)(?:[^\p{L}\d_]|$)`)
+		`(?ims)(?:^|\s|[^\p{L}\d_])?([@#][\p{L}’'\d_§-]+)(?:[^\p{L}\d_]|$)`)
 	//	                             11111111111111111  222222222222222
 
 	// RegEx to match texts like `#----`.
