@@ -1,5 +1,5 @@
 /*
-   Copyright © 2019, 2021 M.Watermann, 10247 Berlin, Germany
+   Copyright © 2019, 2022 M.Watermann, 10247 Berlin, Germany
                   All rights reserved
               EMail : <support@mwat.de>
 */
@@ -11,7 +11,6 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1080,12 +1079,7 @@ func TestTHashList_MentionRemove(t *testing.T) {
 } // TestTHashList_MentionRemove()
 
 func funcHashMentionRE(aText string) int {
-	var XhtHashMentionRE = regexp.MustCompile(
-		`(?ims)(?:^|\s|[^\p{L}\d_])?([@#][\p{L}’'\d_§-]+)(?:[^\p{L}\d_]|$)`)
-	//	                             11111111111111111  222222222222222
-	// htHashMentionRE = regexp.MustCompile(
-	// `(?ims)(?:^|\s|\W)?([@#][\w§ÄÖÜß-]+)(?:\W|$)`)
-	matches := XhtHashMentionRE.FindAllStringSubmatch(aText, -1)
+	matches := htHashMentionRE.FindAllStringSubmatch(aText, -1)
 
 	println(fmt.Sprintf("%s: %v", aText, matches))
 
@@ -1099,7 +1093,7 @@ func Test_htHashMentionRE(t *testing.T) {
 	t4 := `4blabla **#HÄSCH1** blabla\n\n_#hash3_`
 	t5 := `5blabla&#39; **#hash2** blabla\n<a href="page#hash3">txt</a> #hash4`
 	t6 := `#hash3 blabla\n<a href="https://www.tagesspiegel.de/politik/martin-sonneborn-wirbt-fuer-moralische-integritaet-warum-ich-die-eu-kommission-ablehnen-werde/25263366.html#25263366">txt</a> #hash4`
-	t7 := `2blabla #hash2. @Dale_O'Leary "#hash3" @Dale_O’Leary blabla`
+	t7 := `2blabla #hash2. @Dale_O'Leary "#hash3" @Dale_O’Leary blabla @Henry's`
 	type args struct {
 		aText string
 	}
@@ -1115,7 +1109,7 @@ func Test_htHashMentionRE(t *testing.T) {
 		{" 4", args{t4}, 2},
 		{" 5", args{t5}, 4},
 		{" 6", args{t6}, 3},
-		{" 7", args{t7}, 4},
+		{" 7", args{t7}, 5},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
