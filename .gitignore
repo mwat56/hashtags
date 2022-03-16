@@ -2,6 +2,7 @@
 _config.yml
 *.db
 .git/
+.github/
 load.*
 TODO*
 .vscode/
