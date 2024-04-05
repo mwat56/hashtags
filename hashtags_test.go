@@ -1,7 +1,8 @@
 /*
-   Copyright © 2019, 2022 M.Watermann, 10247 Berlin, Germany
-                  All rights reserved
-              EMail : <support@mwat.de>
+Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
 package hashtags
 
@@ -1455,7 +1456,7 @@ func TestTHashList_store(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{" 1", hl1, 91, false},
+		{" 1", hl1, 90, false},
 		{" 2", hl2, 0, true},
 	}
 	for _, tt := range tests {

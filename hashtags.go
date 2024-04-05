@@ -1,7 +1,8 @@
 /*
-   Copyright © 2019, 2022 M.Watermann, 10247 Berlin, Germany
-                  All rights reserved
-              EMail : <support@mwat.de>
+Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
 package hashtags
 
@@ -10,6 +11,7 @@ package hashtags
 import (
 	"bufio"
 	"encoding/gob"
+	"errors"
 	"hash/crc32"
 	"io"
 	"os"
@@ -554,7 +556,7 @@ func (hl *THashList) loadBinary(aFile *os.File) (*THashList, error) {
 	if err := decoder.Decode(&decodedMap); err != nil {
 		// `decoder.Decode()` returns `io.EOF` if the input
 		// is at EOF which we do not consider an error here.
-		if err != io.EOF {
+		if !errors.Is(err, io.EOF) {
 			return hl, err
 		}
 		decodedMap = make(tHashMap, 64)
