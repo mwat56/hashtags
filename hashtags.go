@@ -224,7 +224,7 @@ func (hl *THashList) checksum() uint32 {
 	return hl.µChange
 } // checksum()
 
-// Checksum returns the list's CRC32 checksum.
+// `Checksum()` returns the list's CRC32 checksum.
 //
 // This method can be used to get a kind of 'footprint'.
 func (hl *THashList) Checksum() uint32 {
@@ -247,7 +247,7 @@ func (hl *THashList) clear() *THashList {
 	return hl
 } // clear()
 
-// Clear empties the internal data structures:
+// `Clear()` empties the internal data structures:
 // all `#hashtags` and `@mentions` are deleted.
 func (hl *THashList) Clear() *THashList {
 	hl.mtx.Lock()
@@ -273,7 +273,7 @@ func (hl *THashList) count(aDelim byte) (rLen int) {
 	return
 } // count()
 
-// CountedList returns a list of #hashtags/@mentions with
+// `CountedList()` returns a list of #hashtags/@mentions with
 // their respective count of associated IDs.
 func (hl *THashList) CountedList() (rList []TCountItem) {
 	hl.mtx.Lock()
@@ -300,7 +300,7 @@ func (hl *THashList) CountedList() (rList []TCountItem) {
 	return
 } // CountedList()
 
-// Filename returns the configured filename for reading/storing this list.
+// `Filename()` returns the configured filename for reading/storing this list.
 func (hl *THashList) Filename() string {
 	hl.mtx.RLock()
 	defer hl.mtx.RUnlock()
@@ -308,7 +308,7 @@ func (hl *THashList) Filename() string {
 	return hl.fn
 } // Filename()
 
-// HashAdd appends `aID` to the list of `aHash`.
+// `HashAdd()` appends `aID` to the list of `aHash`.
 //
 // If either `aHash` or `aID` are empty strings they are silently
 // ignored (i.e. this method does nothing).
@@ -325,26 +325,26 @@ func (hl *THashList) HashAdd(aHash, aID string) *THashList {
 	return hl.add('#', aHash, aID)
 } // HashAdd()
 
-// HashCount returns the number of hashtags in the list.
+// `HashCount()` returns the number of hashtags in the list.
 func (hl *THashList) HashCount() int {
 	return hl.count('#')
 } // HashCount()
 
-// HashLen returns the number of IDs stored for `aHash`.
+// `HashLen()` returns the number of IDs stored for `aHash`.
 //
 //	`aHash` identifies the ID list to lookup.
 func (hl *THashList) HashLen(aHash string) int {
 	return hl.idxLen('#', aHash)
 } // HashLen()
 
-// HashList returns a list of IDs associated with `aHash`.
+// `HashList()` returns a list of IDs associated with `aHash`.
 //
 //	`aHash` identifies the ID list to lookup.
 func (hl *THashList) HashList(aHash string) []string {
 	return hl.list('#', aHash)
 } // HashList()
 
-// HashRemove deletes `aID` from the list of `aHash`.
+// `HashRemove()` deletes `aID` from the list of `aHash`.
 //
 //	`aHash` identifies the ID list to lookup.
 //	`aID` is the source to remove from the list.
@@ -352,7 +352,7 @@ func (hl *THashList) HashRemove(aHash, aID string) *THashList {
 	return hl.remove('#', aHash, aID)
 } // HashRemove()
 
-// IDlist returns a list of #hashtags and @mentions associated with `aID`.
+// `IDlist()` returns a list of #hashtags and @mentions associated with `aID`.
 func (hl *THashList) IDlist(aID string) (rList []string) {
 	if 0 == len(aID) {
 		return
@@ -374,7 +374,7 @@ func (hl *THashList) IDlist(aID string) (rList []string) {
 	return
 } // IDlist()
 
-// IDparse checks whether `aText` contains strings starting with `[@|#]`
+// `IDparse()` checks whether `aText` contains strings starting with `[@|#]`
 // and – if found – adds them to the respective list.
 //
 //	`aID` is the ID to add to the list.
@@ -396,7 +396,7 @@ func (hl *THashList) IDparse(aID string, aText []byte) *THashList {
 	return hl.parseID(aID, aText)
 } // IDparse()
 
-// IDremove deletes all @hashtags/@mentions associated with `aID`.
+// `IDremove()` deletes all @hashtags/@mentions associated with `aID`.
 //
 //	`aID` is to be deleted from all lists.
 func (hl *THashList) IDremove(aID string) *THashList {
@@ -409,7 +409,7 @@ func (hl *THashList) IDremove(aID string) *THashList {
 	return hl.removeID(aID)
 } // IDremove()
 
-// IDrename replaces all occurrences of `aOldID` by `aNewID`.
+// `IDrename()` replaces all occurrences of `aOldID` by `aNewID`.
 //
 // This method is intended for rare cases when the ID of a document
 // needs to get changed.
@@ -432,7 +432,7 @@ func (hl *THashList) IDrename(aOldID, aNewID string) *THashList {
 	return hl
 } // IDrename()
 
-// IDupdate checks `aText` removing all #hashtags/@mentions no longer
+// `IDupdate()` checks `aText` removing all #hashtags/@mentions no longer
 // present and adding #hashtags/@mentions new in `aText`.
 //
 //	`aID` is the ID to update.
@@ -476,7 +476,7 @@ func (hl *THashList) idxLen(aDelim byte, aMapIdx string) int {
 	return -1
 } // idxLen()
 
-// Len returns the current length of the list i.e. how many #hashtags
+// `Len()` returns the current length of the list i.e. how many #hashtags
 // and @mentions are currently stored in the list.
 func (hl *THashList) Len() int {
 	hl.mtx.RLock()
@@ -485,7 +485,7 @@ func (hl *THashList) Len() int {
 	return len(hl.hl)
 } // Len()
 
-// LenTotal returns the length of all #hashtag/@mention lists together.
+// `LenTotal()` returns the length of all #hashtag/@mention lists together.
 func (hl *THashList) LenTotal() (rLen int) {
 	hl.mtx.RLock()
 	defer hl.mtx.RUnlock()
@@ -522,7 +522,7 @@ func (hl *THashList) list(aDelim byte, aMapIdx string) (rList []string) {
 	return
 } // list()
 
-// Load reads the configured file returning the data structure
+// `Load()` reads the configured file returning the data structure
 // read from the file and a possible error condition.
 //
 // If the hash file doesn't exist that is not considered an error.
@@ -549,9 +549,10 @@ func (hl *THashList) Load() (*THashList, error) {
 // `loadBinary()` reads a file written by `store()` returning
 // the modified list and a possible error.
 func (hl *THashList) loadBinary(aFile *os.File) (*THashList, error) {
-	// The mutex.Lock is done by the caller
+	// The mutex.Lock is done by the caller i.e. `Load()`.
 
 	var decodedMap tHashMap
+
 	decoder := gob.NewDecoder(aFile)
 	if err := decoder.Decode(&decodedMap); err != nil {
 		// `decoder.Decode()` returns `io.EOF` if the input
