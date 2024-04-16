@@ -556,7 +556,7 @@ func (hl *THashList) loadBinary(aFile *os.File) (*THashList, error) {
 	if err := decoder.Decode(&decodedMap); err != nil {
 		// `decoder.Decode()` returns `io.EOF` if the input
 		// is at EOF which we do not consider an error here.
-		if !errors.Is(err, io.EOF) {
+		if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 			return hl, err
 		}
 		decodedMap = make(tHashMap, 64)
