@@ -19,6 +19,21 @@ type (
 	tSourceList []uint64
 )
 
+// --------------------------------------------------------------------------
+// constructor function
+
+// `NewSourceList()` creates and returns a new instance of tSourceList.
+//
+// The initial capacity of the list is set to 32 to optimize memory usage.
+//
+// Returns:
+// - `*tSourceList`: A pointer to the newly created tSourceList instance.
+func NewSourceList() *tSourceList {
+	sl := make(tSourceList, 0, 32)
+
+	return &sl
+} // NewSourceList()
+
 // -------------------------------------------------------------------------
 // methods of tSourceList
 
