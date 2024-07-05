@@ -27,7 +27,7 @@ It provides the `THashList` class which can be used to parse texts for the occur
 
 You can use `Go` to install this package for you:
 
-    go get -u github.com/mwat56/hashtags
+	go get -u github.com/mwat56/hashtags
 
 ## Usage
 
@@ -39,18 +39,20 @@ _Note_ that both `#hashtag` and `@mention` are stored lower-cased to allow for c
 
 To get a `THashList` instance there's a simple way:
 
-    fName := "mytags.lst"
-    htl, err := hashtags.New(fName)
-    if nil != err {
-        log.PrintF("Problem loading file '%s': %v", fName, err)
-    }
-        // …
-        // do something with the list
-        // …
-    written, err := htl.Store()
-    if nil != err {
-        log.PrintF("Problem writing file '%s': %v", fName, err)
-    }
+	fName := "mytags.lst"
+	ht, err := hashtags.New(fName)
+	if nil != err {
+		log.PrintF("Problem loading file '%s': %v", fName, err)
+	}
+
+	// …
+	// do something with the list
+	// …
+
+	written, err := ht.Store()
+	if nil != err {
+		log.PrintF("Problem writing file '%s': %v", fName, err)
+	}
 
 The package provides a boolean configuration variable called `UseBinaryStorage` which is `true` by default.
 It determines whether the data written by `Store()` and read by `Load()` use plain text (i.e. `hashtags.UseBinaryStorage = false`) or a binary data format.
@@ -62,13 +64,15 @@ For more details please refer to the [package documentation](https://godoc.org/g
 
 ## Libraries
 
-No external libraries were used building `HashTags`.
+The following external libraries were used building `HashTags`:
+
+- [SourceError](https://github.com/mwat56/sourceerror)
 
 ## Licence
 
-        Copyright © 2019, 2022 M.Watermann, 10247 Berlin, Germany
-                        All rights reserved
-                    EMail : <support@mwat.de>
+	Copyright © 2019, 2024 M.Watermann, 10247 Berlin, Germany
+			All rights reserved
+		EMail : <support@mwat.de>
 
 > This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 >
@@ -77,3 +81,4 @@ No external libraries were used building `HashTags`.
 > You should have received a copy of the GNU General Public License along with this program. If not, see the [GNU General Public License](http://www.gnu.org/licenses/gpl.html) for details.
 
 ----
+[![GFDL](https://www.gnu.org/graphics/gfdl-logo-tiny.png)](http://www.gnu.org/copyleft/fdl.html)
