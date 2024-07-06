@@ -98,6 +98,9 @@ func (cl TCountList) Less(i, j int) bool {
 // Returns:
 // - `*TCountList`: A pointer to the sorted list.
 func (cl *TCountList) sort() *TCountList {
+	if 0 == len(*cl) {
+		return cl
+	}
 	// `cmpF()` is a comparison function that compares two `TCountItem`
 	// instances.
 	// It first removes the prefix '#' or '@' from the tag names, then
@@ -118,7 +121,14 @@ func (cl *TCountList) sort() *TCountList {
 		case at > bt:
 			return +1
 		default:
-			return 0
+			switch true {
+			case a.Count < b.Count:
+				return -1
+			case a.Count > b.Count:
+				return 1
+			default:
+				return 0
+			}
 		}
 	}
 	slices.SortStableFunc(*cl, cmpF)
@@ -137,14 +147,23 @@ func (cl TCountList) String() (rStr string) {
 	return
 } // String()
 
+// `Swap()` swaps the elements at the specified indices in the list.
+//
+// If the list is empty, or the old and new indices are the same, or
+// the function, or either of the indices is out of bounds, the
+// function returns the list unchanged.
+//
+// Parameters:
+// - `aOldIdx`: The index of the first element to swap.
+// - `aNewIdx`: The index of the second element to swap.
+//
+// Returns:
+// - `*TCountList`: A pointer to the list with the swapped elements.
 func (cl *TCountList) Swap(aOldIdx, aNewIdx int) *TCountList {
-	if aOldIdx == aNewIdx {
-		return cl
-	}
-	if aOldIdx < 0 || aOldIdx >= len(*cl) {
-		return cl
-	}
-	if aNewIdx < 0 || aNewIdx >= len(*cl) {
+	sLen := len(*cl)
+	if 0 == sLen || aOldIdx == aNewIdx ||
+		0 > aOldIdx || aOldIdx >= sLen ||
+		0 > aNewIdx || aNewIdx >= sLen {
 		return cl
 	}
 	(*cl)[aOldIdx], (*cl)[aNewIdx] = (*cl)[aNewIdx], (*cl)[aOldIdx]
