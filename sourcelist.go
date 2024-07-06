@@ -169,22 +169,25 @@ func (sl *tSourceList) removeID(aID uint64) *tSourceList {
 
 // `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
 //
+// If `aOldID` equals `aNewID` nothing is changed.
+// If `aOldID` doesn't exist then `aNewID` is added to the list.
+//
 // This method is intended for rare cases when the ID of a document
 // gets changed.
 //
 // Parameters:
-// - `aOldID` is to be replaced in this list.
-// - `aNewID` is the replacement in this list.
+// - `aOldID`: ID to be replaced in this list.
+// - `aNewID`: The replacement ID in this list.
 //
 // Returns:
-// - `*tSourceList`: the current list.
+// - `*tSourceList`: The current list.
 func (sl *tSourceList) renameID(aOldID, aNewID uint64) *tSourceList {
 	if (nil == sl) || aOldID == aNewID {
 		return sl
 	}
 
 	if 0 > sl.indexOf(aOldID) { // index not found
-		return sl
+		return sl.insert(aNewID)
 	}
 
 	return sl.removeID(aOldID).insert(aNewID)

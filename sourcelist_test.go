@@ -172,15 +172,11 @@ func Test_tSourceList_removeID(t *testing.T) {
 } // Test_tSourceList_removeID()
 
 func Test_tSourceList_renameID(t *testing.T) {
-	sl := &tSourceList{
-		1, 2, 3,
-	}
-	wl1 := tSourceList{
-		1, 2, 4,
-	}
-	wl2 := tSourceList{
-		1, 2, 6,
-	}
+	sl := &tSourceList{1, 2, 3}
+	wl1 := tSourceList{1, 2, 4}
+	wl2 := tSourceList{1, 2, 6}
+	wl3 := tSourceList{1, 2, 6, 333}
+
 	type tArgs struct {
 		aOldID, aNewID uint64
 	}
@@ -192,7 +188,7 @@ func Test_tSourceList_renameID(t *testing.T) {
 		{"0", tArgs{}, *sl},
 		{"1", tArgs{3, 4}, wl1},
 		{"2", tArgs{4, 6}, wl2},
-		{"3", tArgs{3333, 333}, *sl},
+		{"3", tArgs{3333, 333}, wl3},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
