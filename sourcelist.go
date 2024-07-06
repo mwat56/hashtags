@@ -14,21 +14,20 @@ import (
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 type (
-
-	// `tSourceList` is storing the IDs of a single #hashtag/@mention.
+	// `tSourceList` is storing the IDs using a certain #hashtag/@mention.
 	tSourceList []uint64
 )
 
 // --------------------------------------------------------------------------
 // constructor function
 
-// `NewSourceList()` creates and returns a new instance of tSourceList.
+// `newSourceList()` creates and returns a new instance of tSourceList.
 //
 // The initial capacity of the list is set to 32 to optimize memory usage.
 //
 // Returns:
 // - `*tSourceList`: A pointer to the newly created tSourceList instance.
-func NewSourceList() *tSourceList {
+func newSourceList() *tSourceList {
 	sl := make(tSourceList, 0, 32)
 
 	return &sl
@@ -39,7 +38,9 @@ func NewSourceList() *tSourceList {
 
 // `clear()` removes all entries in this list.
 func (sl *tSourceList) clear() *tSourceList {
-	(*sl) = (*sl)[:0]
+	if nil != sl {
+		(*sl) = (*sl)[:0]
+	}
 
 	return sl
 } // clear()
@@ -79,13 +80,20 @@ func (sl tSourceList) compareTo(aList tSourceList) bool {
 // Returns:
 // - `int`: the index of `aID` in the list.
 func (sl tSourceList) indexOf(aID uint64) int {
-	for result, id := range sl {
-		if id == aID {
-			return result
-		}
+	sLen := len(sl)
+	if 0 == sLen { // empty list
+		return -1
 	}
 
-	return -1
+	// Find the index of the old value
+	result := sort.Search(sLen, func(i int) bool {
+		return sl[i] >= aID
+	})
+	if sLen == result { // id not found
+		return -1
+	}
+
+	return result
 } // indexOf()
 
 // `insert()` adds `aID` to the list while keeping the list sorted.
@@ -98,7 +106,10 @@ func (sl tSourceList) indexOf(aID uint64) int {
 func (sl *tSourceList) insert(aID uint64) *tSourceList {
 	sLen := len(*sl)
 	if 0 == sLen { // empty list
-		*sl = append(*sl, aID)
+		if nil != sl {
+			*sl = append(*sl, aID)
+		}
+
 		return sl
 	}
 
@@ -141,68 +152,20 @@ func (sl *tSourceList) removeID(aID uint64) *tSourceList {
 		return (*sl)[i] >= aID
 	})
 
-	// If the old value is not found, return the original slice
-	if idx == sLen || (*sl)[idx] != aID {
+	switch true {
+	case idx == sLen || (*sl)[idx] != aID:
+		// Old value is not found
 		return sl
-	}
 
-	if idx == 0 {
+	case 0 == idx: // Remove the first element
 		*sl = (*sl)[1:]
-	} else {
-		// Remove the old value
+
+	default: // Remove the old value
 		*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 	}
 
-	/*
-		idx := sl.indexOf(aID)
-		if 0 > idx {
-			return sl
-		}
-
-		sLen := len(*sl) - 1
-		if 0 > sLen {
-			// can't remove from empty list …
-			return sl
-		}
-
-		switch idx {
-		case 0:
-			if 0 == sLen {
-				*sl = (*sl)[:0] // clear the list
-			} else {
-				*sl = (*sl)[1:]
-			}
-
-		case sLen:
-			*sl = (*sl)[:sLen]
-
-		default:
-			*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
-		}
-	*/
 	return sl
 } // removeID()
-
-/*
-// `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
-//
-// This method is intended for rare cases when the ID of a document
-// gets changed.
-//
-// - `aOldID` is to be replaced in this list.
-// - `aNewID` is the replacement in this list.
-func (sl *tSourceList) renameID(aOldID, aNewID uint64) *tSourceList {
-
-	for idx, id := range *sl {
-		if id == aOldID {
-			(*sl)[idx] = aNewID
-			return sl //.sort()
-		}
-	}
-
-	return sl
-} // renameID()
-*/
 
 // `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
 //
@@ -216,18 +179,25 @@ func (sl *tSourceList) renameID(aOldID, aNewID uint64) *tSourceList {
 // Returns:
 // - `*tSourceList`: the current list.
 func (sl *tSourceList) renameID(aOldID, aNewID uint64) *tSourceList {
-	if aOldID == aNewID {
+	if (nil == sl) || aOldID == aNewID {
 		return sl
 	}
+
+	if 0 > sl.indexOf(aOldID) { // index not found
+		return sl
+	}
+
 	return sl.removeID(aOldID).insert(aNewID)
 } // renameID()
 
 /* */
 // `sort()` returns the sorted list.
 func (sl *tSourceList) sort() *tSourceList {
-	sort.Slice(*sl, func(i, j int) bool {
-		return ((*sl)[i] < (*sl)[j]) // ascending
-	})
+	if nil != sl {
+		sort.SliceStable(*sl, func(i, j int) bool {
+			return ((*sl)[i] < (*sl)[j]) // ascending
+		})
+	}
 
 	return sl
 } // sort()
