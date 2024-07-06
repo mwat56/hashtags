@@ -89,11 +89,12 @@ func (sl tSourceList) indexOf(aID uint64) int {
 	result := sort.Search(sLen, func(i int) bool {
 		return sl[i] >= aID
 	})
-	if sLen == result { // id not found
-		return -1
+
+	if (result < sLen) && (sl[result] == aID) {
+		return result
 	}
 
-	return result
+	return -1 // aID not found
 } // indexOf()
 
 // `insert()` adds `aID` to the list while keeping the list sorted.
@@ -154,11 +155,10 @@ func (sl *tSourceList) removeID(aID uint64) *tSourceList {
 
 	switch true {
 	case idx == sLen || (*sl)[idx] != aID:
-		// Old value is not found
-		return sl
+		return sl // Given ID was not found
 
-	case 0 == idx: // Remove the first element
-		*sl = (*sl)[1:]
+	case 0 == idx:
+		*sl = (*sl)[1:] // Remove the first element
 
 	default: // Remove the old value
 		*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
@@ -182,11 +182,11 @@ func (sl *tSourceList) removeID(aID uint64) *tSourceList {
 // Returns:
 // - `*tSourceList`: The current list.
 func (sl *tSourceList) renameID(aOldID, aNewID uint64) *tSourceList {
-	if (nil == sl) || aOldID == aNewID {
+	if (0 == len(*sl)) || (aOldID == aNewID) {
 		return sl
 	}
 
-	if 0 > sl.indexOf(aOldID) { // index not found
+	if 0 > sl.indexOf(aOldID) { // ID not found
 		return sl.insert(aNewID)
 	}
 
