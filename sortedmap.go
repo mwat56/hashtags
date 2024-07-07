@@ -64,33 +64,35 @@ func (sm *TSortedMap[K, V]) Add(aKey K, aValue V) *TSortedMap[K, V] {
 	sm.mtx.Lock()
 	defer sm.mtx.Unlock()
 
-	if _, exists := sm.m[aKey]; !exists {
-		// There are different situations to consider:
-		// 1: the key-list is empty,
-		// 2: the key-list doesn't already contain the key,
-		// 3: the key-list contains the key but with a different value
-		sLen := len(sm.keys)
-		if 0 == sLen {
-			// 1: empty list: just add the new item
-			sm.keys = append(sm.keys, aKey)
-		} else {
-			// find the insertion index using binary search
-			idx := sort.Search(sLen, func(i int) bool {
-				return sm.keys[i] >= aKey
-			})
+	if _, exists := sm.m[aKey]; exists {
+		sm.m[aKey] = aValue
+		return sm
+	}
+	// There are different situations to consider:
+	// 1: the key-list is empty,
+	// 2: the key-list doesn't already contain the key,
+	// 3: the key-list contains the key but with a different value
+	sLen := len(sm.keys)
+	if 0 == sLen {
+		// 1: empty list: just add the new item
+		sm.keys = append(sm.keys, aKey)
+	} else {
+		// find the insertion index using binary search
+		idx := sort.Search(sLen, func(i int) bool {
+			return sm.keys[i] >= aKey
+		})
 
-			if sLen == idx {
-				// 2: key not found: add key at the end
-				sm.keys = append(sm.keys, aKey)
-			} else if (sm.keys)[idx] != aKey {
-				// 3: the search index doesn't point to the required key
-				sm.keys = append(sm.keys, aKey)
-				copy((sm.keys)[idx+1:], (sm.keys)[idx:])
-				(sm.keys)[idx] = aKey
-			} else {
-				// dummy instruction for debugger
-				fmt.Println("\n", sLen)
-			}
+		if sLen == idx {
+			// 2: key not found: add key at the end
+			sm.keys = append(sm.keys, aKey)
+		} else if (sm.keys)[idx] != aKey {
+			// 3: the search index doesn't point to the required key
+			sm.keys = append(sm.keys, aKey)
+			copy((sm.keys)[idx+1:], (sm.keys)[idx:])
+			(sm.keys)[idx] = aKey
+		} else {
+			// dummy instruction for debugger
+			fmt.Println("\n", sLen)
 		}
 	}
 
@@ -172,5 +174,34 @@ func (sm *TSortedMap[K, V]) Iterate(f func(aKey K, aValue V)) *TSortedMap[K, V] 
 
 	return sm
 } // Iterate()
+
+func (sm *TSortedMap[K, V]) Iterator() func() (K, V, bool) {
+	index := 0
+	return func() (K, V, bool) {
+		var (
+			key   K
+			value V
+		)
+		if index < len(sm.keys) {
+			key = sm.keys[index]
+			value = sm.m[key]
+			index++ // used from outer closure
+			return key, value, true
+		}
+		return key, value, false
+	}
+} // Iterator()
+
+func (sm *TSortedMap[K, V]) String() (rStr string) {
+	sm.mtx.RLock()
+	defer sm.mtx.RUnlock()
+
+	// Access items in sorted order:
+	iter := sm.Iterator()
+	for key, value, hasNext := iter(); hasNext; key, value, hasNext = iter() {
+		rStr += fmt.Sprintf("[%v]\n%v\n", key, value)
+	}
+	return
+} // String()
 
 /* EoF */
