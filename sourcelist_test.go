@@ -175,7 +175,7 @@ func Test_tSourceList_renameID(t *testing.T) {
 	sl := &tSourceList{1, 2, 3}
 	wl1 := tSourceList{1, 2, 4}
 	wl2 := tSourceList{1, 2, 6}
-	wl3 := tSourceList{1, 2, 6, 333}
+	wl3 := tSourceList{1, 2, 6}
 
 	type tArgs struct {
 		aOldID, aNewID uint64
