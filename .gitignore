@@ -1,8 +1,8 @@
+*.db*
 *~
-_config.yml
-*.db
 .git/
 .github/
-load.*
-TODO*
 .vscode/
+TODO*
+_config.yml
+load.*
