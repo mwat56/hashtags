@@ -7,6 +7,7 @@ Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
 package hashtags
 
 import (
+	"bufio"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"os"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	se "github.com/mwat56/sourceerror"
@@ -39,14 +41,14 @@ var (
 // --------------------------------------------------------------------------
 // constructor function
 
-func NewHashMap() tHashMap {
+func newHashMap() tHashMap {
 	hm := make(tHashMap, 64)
 
 	return hm
-} // NewHashMap()
+} // newHashMap()
 
 // --------------------------------------------------------------------------
-// helper for sorting the hash strings; used by `kys()` and `sort()`
+// helper for sorting the hash strings; used by `keys()`
 
 // `cmp4sort()` helps to sort a slice in ascending order based on the
 // comparison of the substrings after the leading hash or mention mark.
@@ -108,12 +110,14 @@ func (hm *tHashMap) add(aName string, aID uint64) *tHashMap {
 //
 // Returns:
 // - `uint32`: The computed checksum.
-func (hm *tHashMap) checksum() uint32 {
-	// the mutex.Lock is done by the callers
-
-	return crc32.Update(0,
+func (hm *tHashMap) checksum() (rSum uint32) {
+	// We use `string()` because it sorts internally
+	// thus generating reproducible results:
+	rSum = crc32.Update(0,
 		crc32.MakeTable(0), // other table types may not be reproducible
 		[]byte(hm.String()))
+
+	return
 } // checksum()
 
 // `clear()` empties the internal data structures:
@@ -122,8 +126,9 @@ func (hm *tHashMap) checksum() uint32 {
 // Returns:
 // - `*tHashMap`: The cleared hash map.
 func (hm *tHashMap) clear() *tHashMap {
-	// the mutex.Lock is done by the callers
-
+	if (nil == hm) || (0 == len(*hm)) {
+		return hm
+	}
 	for hash, sl := range *hm {
 		sl.clear()
 		delete(*hm, hash)
@@ -205,9 +210,13 @@ func (hm tHashMap) countedList() TCountList {
 // Returns:
 // - `[]string`: The list of #hashtags and @mentions associated with `aID`.
 func (hm *tHashMap) idList(aID uint64) []string {
-	// var result []string
-	result := make([]string, 0, len(*hm))
+	var result []string
+	hLen := len(*hm)
+	if 0 == hLen {
+		return result
+	}
 
+	result = make([]string, 0, hLen)
 	for hash, sl := range *hm {
 		if 0 > sl.indexOf(aID) {
 			continue // ID not found
@@ -284,7 +293,6 @@ func (hm tHashMap) keys() []string {
 // Returns:
 // - `[]uint64`: The number of references of `aName`.
 func (hm *tHashMap) list(aDelim byte, aName string) (rList []uint64) {
-
 	if 0 == len(aName) {
 		return
 	}
@@ -301,6 +309,109 @@ func (hm *tHashMap) list(aDelim byte, aName string) (rList []uint64) {
 	return
 } // list()
 
+// `Load()` reads the configured file returning the data structure
+// read from the file and a possible error condition.
+//
+// If the hash file doesn't exist that is not considered an error.
+// If there is an error, it will be of type `*PathError`.
+//
+// Parameters:
+// - `aFilename`: Name of the file to load.
+//
+// Returns:
+// - `*tHashMap`: The loaded hash map.
+// - `error`: A possible I/O error.
+func (hm *tHashMap) Load(aFilename string) (*tHashMap, error) {
+	if nil == hm {
+		return hm, se.Wrap(errors.New("nil == hashmap"), 1)
+	}
+	var (
+		err  error
+		file *os.File
+	)
+
+	file, err = os.OpenFile(aFilename, os.O_RDONLY, 0)
+	if nil != err {
+		if os.IsNotExist(err) {
+			return hm, nil
+		}
+		return hm, se.Wrap(err, 5)
+	}
+	defer file.Close()
+
+	if UseBinaryStorage {
+		_, err = hm.loadBinary(file)
+	} else {
+		_, err = hm.loadText(file)
+	}
+
+	return hm, err
+} // Load()
+
+// `loadBinary()` reads a file written by store() returning the modified
+// list and a possible error.
+//
+// Parameters:
+// - aFile: The file to read from.
+//
+// Returns:
+// - (*tHashMap, error): The modified hash map.
+// - `error`: A possible I/O error.
+func (hm *tHashMap) loadBinary(aFile *os.File) (*tHashMap, error) {
+	var decodedMap tHashMap
+
+	decoder := gob.NewDecoder(aFile)
+	if err := decoder.Decode(&decodedMap); nil != err {
+		// `decoder.Decode()` returns `io.EOF` if the input
+		// is at EOF which we do not consider an error here.
+		if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			return hm, se.Wrap(err, 4)
+		}
+
+		// some other error occurred
+		(*hm) = newHashMap()
+		return hm, se.Wrap(err, 9)
+	}
+	hm = &decodedMap
+
+	return hm, nil
+} // loadBinary()
+
+// `loadText()` parses a file written by `store()` returning
+// the modified list and a possible error.
+//
+// This method reads one line of the file at a time.
+func (hm *tHashMap) loadText(aFile *os.File) (*tHashMap, error) {
+	var (
+		hash string
+		read int
+	)
+
+	hm.clear()
+	scanner := bufio.NewScanner(aFile)
+	for lineRead := scanner.Scan(); lineRead; lineRead = scanner.Scan() {
+		line := scanner.Text()
+		read += len(line) + 1 // add trailing LF
+
+		line = strings.TrimSpace(line)
+		if 0 == len(line) {
+			continue
+		}
+
+		if matches := htHashHeadRE.FindStringSubmatch(line); nil != matches {
+			hash = strings.ToLower(strings.TrimSpace(matches[1]))
+		} else {
+			var id uint64
+			if ui64, err := strconv.ParseUint(line, 10, 64); nil == err {
+				id = ui64
+			}
+			hm.add(hash, id)
+		}
+	}
+
+	return hm, se.Wrap(scanner.Err(), 0)
+} // loadText()
+
 // `remove()` deletes `aID` from the list of `aName`.
 //
 // Parameters:
@@ -311,22 +422,21 @@ func (hm *tHashMap) list(aDelim byte, aName string) (rList []uint64) {
 // Returns:
 // - `*tHashMap`: The current hash map.
 func (hm *tHashMap) remove(aDelim byte, aName string, aID uint64) *tHashMap {
-	aName = strings.ToLower(aName)
-	if (0 == len(aName)) || (0 == aID) {
+	if 0 == len(aName) {
 		return hm
 	}
 
+	aName = strings.ToLower(aName)
 	if aName[0] != aDelim {
 		aName = string(aDelim) + aName
 	}
 
 	if sl, ok := (*hm)[aName]; ok {
-		// sl = sl.removeID(aID)
 		sl.removeID(aID)
 		if 0 == len(*sl) {
 			delete(*hm, aName)
-		} else {
-			(*hm)[aName] = sl //TODO: is this needed?
+			// } else {
+			// 	(*hm)[aName] = sl //TODO: is this needed?
 		}
 	}
 
@@ -391,17 +501,6 @@ func (hm *tHashMap) sort() *tHashMap {
 	if 0 == hLen {
 		return hm
 	}
-	/*
-		// Create a slice to hold the keys
-		keys := make([]string, 0, hLen)
-		// Extract keys from the map
-		for key := range *hm {
-			keys = append(keys, key)
-		}
-
-		// Sort the keys ignoring the respective leading hash/mention mark
-		slices.SortFunc(keys, cmp4sort)
-	*/
 
 	keys := hm.keys()
 	// Create a new map to store sorted key-value pairs
@@ -459,28 +558,19 @@ func (hm tHashMap) store(aFilename string) (int, error) {
 // It is also used to generate a list of hashtags/@mentions mostly
 // for debugging purposes.
 //
-// NOTE: Since the order of the hashtags/mentions is NOT guaranteed
-// here the order of the the hashtags/mentions im the returned String
-// isn't guaranteed to be ordered either.
-//
 // Returns:
 // - `string`: The string representation of this hash map.
-func (hm *tHashMap) String() (rStr string) {
-	sLen := len(*hm)
-	if 0 == sLen {
+func (hm tHashMap) String() (rStr string) {
+	if 0 == len(hm) {
 		return
 	}
 
 	keys := hm.keys()
 	// Iterate through sorted keys and create a new sorted string
 	for _, hash := range keys {
-		sl := (*hm)[hash]
+		sl := hm[hash]
 		rStr += fmt.Sprintf("[%s]\n%s", hash, sl.String())
 	}
-	// // NOTE: the order of the items is NOT guaranteed here
-	// for hash, sl := range *hm {
-	// 	rStr += fmt.Sprintf("[%s]\n%s", hash, sl.String())
-	// }
 
 	return
 } // String()

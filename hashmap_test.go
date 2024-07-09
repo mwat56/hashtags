@@ -336,6 +336,70 @@ func Test_tHashMap_list(t *testing.T) {
 	}
 } // Test_tHashMap_list()
 
+func Test_tHashMap_loadBinary(t *testing.T) {
+	wasBinary := UseBinaryStorage
+	UseBinaryStorage = true
+	defer func() {
+		UseBinaryStorage = wasBinary
+	}()
+	// fn := testHmStore
+	// hm1 := newHashMap()
+	// wl1 := prepHashMap()
+
+	tests := []struct {
+		name    string
+		hm      *tHashMap
+		file    *os.File
+		want    *tHashMap
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.hm.loadBinary(tt.file)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("%q: tHashMap.loadBinary() =\n%v\n>>>> want >>>>\n%v",
+					tt.name, err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("%q: tHashMap.loadBinary() =\n%v\n>>>> want >>>>\n%v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_tHashMap_loadText(t *testing.T) {
+	type args struct {
+		aFile *os.File
+	}
+	tests := []struct {
+		name    string
+		hm      *tHashMap
+		file    *os.File
+		want    *tHashMap
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.hm.loadText(tt.file)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("%q: tHashMap.loadText() =\n%v\n>>>> want >>>>\n%v",
+					tt.name, err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("%q: tHashMap.loadText() =\n%v\n>>>> want >>>>\n%v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_tHashMap_remove(t *testing.T) {
 	// hm.add("#hash1", 111).
 	// 	add("#hash2", 222).
@@ -549,30 +613,25 @@ func Test_tHashMap_store(t *testing.T) {
 } // Test_tHashMap_store()
 
 func Test_tHashMap_String(t *testing.T) {
-	//
-	// NOTE: Since the order of the hashtags/mentions is NOT guaranteed
-	// here the order of the the hashtags/mentions im the returned String
-	// isn't guaranteed to be ordered either.
-	//
-	sl0 := &tHashMap{}
+	sl0 := tHashMap{}
 	ws0 := ""
 	sl1 := prepHashMap()
 	ws1 := "[#hash1]\n111\n[#hash2]\n222\n[#hash3]\n333\n[@mention1]\n111\n[@mention2]\n222\n"
 
 	tests := []struct {
-		name     string
-		hm       *tHashMap
-		wantRStr string
+		name string
+		hm   tHashMap
+		want string
 	}{
 		{"0", sl0, ws0},
-		{"1", sl1, ws1},
+		{"1", *sl1, ws1},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotRStr := tt.hm.String(); gotRStr != tt.wantRStr {
+			if got := tt.hm.String(); got != tt.want {
 				t.Errorf("%q: tHashMap.String() = \n%v\n>>>> want: >>>>\n%v",
-					tt.name, gotRStr, tt.wantRStr)
+					tt.name, got, tt.want)
 			}
 		})
 	}
