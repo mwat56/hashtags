@@ -7,6 +7,7 @@ Copyright © 2023, 2024  M.Watermann, 10247 Berlin, Germany
 package hashtags
 
 import (
+	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -336,69 +337,45 @@ func Test_tHashMap_list(t *testing.T) {
 	}
 } // Test_tHashMap_list()
 
-func Test_tHashMap_loadBinary(t *testing.T) {
-	wasBinary := UseBinaryStorage
-	UseBinaryStorage = true
+func Test_tHashMap_Load(t *testing.T) {
+	saveBinary := UseBinaryStorage
 	defer func() {
-		UseBinaryStorage = wasBinary
+		os.Remove(testHmStore)
+		UseBinaryStorage = saveBinary
 	}()
-	// fn := testHmStore
-	// hm1 := newHashMap()
-	// wl1 := prepHashMap()
+	hm1 := prepHashMap().
+		add("@CrashTestDummy", 1)
+	wm1 := prepHashMap().
+		add("@CrashTestDummy", 1)
 
 	tests := []struct {
 		name    string
 		hm      *tHashMap
-		file    *os.File
-		want    *tHashMap
+		binary  bool
+		want    tHashMap
 		wantErr bool
 	}{
+		{"1", hm1, true, *wm1, false},
+		{"2", hm1, false, *wm1, false},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.hm.loadBinary(tt.file)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("%q: tHashMap.loadBinary() =\n%v\n>>>> want >>>>\n%v",
+			UseBinaryStorage = tt.binary
+			tt.hm.store(testHmStore)
+			got, err := tt.hm.Load(testHmStore)
+			if (nil != err) != tt.wantErr {
+				t.Errorf("%q: tHashMap.Load() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("%q: tHashMap.loadBinary() =\n%v\n>>>> want >>>>\n%v",
+			if !tt.want.compareTo(*got) {
+				t.Errorf("%q: tHashMap.Load() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-}
-
-func Test_tHashMap_loadText(t *testing.T) {
-	type args struct {
-		aFile *os.File
-	}
-	tests := []struct {
-		name    string
-		hm      *tHashMap
-		file    *os.File
-		want    *tHashMap
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.hm.loadText(tt.file)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("%q: tHashMap.loadText() =\n%v\n>>>> want >>>>\n%v",
-					tt.name, err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("%q: tHashMap.loadText() =\n%v\n>>>> want >>>>\n%v",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-}
+} // Test_tHashMap_Load()
 
 func Test_tHashMap_remove(t *testing.T) {
 	// hm.add("#hash1", 111).
@@ -599,7 +576,7 @@ func Test_tHashMap_store(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			UseBinaryStorage = tt.useBinary
 			got, err := tt.hm.store(fn + tt.name)
-			if (err != nil) != tt.wantErr {
+			if (nil != err) != tt.wantErr {
 				t.Errorf("%q: tHashMap.store() error = %v, wantErr %v",
 					tt.name, err, tt.wantErr)
 				return
@@ -657,3 +634,77 @@ func Test_tHashMap_walk(t *testing.T) {
 		})
 	}
 }
+
+func Benchmark_LoadTxT(b *testing.B) {
+	saveBinary := UseBinaryStorage
+	defer func() {
+		os.Remove(testHmStore)
+		UseBinaryStorage = saveBinary
+	}()
+	hm := prepHashMap().
+		add("@CrashTestDummy", 1)
+	UseBinaryStorage = false
+
+	hm.store(testHmStore)
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		if _, err := hm.Load(testHmStore); nil != err {
+			log.Printf("LoadTxt(): %v", err)
+		}
+	}
+} // Benchmark_LoadTxt()
+
+func Benchmark_LoadBin(b *testing.B) {
+	saveBinary := UseBinaryStorage
+	defer func() {
+		os.Remove(testHmStore)
+		UseBinaryStorage = saveBinary
+	}()
+	hm := prepHashMap().
+		add("@CrashTestDummy", 1)
+	UseBinaryStorage = true
+
+	hm.store(testHmStore)
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		if _, err := hm.Load(testHmStore); nil != err {
+			log.Printf("LoadBin(): %v", err)
+		}
+	}
+} // Benchmark_LoadBin()
+
+func Benchmark_StoreTxt(b *testing.B) {
+	saveBinary := UseBinaryStorage
+	defer func() {
+		os.Remove(testHmStore)
+		UseBinaryStorage = saveBinary
+	}()
+	hm := prepHashMap().
+		add("@CrashTestDummy", 1)
+	UseBinaryStorage = false
+
+	for n := 0; n < b.N; n++ {
+		if _, err := hm.store(testHmStore); nil != err {
+			log.Printf("StoreTxt(): %v", err)
+		}
+	}
+} // Benchmark_StoreTxt()
+
+func Benchmark_StoreBin(b *testing.B) {
+	saveBinary := UseBinaryStorage
+	defer func() {
+		os.Remove(testHmStore)
+		UseBinaryStorage = saveBinary
+	}()
+	hm := prepHashMap().
+		add("@CrashTestDummy", 1)
+	UseBinaryStorage = true
+
+	for n := 0; n < b.N; n++ {
+		if _, err := hm.store(testHmStore); nil != err {
+			log.Printf("StoreBin(): %v", err)
+		}
+	}
+} // Benchmark_StoreBin()
