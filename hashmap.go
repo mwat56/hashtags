@@ -408,8 +408,10 @@ func (hm *tHashMap) loadText(aFile *os.File) (*tHashMap, error) {
 			hm.add(hash, id)
 		}
 	}
-
-	return hm, se.Wrap(scanner.Err(), 0)
+	if err := scanner.Err(); nil != err {
+		return hm, se.Wrap(err, 2)
+	}
+	return hm, nil
 } // loadText()
 
 // `remove()` deletes `aID` from the list of `aName`.
