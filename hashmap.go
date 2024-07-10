@@ -96,7 +96,11 @@ func cmp4sort(a, b string) int {
 // Returns:
 // - `*tHashMap`: This hash map.
 func (hm *tHashMap) add(aName string, aID uint64) *tHashMap {
-	aName = strings.ToLower(aName)
+	aName = strings.ToLower(strings.TrimSpace((aName)))
+	if 0 == len(aName) {
+		return hm
+	}
+
 	if sl, exists := (*hm)[aName]; exists {
 		sl.insert(aID) // changes in place
 	} else {
@@ -242,11 +246,11 @@ func (hm *tHashMap) idList(aID uint64) []string {
 // Returns:
 // - `int: The number of references of `aName`, or `-1` if not found.
 func (hm tHashMap) idxLen(aDelim byte, aName string) int {
+	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
 		return -1
 	}
 
-	aName = strings.ToLower(aName)
 	if aName[0] != aDelim {
 		aName = string(aDelim) + aName
 	}
@@ -293,11 +297,11 @@ func (hm tHashMap) keys() []string {
 // Returns:
 // - `[]uint64`: The number of references of `aName`.
 func (hm *tHashMap) list(aDelim byte, aName string) (rList []uint64) {
+	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
 		return
 	}
 
-	aName = strings.ToLower(aName)
 	if aName[0] != aDelim {
 		aName = string(aDelim) + aName
 	}
@@ -411,34 +415,33 @@ func (hm *tHashMap) loadText(aFile *os.File) (*tHashMap, error) {
 	if err := scanner.Err(); nil != err {
 		return hm, se.Wrap(err, 2)
 	}
+
 	return hm, nil
 } // loadText()
 
 // `remove()` deletes `aID` from the list of `aName`.
 //
 // Parameters:
-// - `aDelim` is the start character of words to use (i.e. either '@' or '#').
+// - `aDelim`: The start character of words to use (either '@' or '#').
 // - `aName`: The hash/mention to lookup.
 // - `aID`: The referenced object to remove from the list.
 //
 // Returns:
 // - `*tHashMap`: The current hash map.
 func (hm *tHashMap) remove(aDelim byte, aName string, aID uint64) *tHashMap {
+	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
 		return hm
 	}
 
-	aName = strings.ToLower(aName)
 	if aName[0] != aDelim {
 		aName = string(aDelim) + aName
 	}
 
 	if sl, ok := (*hm)[aName]; ok {
-		sl.removeID(aID)
+		sl.remove(aID)
 		if 0 == len(*sl) {
 			delete(*hm, aName)
-			// } else {
-			// 	(*hm)[aName] = sl //TODO: is this needed?
 		}
 	}
 
@@ -451,17 +454,15 @@ func (hm *tHashMap) remove(aDelim byte, aName string, aID uint64) *tHashMap {
 // - `aID`: The object to remove from all references list.
 //
 // Returns:
-// - `*tHashMap`: The current hash map.
+// - `*tHashMap`: The updated hash map.
 func (hm *tHashMap) removeID(aID uint64) *tHashMap {
 	if (nil == hm) || 0 == len(*hm) {
 		return hm
 	}
 	for hash, sl := range *hm {
-		sl = sl.removeID(aID)
+		sl = sl.remove(aID)
 		if 0 == len(*sl) {
 			delete(*hm, hash)
-		} else {
-			(*hm)[hash] = sl
 		}
 	}
 
@@ -482,13 +483,11 @@ func (hm *tHashMap) renameID(aOldID, aNewID uint64) *tHashMap {
 	}
 
 	for idx, sl := range *hm {
-		(*hm)[idx] = sl.renameID(aOldID, aNewID)
+		(*hm)[idx] = sl.rename(aOldID, aNewID)
 	}
 
 	return hm
 } // renameID()
-
-/* */
 
 // `sort()` ensures that the hash map is sorted, which can improve the
 // performance of certain operations on the hash map, such as searching
@@ -517,7 +516,6 @@ func (hm *tHashMap) sort() *tHashMap {
 
 	return hm
 } // sort()
-/* */
 
 // `store()` writes the whole hash/mention list to `aFilename`.
 //

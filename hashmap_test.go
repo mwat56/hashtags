@@ -27,7 +27,7 @@ func hmFilename() string {
 
 func prepHashMap() *tHashMap {
 	hm := make(tHashMap, 8)
-	// add already sorted keys
+	// add already sorts keys
 	hm.add("#hash1", 111).
 		add("#hash2", 222).
 		add("#hash3", 333).
@@ -97,17 +97,17 @@ func Test_tHashMap_compareTo(t *testing.T) {
 
 	tests := []struct {
 		name string
-		hm   tHashMap
-		oMap tHashMap
+		hm   *tHashMap
+		oMap *tHashMap
 		want bool
 	}{
-		{"1", *hm1, *om1, true},
-		{"2", *hm1, *om2, false},
+		{"1", hm1, om1, true},
+		{"2", hm1, om2, false},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.compareTo(tt.oMap); got != tt.want {
+			if got := tt.hm.compareTo(*tt.oMap); got != tt.want {
 				t.Errorf("%q: tHashMap.compareTo() = %v, want %v",
 					tt.name, got, tt.want)
 			}
@@ -146,11 +146,6 @@ func Test_tHashMap_count(t *testing.T) {
 
 func Test_tHashMap_countedList(t *testing.T) {
 	hm1 := prepHashMap()
-	// hm.add("#hash1", 111).
-	// 	add("#hash2", 222).
-	// 	add("#hash3", 333).
-	// 	add("@mention1", 111).
-	// 	add("@mention2", 222)
 
 	wc1 := TCountList{
 		{1, "#hash1"},
@@ -191,32 +186,25 @@ func Test_tHashMap_countedList(t *testing.T) {
 
 func Test_tHashMap_idList(t *testing.T) {
 	hm := prepHashMap()
-	// hm.add("#hash1", 111).
-	// 	add("#hash2", 222).
-	// 	add("#hash3", 333).
-	// 	add("@mention1", 111).
-	// 	add("@mention2", 222).
 
-	// id1 := uint64(111)
-	// wl1 := []string{
-	// 	"#hash1",
-	// 	"#hash2",
-	// 	"#hash3",
-	// 	"@mention1",
-	// 	"@mention2",
-	// }
+	id1 := uint64(111)
+	wl1 := []string{
+		"#hash1",
+		"@mention1",
+	}
 
 	id2 := uint64(222)
 	wl2 := []string{
 		"#hash2",
 		"@mention2",
 	}
+
 	tests := []struct {
 		name string
 		id   uint64
 		want []string
 	}{
-		// {"1", id1, wl1},
+		{"1", id1, wl1},
 		{"2", id2, wl2},
 		// TODO: Add test cases.
 	}
@@ -231,11 +219,6 @@ func Test_tHashMap_idList(t *testing.T) {
 } // Test_tHashMap_idList()
 
 func Test_tHashMap_idxLen(t *testing.T) {
-	// hm.add("#hash1", 111).
-	// 	add("#hash2", 222).
-	// 	add("#hash3", 333).
-	// 	add("@mention1", 111).
-	// 	add("@mention2", 222)
 	hm := prepHashMap().
 		add("#hash2", 333)
 
@@ -296,11 +279,6 @@ func Test_tHashMap_keys(t *testing.T) {
 } // Test_tHashMap_keys()
 
 func Test_tHashMap_list(t *testing.T) {
-	// hm.add("#hash1", 111).
-	// 	add("#hash2", 222).
-	// 	add("#hash3", 333).
-	// 	add("@mention1", 111).
-	// 	add("@mention2", 222)
 	hm := prepHashMap().
 		add("#hash3", 33)
 	wl0 := tSourceList{}
@@ -378,15 +356,10 @@ func Test_tHashMap_Load(t *testing.T) {
 } // Test_tHashMap_Load()
 
 func Test_tHashMap_remove(t *testing.T) {
-	// hm.add("#hash1", 111).
-	// 	add("#hash2", 222).
-	// 	add("#hash3", 333).
-	// 	add("@mention1", 111).
-	// 	add("@mention2", 222)
 	hm := prepHashMap().
 		add("#nameX", 999).
 		add("#hash3", 333)
-	// wm0 := hm
+	wm0 := hm
 
 	wm1 := prepHashMap().
 		add("#nameX", 999).
@@ -405,7 +378,7 @@ func Test_tHashMap_remove(t *testing.T) {
 		args tArgs
 		want tHashMap
 	}{
-		// {"0", tArgs{}, *wm0},
+		{"0", tArgs{}, *wm0},
 		{"1", tArgs{MarkHash, "#nameX", 111}, *wm1},
 		{"2", tArgs{MarkHash, "#nameX", 999}, *wm2},
 		// TODO: Add test cases.
@@ -422,6 +395,18 @@ func Test_tHashMap_remove(t *testing.T) {
 } // Test_tHashMap_remove()
 
 func Test_tHashMap_removeID(t *testing.T) {
+	hm0 := newHashMap()
+	wm0 := newHashMap()
+	hm1 := prepHashMap().
+		add("#hash2", 999).
+		add("#hash3", 888).
+		add("#CrashTestDummy", 777)
+	wm1 := prepHashMap().
+		add("#CrashTestDummy", 777).
+		add("#hash3", 888)
+	wm2 := prepHashMap().
+		add("#CrashTestDummy", 777)
+	wm3 := prepHashMap()
 
 	tests := []struct {
 		name string
@@ -429,35 +414,35 @@ func Test_tHashMap_removeID(t *testing.T) {
 		id   uint64
 		want *tHashMap
 	}{
+		{"0", &hm0, 999, &wm0},
+		{"1", hm1, 999, wm1},
+		{"2", hm1, 888, wm2},
+		{"3", hm1, 777, wm3},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.removeID(tt.id); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("tHashMap.removeID() = %v, want %v", got, tt.want)
+			if got := tt.hm.removeID(tt.id); !tt.want.compareTo(*got) {
+				t.Errorf("%q: tHashMap.removeID() =\n%v\n>>>> want >>>>\n%v",
+					tt.name, got, tt.want.String())
 			}
 		})
 	}
 } // Test_tHashMap_removeID()
 
 func Test_tHashMap_renameID(t *testing.T) {
-	//	add("#hash1", 111).
-	// 	add("#hash2", 222).
-	// 	add("#hash3", 333).
-	// 	add("@mention1", 111).
-	// 	add("@mention2", 222)
 	id1, id2, id3 := uint64(11), uint64(22), uint64(33)
 
-	// hm1 := prepHashMap().
-	// 	add("#hash1", id1).
-	// 	add("#hash1", id3).
-	// 	add("@mention1", id3).
-	// 	sort()
-	// wm1 := prepHashMap().
-	// 	add("#hash1", id2).
-	// 	add("#hash1", id3).
-	// 	add("@mention1", id3).
-	// 	sort()
+	hm1 := prepHashMap().
+		add("#hash1", id1).
+		add("#hash1", id3).
+		add("@mention1", id3).
+		sort()
+	wm1 := prepHashMap().
+		add("#hash1", id2).
+		add("#hash1", id3).
+		add("@mention1", id3).
+		sort()
 	if 0 == id1 {
 		return
 	}
@@ -480,8 +465,8 @@ func Test_tHashMap_renameID(t *testing.T) {
 		args tArgs
 		want *tHashMap
 	}{
-		// {"0", hm1, tArgs{}, hm1}, // no change
-		// {"1", hm1, tArgs{id1, id2}, wm1},
+		{"0", hm1, tArgs{}, hm1}, // no change
+		{"1", hm1, tArgs{id1, id2}, wm1},
 		{"2", hm2, tArgs{id2, id3}, wm2},
 		// TODO: Add test cases.
 	}
@@ -552,24 +537,19 @@ func Test_tHashMap_sort(t *testing.T) {
 } // Test_tHashMap_sort()
 
 func Test_tHashMap_store(t *testing.T) {
-	// hm.add("#hash1", 111).
-	// 	add("#hash2", 222).
-	// 	add("#hash3", 333).
-	// 	add("@mention1", 111).
-	// 	add("@mention2", 222)
 	hm1 := prepHashMap().
 		add("@alphons", 1)
 	fn := hmFilename()
 
 	tests := []struct {
 		name      string
-		hm        tHashMap
+		hm        *tHashMap
 		useBinary bool
-		want      int
+		wantInt   int
 		wantErr   bool
 	}{
-		{"1", *hm1, false, 84, false},
-		{"2", *hm1, true, 109, false},
+		{"1", hm1, false, 84, false},
+		{"2", hm1, true, 109, false},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -581,9 +561,9 @@ func Test_tHashMap_store(t *testing.T) {
 					tt.name, err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
+			if got != tt.wantInt {
 				t.Errorf("%q: tHashMap.store() = %v, want %v",
-					tt.name, got, tt.want)
+					tt.name, got, tt.wantInt)
 			}
 		})
 	}
