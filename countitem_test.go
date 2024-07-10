@@ -6,21 +6,27 @@ Copyright © 2023, 2024  M.Watermann, 10247 Berlin, Germany
 */
 package hashtags
 
+import "testing"
+
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-/* * /
-// does not compile: tt.ci.compareTo undefined (type struct{Count int; Tag string} has no field or method compareTo)
 func TestTCountItem_compareTo(t *testing.T) {
+	ci0 := TCountItem{}
 	ci1 := TCountItem{11, "one"}
-	ci2 := TCountItem{222, "two"}
+	ci2 := TCountItem{222, "#two"}
+	ci3 := TCountItem{222, "#alphons"}
+	ci4 := ci3
 
 	tests := []struct {
 		name string
 		ci   TCountItem
 		item TCountItem
-		want int
+		want bool
 	}{
-		{"1", ci1, ci2, -1},
+		{"1", ci0, ci1, false},
+		{"2", ci1, ci2, false},
+		{"3", ci2, ci3, false},
+		{"4", ci3, ci4, true},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -32,11 +38,12 @@ func TestTCountItem_compareTo(t *testing.T) {
 		})
 	}
 } // TestTCountItem_compareTo()
-/* */
 
-/* * /
-// does not compile: tt.ci.Less undefined (type struct{Count int; Tag string} has no field or method Less)
 func TestTCountItem_Less(t *testing.T) {
+	ci0 := TCountItem{}
+	ci1 := TCountItem{11, "one"}
+	ci2 := TCountItem{222, "#two"}
+	ci3 := TCountItem{222, "#Xaver"}
 
 	tests := []struct {
 		name string
@@ -44,6 +51,11 @@ func TestTCountItem_Less(t *testing.T) {
 		item TCountItem
 		want bool
 	}{
+		{"0", ci0, ci0, false},
+		{"1", ci0, ci1, true},
+		{"2", ci1, ci0, false},
+		{"3", ci1, ci2, true},
+		{"4", ci2, ci3, false},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -55,6 +67,5 @@ func TestTCountItem_Less(t *testing.T) {
 		})
 	}
 } // TestTCountItem_Less()
-/* */
 
 /* EoF */

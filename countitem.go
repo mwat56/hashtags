@@ -10,19 +10,24 @@ package hashtags
 
 type (
 	// `TCountItem` holds a #hashtag/@mention and its number of occurrences.
-	TCountItem = struct {
-		// number of IDs for this #hashtag/@mention
-		Count int
-		// name of #hashtag/@mention
-		Tag string
+	TCountItem struct {
+		Count int    // number of IDs for this #hashtag/@mention
+		Tag   string // name of #hashtag/@mention
 	}
 )
 
-/* * /
-// does not compile: invalid receiver type struct{Count int; Tag string}
-func (ci TCountItem) compareTo(aItem TCountItem) int {
-	at, bt := ci.Tag, aItem.Tag
-	// at, bt := (*ci).Tag, (*aItem).Tag
+// `compareTo()` checks whether the current `TCountItem` is equal to `aID`.
+//
+// Parameters:
+// - `aItem`: The other item to compare with.
+//
+// Returns:
+// - `bool`: Whether the two items are equal.
+func (ci TCountItem) compareTo(aItem TCountItem) bool {
+	if 0 == len(ci.Tag) {
+		return 0 == len(aItem.Tag)
+	}
+	at, bt := ci.Tag+"Z", aItem.Tag+"Z" // avoid empty strings
 
 	if MarkHash == at[0] || MarkMention == at[0] {
 		at = at[1:]
@@ -30,32 +35,35 @@ func (ci TCountItem) compareTo(aItem TCountItem) int {
 	if MarkHash == bt[0] || MarkMention == bt[0] {
 		bt = bt[1:]
 	}
-
-	switch true {
-	case at < bt:
-		return -1
-	case at > bt:
-		return +1
-	default:
-		return 0
+	if at == bt {
+		return ci.Count == aItem.Count
 	}
+
+	return false
 } // compareTo()
-/* */
 
-/* * /
-// does not compile: invalid receiver type struct{Count int; Tag string}
+// `Less()` checks whether this `TCountItem` is less than `aItem`.
+//
+// * Parameters:
+// - `aItem`: The other `TCountItem` instance to compare with.
+//
+// * Returns:
+// - `bool`: Whether the current instance's tag is less than the
+// other instance's tag.
 func (ci TCountItem) Less(aItem TCountItem) bool {
-	at, bt := ci.Tag, aItem.Tag
-	// at, bt := (*ci).Tag, (*aItem).Tag
+	at, bt := ci.Tag+"Z", aItem.Tag+"Z" // avoid empty strings
+
 	if MarkHash == at[0] || MarkMention == at[0] {
 		at = at[1:]
 	}
 	if MarkHash == bt[0] || MarkMention == bt[0] {
 		bt = bt[1:]
 	}
+	if at < bt {
+		return ci.Count < aItem.Count
+	}
 
-	return at < bt
+	return false
 } // Less()
-/* */
 
 /* EoF */
