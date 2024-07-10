@@ -149,16 +149,20 @@ func (sl *tSourceList) remove(aID uint64) *tSourceList {
 	})
 
 	if (idx < sLen) && ((*sl)[idx] == aID) {
-		// fmt.Printf("Found %d at index %d\n", aID, idx)
+		// `aID` found at index `idx`
 		if 0 == idx {
-			*sl = (*sl)[1:] // remove the first element
+			if 1 == sLen { // the only element
+				*sl = *newSourceList()
+			} else { // a longer list
+				*sl = (*sl)[1:] // remove the first element
+			}
 		} else if (sLen - 1) == idx { // remove the last element
 			*sl = (*sl)[:idx]
 		} else { // remove element in the middle
 			*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 		}
-		// } else {
-		// 	// fmt.Printf("%d not found in the slice\n", aID)
+	} else {
+		idx = -1 // DEBUG breakpoint: aID not found
 	}
 
 	return sl

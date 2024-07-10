@@ -147,6 +147,7 @@ func Test_tSourceList_remove(t *testing.T) {
 	wl1 := &tSourceList{2, 3, 4, 5}
 	wl2 := &tSourceList{2, 3, 4}
 	wl3 := &tSourceList{2, 4}
+	wl4 := &tSourceList{4}
 
 	tests := []struct {
 		name string
@@ -158,7 +159,9 @@ func Test_tSourceList_remove(t *testing.T) {
 		{"1", sl1, 1, wl1},
 		{"2", sl1, 5, wl2},
 		{"3", sl1, 3, wl3},
-		{"4", sl1, 9999, sl1},
+		{"4", sl1, 2, wl4},
+		{"5", sl1, 2, wl4},
+		{"6", sl1, 4, sl0},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
