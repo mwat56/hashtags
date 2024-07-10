@@ -141,7 +141,7 @@ func Test_tSourceList_insert(t *testing.T) {
 	}
 } // Test_tSourceList_insert()
 
-func Test_tSourceList_removeID(t *testing.T) {
+func Test_tSourceList_remove(t *testing.T) {
 	sl0 := &tSourceList{}
 	sl1 := &tSourceList{1, 2, 3, 4, 5}
 	wl1 := &tSourceList{2, 3, 4, 5}
@@ -163,15 +163,15 @@ func Test_tSourceList_removeID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.removeID(tt.id); !got.compareTo(*tt.want) {
-				t.Errorf("%q: tSourceList.removeID() =\n%v\n>>>> want: >>>>\n%v",
+			if got := tt.sl.remove(tt.id); !got.compareTo(*tt.want) {
+				t.Errorf("%q: tSourceList.remove() =\n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-} // Test_tSourceList_removeID()
+} // Test_tSourceList_remove()
 
-func Test_tSourceList_renameID(t *testing.T) {
+func Test_tSourceList_rename(t *testing.T) {
 	sl := &tSourceList{1, 2, 3}
 	wl1 := tSourceList{1, 2, 4}
 	wl2 := tSourceList{1, 2, 6}
@@ -193,19 +193,21 @@ func Test_tSourceList_renameID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := sl.renameID(tt.ids.aOldID, tt.ids.aNewID); !got.compareTo(tt.want) {
-				t.Errorf("%q: tSourceList.renameID() =\n%v\n>>>> want: >>>>\n%v",
+			if got := sl.rename(tt.ids.aOldID, tt.ids.aNewID); !got.compareTo(tt.want) {
+				t.Errorf("%q: tSourceList.rename() =\n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-} // Test_tSourceList_renameID()
+} // Test_tSourceList_rename()
 
 func Test_tSourceList_sort(t *testing.T) {
-	sl1 := &tSourceList{
-		3, 2, 1,
+	sl1 := &tSourceList{}
+	wl1 := &tSourceList{}
+	sl2 := &tSourceList{
+		3, 1, 2,
 	}
-	wl1 := &tSourceList{
+	wl2 := &tSourceList{
 		1, 2, 3,
 	}
 	tests := []struct {
@@ -215,6 +217,7 @@ func Test_tSourceList_sort(t *testing.T) {
 	}{
 		{"0", nil, nil},
 		{"1", sl1, wl1},
+		{"2", sl2, wl2},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {

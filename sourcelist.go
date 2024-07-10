@@ -120,14 +120,9 @@ func (sl *tSourceList) insert(aID uint64) *tSourceList {
 	})
 
 	if sLen == idx { // key not found
-		// add new ID
-		*sl = append(*sl, aID)
-		return sl
-	}
-
-	if (*sl)[idx] != aID {
-		// make room to insert new ID
-		*sl = append(*sl, 0)
+		*sl = append(*sl, aID) // add new ID
+	} else if (*sl)[idx] != aID {
+		*sl = append(*sl, 0) // make room to insert new ID
 		copy((*sl)[idx+1:], (*sl)[idx:])
 		(*sl)[idx] = aID
 	}
@@ -135,14 +130,14 @@ func (sl *tSourceList) insert(aID uint64) *tSourceList {
 	return sl
 } // insert()
 
-// `removeID()` deletes the list entry of `aID`.
+// `remove()` deletes the list entry of `aID`.
 //
 // Parameters:
 // - `aID` is the string to look up.
 //
 // Returns:
 // - `*tSourceList`: the current list.
-func (sl *tSourceList) removeID(aID uint64) *tSourceList {
+func (sl *tSourceList) remove(aID uint64) *tSourceList {
 	sLen := len(*sl)
 	if 0 == sLen { // empty list
 		return sl
@@ -153,21 +148,21 @@ func (sl *tSourceList) removeID(aID uint64) *tSourceList {
 		return (*sl)[i] >= aID
 	})
 
-	switch true {
-	case idx == sLen || (*sl)[idx] != aID:
-		return sl // Given ID was not found
-
-	case 0 == idx:
-		*sl = (*sl)[1:] // Remove the first element
-
-	default: // Remove the old value
-		*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
+	if (idx < sLen) && ((*sl)[idx] == aID) {
+		// fmt.Printf("Found %d at index %d\n", aID, idx)
+		if 0 == idx {
+			*sl = (*sl)[1:] // Remove the first element
+		} else { // Remove the old value
+			*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
+		}
+	} else {
+		// fmt.Printf("%d not found in the slice\n", aID)
 	}
 
 	return sl
-} // removeID()
+} // remove()
 
-// `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
+// `rename()` replaces all occurrences of `aOldID` by `aNewID`.
 //
 // If `aOldID` equals `aNewID`, or aOldID` doesn't exist then nothing
 // is changed.
@@ -181,7 +176,7 @@ func (sl *tSourceList) removeID(aID uint64) *tSourceList {
 //
 // Returns:
 // - `*tSourceList`: The current list.
-func (sl *tSourceList) renameID(aOldID, aNewID uint64) *tSourceList {
+func (sl *tSourceList) rename(aOldID, aNewID uint64) *tSourceList {
 	if (0 == len(*sl)) || (aOldID == aNewID) {
 		return sl
 	}
@@ -190,11 +185,18 @@ func (sl *tSourceList) renameID(aOldID, aNewID uint64) *tSourceList {
 		return sl
 	}
 
-	return sl.removeID(aOldID).insert(aNewID)
-} // renameID()
+	return sl.remove(aOldID).insert(aNewID)
+} // rename()
 
-/* */
-// `sort()` returns the sorted list.
+// `sort()` sorts the list in ascending order.
+//
+// This method uses the `sort.SliceStable` function from the standard
+// library to sort the list.
+// The sorting is stable, meaning that equal elements will retain their
+// original order.
+//
+// Returns:
+// - `*tSourceList`: The sorted `tSourceList` instance.
 func (sl *tSourceList) sort() *tSourceList {
 	if nil != sl {
 		sort.SliceStable(*sl, func(i, j int) bool {
@@ -204,7 +206,6 @@ func (sl *tSourceList) sort() *tSourceList {
 
 	return sl
 } // sort()
-/* */
 
 // `String()` returns the list as a linefeed separated string.
 //
