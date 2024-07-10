@@ -133,10 +133,10 @@ func (sl *tSourceList) insert(aID uint64) *tSourceList {
 // `remove()` deletes the list entry of `aID`.
 //
 // Parameters:
-// - `aID` is the string to look up.
+// - `aID`: The ID to look up and delete.
 //
 // Returns:
-// - `*tSourceList`: the current list.
+// - `*tSourceList`: The modified list.
 func (sl *tSourceList) remove(aID uint64) *tSourceList {
 	sLen := len(*sl)
 	if 0 == sLen { // empty list
@@ -151,12 +151,14 @@ func (sl *tSourceList) remove(aID uint64) *tSourceList {
 	if (idx < sLen) && ((*sl)[idx] == aID) {
 		// fmt.Printf("Found %d at index %d\n", aID, idx)
 		if 0 == idx {
-			*sl = (*sl)[1:] // Remove the first element
-		} else { // Remove the old value
+			*sl = (*sl)[1:] // remove the first element
+		} else if (sLen - 1) == idx { // remove the last element
+			*sl = (*sl)[:idx]
+		} else { // remove element in the middle
 			*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 		}
-	} else {
-		// fmt.Printf("%d not found in the slice\n", aID)
+		// } else {
+		// 	// fmt.Printf("%d not found in the slice\n", aID)
 	}
 
 	return sl
