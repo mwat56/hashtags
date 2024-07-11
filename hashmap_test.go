@@ -537,9 +537,9 @@ func Test_tHashMap_sort(t *testing.T) {
 } // Test_tHashMap_sort()
 
 func Test_tHashMap_store(t *testing.T) {
+	fn := hmFilename()
 	hm1 := prepHashMap().
 		add("@alphons", 1)
-	fn := hmFilename()
 
 	tests := []struct {
 		name      string
@@ -553,9 +553,10 @@ func Test_tHashMap_store(t *testing.T) {
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
+		fName := fn + tt.name
+		UseBinaryStorage = tt.useBinary
 		t.Run(tt.name, func(t *testing.T) {
-			UseBinaryStorage = tt.useBinary
-			got, err := tt.hm.store(fn + tt.name)
+			got, err := tt.hm.store(fName)
 			if (nil != err) != tt.wantErr {
 				t.Errorf("%q: tHashMap.store() error = %v, wantErr %v",
 					tt.name, err, tt.wantErr)
@@ -566,6 +567,7 @@ func Test_tHashMap_store(t *testing.T) {
 					tt.name, got, tt.wantInt)
 			}
 		})
+		os.Remove(fName)
 	}
 } // Test_tHashMap_store()
 
