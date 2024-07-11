@@ -29,15 +29,6 @@ type (
 	tHashMap map[string]*tSourceList
 )
 
-var (
-	// `UseBinaryStorage` determines whether to use binary storage
-	// or not (i.e. plain text).
-	//
-	// Loading/storing binary data is about three times as fast with
-	// the `THashList` data than reading and parsing plain text data.
-	UseBinaryStorage = true
-)
-
 // --------------------------------------------------------------------------
 // constructor function
 
