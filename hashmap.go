@@ -32,10 +32,10 @@ type (
 // --------------------------------------------------------------------------
 // constructor function
 
-func newHashMap() tHashMap {
+func newHashMap() *tHashMap {
 	hm := make(tHashMap, 64)
 
-	return hm
+	return &hm
 } // newHashMap()
 
 // --------------------------------------------------------------------------
@@ -364,7 +364,7 @@ func (hm *tHashMap) loadBinary(aFile *os.File) (*tHashMap, error) {
 		}
 
 		// some other error occurred
-		(*hm) = newHashMap()
+		(*hm) = *newHashMap()
 		return hm, se.Wrap(err, 9)
 	}
 	hm = &decodedMap

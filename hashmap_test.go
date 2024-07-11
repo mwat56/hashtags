@@ -414,7 +414,7 @@ func Test_tHashMap_removeID(t *testing.T) {
 		id   uint64
 		want *tHashMap
 	}{
-		{"0", &hm0, 999, &wm0},
+		{"0", hm0, 999, wm0},
 		{"1", hm1, 999, wm1},
 		{"2", hm1, 888, wm2},
 		{"3", hm1, 777, wm3},
