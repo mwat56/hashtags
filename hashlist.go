@@ -9,35 +9,15 @@ package hashtags
 import (
 	"regexp"
 	"strings"
-	"sync"
-	"sync/atomic"
 )
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-const (
-	// `MarkHash` is the first character in asy hash tag.
-	MarkHash = byte('#')
-
-	// `MarkMention` is the first character in asy mention tag.
-	MarkMention = byte('@')
-)
-
 type (
-	// Data cache for `CountedList()`
-	tCountCache struct {
-		µCRC    uint32
-		µCounts TCountList
-	}
-
-	// `THashList` is a list of `#hashtags` and `@mentions`
+		// `tHashList` is a list of `#hashtags` and `@mentions`
 	// pointing to sources (i.e. IDs).
-	THashList struct {
-		fn      string       // the filename to use
-		hm      tHashMap     // the actual map list of sources/IDs
-		mtx     sync.RWMutex // safeguard against concurrent accesses
-		µChange uint32       // internal change flag
-		µCC     tCountCache  // cache for `CountedList()`
+	tHashList struct {
+		hm tHashMap // the actual map list of sources/IDs
 	}
 )
 
@@ -52,16 +32,15 @@ type (
 //
 // Parameters:
 // - `aFilename` is the name of the file to use for reading and storing.
-func newHashList(aFilename string) (*THashList, error) {
-	result := &THashList{
-		fn: aFilename,
+func newHashList(aFilename string) (*tHashList, error) {
+	result := &tHashList{
 		hm: make(tHashMap, 64),
 	}
 	if 0 == len(aFilename) {
 		return result, nil
 	}
 
-	return result.Load()
+	return result.Load(aFilename)
 } // newHashList()
 
 // -------------------------------------------------------------------------
@@ -79,9 +58,7 @@ func newHashList(aFilename string) (*THashList, error) {
 //
 // Returns:
 // - `*tHashList`: This hash list.
-func (hl *THashList) add(aDelim byte, aName string, aID uint64) *THashList {
-	// the mutex.Lock is done by the callers
-
+func (hl *tHashList) add(aDelim byte, aName string, aID uint64) *tHashList {
 	// prepare for case-insensitive search:
 	aName = strings.ToLower(strings.TrimSpace(aName))
 	if 0 == len(aName) {
@@ -103,68 +80,29 @@ func (hl *THashList) add(aDelim byte, aName string, aID uint64) *THashList {
 //
 // Returns:
 // - `*tHashList`: This hash list.
-func (hl *THashList) add0(aName string, aID uint64) *THashList {
+func (hl *tHashList) add0(aName string, aID uint64) *tHashList {
 	// the mutex.Lock is done by the callers
 
 	hl.hm.add(aName, aID)
-	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // add0()
 
-func (hl *THashList) checksum() uint32 {
-	// the mutex.Lock is done by the callers
-
-	if 0 == atomic.LoadUint32(&hl.µChange) {
-		atomic.StoreUint32(&hl.µChange, hl.hm.checksum())
-	}
-
-	return atomic.LoadUint32(&hl.µChange)
-} // checksum()
-
-// `Checksum()` returns the list's CRC32 checksum.
+// `checksum()` returns the list's CRC32 checksum.
 //
 // This method can be used to get a kind of 'footprint'.
 //
 // Returns:
 // - `uint32`: The computed checksum.
-func (hl *THashList) Checksum() uint32 {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
+func (hl *tHashList) checksum() uint32 {
+	return hl.hm.checksum()
+} // checksum()
 
-	return hl.checksum()
-} // Checksum()
-
-func (hl *THashList) clear() *THashList {
-	// the mutex.Lock is done by the callers
-
+func (hl *tHashList) clear() *tHashList {
 	hl.hm.clear()
-	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // clear()
-
-// `Clear()` empties the internal data structures:
-// all `#hashtags` and `@mentions` are deleted.
-//
-// Returns:
-// - `*tHashList`: This hash list.
-func (hl *THashList) Clear() *THashList {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
-
-	return hl.clear()
-} // Clear()
-
-func (hl *THashList) compare2(aList *THashList) bool {
-	// the mutex.Lock is done by the caller
-
-	if len((*hl).hm) != len((*aList).hm) {
-		return false
-	}
-
-	return hl.hm.compareTo(aList.hm)
-} // compare2()
 
 // ` compareTo()` compares the current list with another list.
 //
@@ -172,52 +110,20 @@ func (hl *THashList) compare2(aList *THashList) bool {
 // - `aList`: The list to compare with.
 //
 // Returns:
-// - `bool`: True if the lists are identical, false otherwise.
-func (hl *THashList) compareTo(aList *THashList) bool {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
-
-	return hl.compare2(aList)
-} // compareTo()
-
-// `Filename()` returns the configured filename for reading/storing
-// this list's contents.
-//
-// Returns:
-// - `string`: The filename for reading/storing this list.
-func (hl *THashList) Filename() string {
-	return hl.fn
-} // Filename()
-
-// `HashAdd()` appends `aID` to the list of `aHash`.
-//
-// If `aHash` is an empty string it is silently ignored
-// (i.e. this method does nothing).
-//
-// Parameters:
-// - `aHash`: The hash list index to use.
-// - `aID`: The object to be added to the hash list.
-//
-// Returns:
-// - `*tHashList`: This hash list.
-func (hl *THashList) HashAdd(aHash string, aID uint64) *THashList {
-	if 0 == len(aHash) {
-		return hl
+// - `bool`: `true` if the lists are identical, `false` otherwise.
+func (hl *tHashList) compareTo(aList *tHashList) bool {
+	if len((*hl).hm) != len((*aList).hm) {
+		return false
 	}
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
 
-	return hl.add(MarkHash, aHash, aID)
-} // HashAdd()
+	return hl.hm.compareTo(aList.hm)
+} // compareTo()
 
 // `HashCount()` counts the number of hashtags in the list.
 //
 // Returns:
 // - `int`: The number of hashes in the list.
-func (hl *THashList) HashCount() int {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
-
+func (hl *tHashList) HashCount() int {
 	return hl.hm.count(MarkHash)
 } // HashCount()
 
@@ -228,10 +134,7 @@ func (hl *THashList) HashCount() int {
 //
 // Returns:
 // - `int`: The number of `aHash` in the list.
-func (hl *THashList) HashLen(aHash string) int {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
-
+func (hl *tHashList) HashLen(aHash string) int {
 	return hl.hm.idxLen(MarkHash, aHash)
 } // HashLen()
 
@@ -242,41 +145,9 @@ func (hl *THashList) HashLen(aHash string) int {
 //
 // Returns:
 // - `[]uint64`: The number of references of `aName`.
-func (hl *THashList) HashList(aHash string) []uint64 {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
-
+func (hl *tHashList) HashList(aHash string) []uint64 {
 	return hl.hm.list(MarkHash, aHash)
 } // HashList()
-
-// `HashRemove()` deletes `aID` from the list of `aHash`.
-//
-// Parameters:
-// - `aHash`: The hash to lookup.
-// - `aID`: The referenced object to remove from the list.
-//
-// Returns:
-// - `*tHashList`: The current hash list.
-func (hl *THashList) HashRemove(aHash string, aID uint64) *THashList {
-	if 0 == len(aHash) {
-		return hl
-	}
-
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
-
-	hl.removeHM(MarkHash, aHash, aID)
-
-	return hl
-} // HashRemove()
-
-func (hl *THashList) idList(aID uint64) []string {
-	if 0 == len(hl.hm) {
-		return nil
-	}
-
-	return hl.hm.idList(aID)
-} // ifList()
 
 // `IDlist()` returns a list of #hashtags and @mentions associated with `aID`.
 //
@@ -285,48 +156,29 @@ func (hl *THashList) idList(aID uint64) []string {
 //
 // Returns:
 // - `[]string`: The list of #hashtags and @mentions associated with `aID`.
-func (hl *THashList) IDlist(aID uint64) []string {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
-
-	return hl.idList(aID)
-} // IDlist()
-
-// `IDparse()` checks whether `aText` contains strings starting with
-// `[@|#]` and - if found - adds them to the respective list.
-//
-// Parameters:
-// - `aID`: the ID to add to the list.
-// - `aText:` The text to search.
-func (hl *THashList) IDparse(aID uint64, aText []byte) *THashList {
-	if 0 == len(aText) {
-		return hl
+func (hl *tHashList) idList(aID uint64) []string {
+	if 0 == len(hl.hm) {
+		return nil
 	}
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
 
-	oldCRC := hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.hm.store(hl.fn)
-		}
-	}()
+	return hl.hm.idList(aID)
+} // idList()
 
-	return hl.parseID(aID, aText)
-} // IDparse()
-
-// `IDremove()` deletes all @hashtags/@mentions associated with `aID`.
+// `IDremove()` deletes all #hashtags/@mentions associated with `aID`.
 //
 // Parameters:
-// - `aID` is to be deleted from all lists.
-func (hl *THashList) IDremove(aID uint64) *THashList {
+// - `aID`: The object to remove from all references list.
+//
+// Returns:
+// - `*THashList`: The modified hash list.
+func (hl *tHashList) IDremove(aID uint64) *tHashList {
 	if (nil == hl) || (0 == len(hl.hm)) {
 		return hl
 	}
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
 
-	return hl.removeID(aID)
+	hl.hm.removeID((aID))
+
+	return hl
 } // IDremove()
 
 // `IDrename()` replaces all occurrences of `aOldID` by `aNewID`.
@@ -335,36 +187,44 @@ func (hl *THashList) IDremove(aID uint64) *THashList {
 // needs to get changed.
 //
 // Parameters:
-// - `aOldID` is to be replaced in all lists.
-// - `aNewID` is the replacement in all lists.
-func (hl *THashList) IDrename(aOldID, aNewID uint64) *THashList {
+// - `aOldID`: The ID to be replaced in all lists.
+// - `aNewID`: The replacement in all lists.
+//
+// Returns:
+// - `*THashList`: The modified hash list.
+func (hl *tHashList) IDrename(aOldID, aNewID uint64) *tHashList {
 	if (aOldID == aNewID) || (0 == len(hl.hm)) {
 		return hl
 	}
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
+	for _, sl := range hl.hm {
+		sl.rename(aOldID, aNewID)
+	}
 
-	return hl.renameID(aOldID, aNewID)
+	return hl
 } // IDrename()
 
 // `IDupdate()` checks `aText` removing all #hashtags/@mentions no longer
-// present and adding #hashtags/@mentions new in `aText`.
+// present and adds #hashtags/@mentions new in `aText`.
 //
 // Parameters:
-// - `aID` is the ID to update.
-// - `aText` is the text to use.
-func (hl *THashList) IDupdate(aID uint64, aText []byte) *THashList {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
+// - `aID`: The ID to update.
+// - `aText`: The text to use.
+//
+// Returns:
+// - `*THashList`: The current hash list.
+func (hl *tHashList) IDupdate(aID uint64, aText []byte) *tHashList {
+	if (nil == hl) || (0 == len(aText)) || (0 == len(hl.hm)) {
+		return hl
+	}
 
-	return hl.updateID(aID, aText)
+	return hl.IDremove(aID).parseID(aID, aText)
 } // IDupdate()
 
 // `Len()` returns the current length of the list i.e. how many #hashtags
 // and @mentions are currently stored in the list.
-func (hl *THashList) Len() int {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
+func (hl *tHashList) Len() int {
+	// hl.mtx.RLock()
+	// defer hl.mtx.RUnlock()
 
 	return len(hl.hm)
 } // Len()
@@ -374,9 +234,9 @@ func (hl *THashList) Len() int {
 //
 // Returns:
 // - `int`: The total length of all #hashtag/@mention lists.
-func (hl *THashList) LenTotal() (rLen int) {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
+func (hl *tHashList) LenTotal() (rLen int) {
+	// hl.mtx.RLock()
+	// defer hl.mtx.RUnlock()
 
 	rLen = len(hl.hm)
 	for _, sl := range hl.hm {
@@ -386,29 +246,14 @@ func (hl *THashList) LenTotal() (rLen int) {
 	return
 } // LenTotal()
 
-func (hl *THashList) list() TCountList {
-	if (hl.checksum() == hl.µCC.µCRC) && (0 < len(hl.µCC.µCounts)) {
-		return hl.µCC.µCounts
-	}
-
-	hl.µCC.µCounts = nil
-	hl.µCC.µCRC = hl.checksum()
-	hl.µCC.µCounts = hl.hm.countedList()
-
-	return hl.µCC.µCounts
-} // countedList()
-
 // `List()` returns a list of #hashtags/@mentions with
 // their respective count of associated IDs.
 //
 // Returns:
 // - `TCountList`: A list of #hashtags/@mentions with their
 // respective counts of associated IDs.
-func (hl *THashList) List() TCountList {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
-
-	return hl.list()
+func (hl *tHashList) List() TCountList {
+	return hl.hm.countedList()
 } // List()
 
 // `Load()` reads the configured file returning the data structure
@@ -419,40 +264,16 @@ func (hl *THashList) List() TCountList {
 // Returns:
 // - `*THashList`: The updated list.
 // - `error`: If there is an error, it will be of type `*PathError`.
-func (hl *THashList) Load() (*THashList, error) {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
-
-	_, err := hl.hm.Load(hl.fn)
+func (hl *tHashList) Load(aFilename string) (*tHashList, error) {
+	_, err := hl.hm.Load(aFilename)
 	return hl, err
 } // Load()
-
-// `MentionAdd()` appends `aID` to the list of `aMention`.
-//
-// If either `aMention` or `aID` are empty strings they are
-// silently ignored (i.e. this method does nothing).
-//
-// Parameters:
-// - `aMention` is the list index to lookup.
-// - `aID` is to be added to the hash list.
-func (hl *THashList) MentionAdd(aMention string, aID uint64) *THashList {
-	if 0 == len(aMention) {
-		return hl
-	}
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
-
-	return hl.add(MarkMention, aMention, aID)
-} // MentionAdd()
 
 // `MentionCount()` returns the number of mentions in the list.
 //
 // Returns:
 // - `int`: The number of mentions in the list.
-func (hl *THashList) MentionCount() int {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
-
+func (hl *tHashList) MentionCount() int {
 	return hl.hm.count(MarkMention)
 } // MentionCount()
 
@@ -463,10 +284,7 @@ func (hl *THashList) MentionCount() int {
 //
 // Returns:
 // - `int`: The number of `aMention` in the list.
-func (hl *THashList) MentionLen(aMention string) int {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
-
+func (hl *tHashList) MentionLen(aMention string) int {
 	return hl.hm.idxLen(MarkMention, aMention)
 } // MentionLen()
 
@@ -477,32 +295,9 @@ func (hl *THashList) MentionLen(aMention string) int {
 //
 // Returns:
 // - `[]uint64`: The number of references of `aName`.
-func (hl *THashList) MentionList(aMention string) []uint64 {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
-
+func (hl *tHashList) MentionList(aMention string) []uint64 {
 	return hl.hm.list(MarkMention, aMention)
 } // MentionList()
-
-// `MentionRemove()` deletes `aID` from the list of `aMention`.
-//
-// Parameters:
-// - `aMention`: The mention to lookup.
-// - `aID`: The referenced object to remove from the list.
-//
-// Returns:
-// - `*tHashList`: The current hash list.
-func (hl *THashList) MentionRemove(aMention string, aID uint64) *THashList {
-	if 0 == len(aMention) {
-		return hl
-	}
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
-
-	hl.removeHM(MarkMention, aMention, aID)
-
-	return hl
-} // MentionRemove()
 
 var (
 	// RegEx to identify a numeric HTML entity.
@@ -530,7 +325,7 @@ var (
 //
 // Returns:
 // - `*THashList`: The current hash list.
-func (hl *THashList) parseID(aID uint64, aText []byte) *THashList {
+func (hl *tHashList) parseID(aID uint64, aText []byte) *tHashList {
 	if 0 == len(aText) {
 		return hl
 	}
@@ -597,141 +392,45 @@ func (hl *THashList) parseID(aID uint64, aText []byte) *THashList {
 //
 // Returns:
 // - `*THashList`: The current hash list.
-func (hl *THashList) removeHM(aDelim byte, aName string, aID uint64) *THashList {
+func (hl *tHashList) removeHM(aDelim byte, aName string, aID uint64) *tHashList {
 	aName = strings.ToLower(strings.TrimSpace(aName))
 	if (0 == len(aName)) || (0 == aID) {
 		return hl
 	}
 
-	oldCRC := hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			go func() {
-				hl.hm.store(hl.fn)
-			}()
-		}
-	}()
-
 	hl.hm.remove(aDelim, aName, aID)
-	atomic.StoreUint32(&hl.µChange, 0)
 
 	return hl
 } // removeHM()
-
-// `removeID()` deletes all #hashtags/@mentions associated with `aID`.
-//
-// Parameters:
-// - `aID`: The object to remove from all references list.
-//
-// Returns:
-// - `*THashList`: The modified hash list.
-func (hl *THashList) removeID(aID uint64) *THashList {
-	if (nil == hl) || (0 == len(hl.hm)) {
-		return hl
-	}
-
-	oldCRC := hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			go func() {
-				hl.hm.store(hl.fn)
-			}()
-		}
-	}()
-
-	hl.hm.removeID((aID))
-	atomic.StoreUint32(&hl.µChange, 0)
-
-	return hl
-} // removeID()
-
-func (hl *THashList) renameID(aOldID, aNewID uint64) *THashList {
-	if (aOldID == aNewID) || (nil == hl) || (0 == len(hl.hm)) {
-		return hl
-	}
-
-	oldCRC := hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			go func() {
-				hl.hm.store(hl.fn)
-			}()
-		}
-	}()
-
-	for _, sl := range hl.hm {
-		sl.rename(aOldID, aNewID)
-	}
-	atomic.StoreUint32(&hl.µChange, 0)
-
-	return hl
-} // renameID()
-
-// `SetFilename()` sets `aFilename` to be used by this list.
-//
-// Parameters:
-// - `aFilename`: The name of the file to use for storage.
-//
-// Returns:
-// - `*THashList`: The current hash list.
-func (hl *THashList) SetFilename(aFilename string) *THashList {
-	hl.mtx.Lock()
-	defer hl.mtx.Unlock()
-
-	hl.fn = aFilename
-
-	return hl
-} // SetFilename()
 
 // `Store()` writes the whole list to the configured file
 // returning the number of bytes written and a possible error.
 //
 // If there is an error, it will be of type `*PathError`.
 //
+// Parameters:
+// - 'aFilename`: The name of the file to write.
+//
 // Returns:
 // - `int`: Number of bytes written to storage.
 // - `error`: A possible storage error, or `nil` in case of success.
-func (hl *THashList) Store() (int, error) {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
+func (hl *tHashList) Store(aFilename string) (int, error) {
+	// hl.mtx.RLock()
+	// defer hl.mtx.RUnlock()
 
-	return hl.hm.store(hl.fn)
+	return hl.hm.store(aFilename)
 } // Store()
 
 // `String()` returns the whole list as a linefeed separated string.
 //
 // Returns:
 // - `string`: The string representation of this hash list.
-func (hl *THashList) String() string {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
+func (hl *tHashList) String() string {
+	// hl.mtx.RLock()
+	// defer hl.mtx.RUnlock()
 
 	return hl.hm.String()
 } // String()
-
-// `updateID()` checks `aText` removing all #hashtags/@mentions no longer
-// present and adds #hashtags/@mentions new in `aText`.
-//
-// Parameters:
-// - `aID` is the ID to update.
-// - `aText` is the text to use.
-//
-// Returns:
-// - `*THashList`: The current hash list.
-func (hl *THashList) updateID(aID uint64, aText []byte) *THashList {
-	if (nil == hl) || (0 == len(aText)) || (0 == len(hl.hm)) {
-		return hl
-	}
-
-	oldCRC := hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			hl.hm.store(hl.fn)
-		}
-	}()
-
-	return hl.removeID(aID).parseID(aID, aText)
-} // updateID()
 
 // -------------------------------------------------------------------------
 
@@ -765,30 +464,30 @@ type (
 //
 // Parameters:
 // - `aFunc` The function called for each ID in all lists.
-func (hl *THashList) Walk(aFunc TWalkFunc) {
-	hl.mtx.RLock()
-	defer hl.mtx.RUnlock()
+// func (hl *tHashList) Walk(aFunc TWalkFunc) {
+// 	// hl.mtx.RLock()
+// 	// defer hl.mtx.RUnlock()
 
-	oldCRC := hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-			_, _ = hl.hm.store(hl.fn)
-		}
-	}()
+// 	oldCRC := hl.checksum()
+// 	defer func() {
+// 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
+// 			_, _ = hl.hm.store(hl.fn)
+// 		}
+// 	}()
 
-	changed := hl.hm.walk(aFunc)
-	if changed {
-		atomic.StoreUint32(&hl.µChange, 0)
-	}
-} // Walk()
+// 	changed := hl.hm.walk(aFunc)
+// 	if changed {
+// 		atomic.StoreUint32(&hl.µChange, 0)
+// 	}
+// } // Walk()
 
 // `Walker()` traverses through all entries in the hash lists
 // calling `aWalker` for each entry.
 //
 // Parameters:
 // - `aWalker` is an object implementing the `IHashWalker` interface.
-func (hl *THashList) Walker(aWalker IHashWalker) {
-	hl.Walk(aWalker.Walk)
-} // Walker()
+// func (hl *tHashList) Walker(aWalker IHashWalker) {
+// 	hl.Walk(aWalker.Walk)
+// } // Walker()
 
 /* EoF */
