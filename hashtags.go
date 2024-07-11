@@ -95,7 +95,7 @@ func (ht *THashTags) add(aDelim byte, aName string, aID uint64) *THashTags {
 		return ht
 	}
 
-	oldCRC := ht.hl.checksum()
+	oldCRC := ht.checksum()
 	defer func() {
 		if oldCRC != atomic.LoadUint32(&ht.µChange) {
 			go func() {
@@ -113,6 +113,14 @@ func (ht *THashTags) add(aDelim byte, aName string, aID uint64) *THashTags {
 	return ht
 } // add()
 
+func (ht *THashTags) checksum() uint32 {
+	if 0 == atomic.LoadUint32(&ht.µChange) {
+		atomic.StoreUint32(&ht.µChange, ht.hl.checksum())
+	}
+
+	return atomic.LoadUint32(&ht.µChange)
+} // checksum()
+
 // `Checksum()` returns the list's CRC32 checksum.
 //
 // This method can be used to get a kind of 'footprint'.
@@ -123,11 +131,7 @@ func (ht *THashTags) Checksum() uint32 {
 	ht.mtx.RLock()
 	defer ht.mtx.RUnlock()
 
-	if 0 == atomic.LoadUint32(&ht.µChange) {
-		atomic.StoreUint32(&ht.µChange, ht.hl.checksum())
-	}
-
-	return atomic.LoadUint32(&ht.µChange)
+	return ht.checksum()
 } // Checksum()
 
 // `Clear()` empties the internal data structures:
@@ -145,7 +149,7 @@ func (ht *THashTags) Clear() *THashTags {
 	return ht
 } // Clear()
 
-// ` compareTo()` compares the current list with another list.
+// `compareTo()` compares the current list with another list.
 //
 // Parameters:
 // - `aList`: The list to compare with.
