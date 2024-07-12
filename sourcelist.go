@@ -9,7 +9,6 @@ package hashtags
 import (
 	"fmt"
 	"slices"
-	"sort"
 )
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
@@ -86,13 +85,14 @@ func (sl tSourceList) findIndex(aID uint64) int {
 		return -1
 	}
 
-	// Find the index of the old value
-	result := sort.Search(sLen, func(i int) bool {
-		return sl[i] >= aID
-	})
+	// Find the index of the given ID:
+	idx, ok := slices.BinarySearch(sl, aID)
+	if !ok {
+		return -1
+	}
 
-	if (result < sLen) && (sl[result] == aID) {
-		return result
+	if (idx < sLen) && (sl[idx] == aID) {
+		return idx
 	}
 
 	return -1 // aID not found
@@ -115,10 +115,8 @@ func (sl *tSourceList) insert(aID uint64) bool {
 		return true
 	}
 
-	// find the insertion index using binary search
-	idx := sort.Search(sLen, func(i int) bool {
-		return (*sl)[i] >= aID
-	})
+	// Find the index of the given ID:
+	idx, _ := slices.BinarySearch(*sl, aID)
 
 	if sLen == idx { // key not found
 		*sl = append(*sl, aID) // add new ID
@@ -149,11 +147,8 @@ func (sl *tSourceList) remove(aID uint64) bool {
 		return false
 	}
 
-	// Find the index of the old value
-	idx := sort.Search(sLen, func(i int) bool {
-		return (*sl)[i] >= aID
-	})
-
+	// Find the index of the given ID:
+	idx, _ := slices.BinarySearch(*sl, aID)
 	if (idx < sLen) && ((*sl)[idx] == aID) {
 		// `aID` found at index `idx`
 		if 0 == idx {
@@ -175,8 +170,8 @@ func (sl *tSourceList) remove(aID uint64) bool {
 
 // `rename()` replaces all occurrences of `aOldID` by `aNewID`.
 //
-// If `aOldID` equals `aNewID`, or aOldID` doesn't exist then nothing
-// is changed.
+// If `aOldID` equals `aNewID`, or aOldID` doesn't exist then they are
+// silently ignored (i.e. this method does nothing), returning `false`.
 //
 // This method is intended for rare cases when the ID of a document
 // gets changed.
@@ -224,9 +219,6 @@ func (sl *tSourceList) rename(aOldID, aNewID uint64) bool {
 // - `*tSourceList`: The sorted `tSourceList` instance.
 func (sl *tSourceList) sort() *tSourceList {
 	if nil != sl {
-		// sort.SliceStable(*sl, func(i, j int) bool {
-		// 	return ((*sl)[i] < (*sl)[j]) // ascending
-		// })
 		slices.Sort(*sl) // ascending
 	}
 
