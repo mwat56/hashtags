@@ -72,7 +72,7 @@ func Test_tSourceList_compareTo(t *testing.T) {
 	}
 } // Test_tSourceList_compareTo()
 
-func Test_tSourceList_indexOf(t *testing.T) {
+func Test_tSourceList_findIndex(t *testing.T) {
 	sl1 := &tSourceList{
 		1, 2, 3, 4, 5,
 	}
@@ -92,50 +92,33 @@ func Test_tSourceList_indexOf(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.indexOf(tt.id); got != tt.want {
-				t.Errorf("%q: tSourceList.indexOf() =\n %v,\n>>>> want: >>>>\n%v",
+			if got := tt.sl.findIndex(tt.id); got != tt.want {
+				t.Errorf("%q: tSourceList.findIndex() =\n %v,\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-} // Test_tSourceList_indexOf()
+} // Test_tSourceList_findIndex()
 
 func Test_tSourceList_insert(t *testing.T) {
 	sl := tSourceList{}
 
-	wl0 := tSourceList{
-		1,
-	}
-	wl1 := tSourceList{
-		1, 3,
-	}
-	wl2 := tSourceList{
-		1, 3, 5,
-	}
-	wl3 := tSourceList{
-		1, 2, 3, 5,
-	}
-	wl4 := tSourceList{
-		1, 2, 3, 4, 5,
-	}
-
 	tests := []struct {
 		name string
 		id   uint64
-		want tSourceList
+		want bool
 	}{
-		{"0", 1, wl0},
-		{"1", 3, wl1},
-		{"2", 5, wl2},
-		{"3", 2, wl3},
-		{"4", 4, wl4},
+		{"0", 1, true}, // beginning
+		{"1", 3, true}, // end
+		{"2", 5, true}, // end
+		{"3", 2, true}, // middle
+		{"4", 4, true}, // middle
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := sl.insert(tt.id); !got.compareTo(tt.want) {
-				t.Errorf("%q: tSourceList.insert() =\n%v\n>>>> want: >>>>\n%v",
-					tt.name, got, tt.want)
+			if got := sl.insert(tt.id); got != tt.want {
+				t.Errorf("tSourceList.insert() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -144,29 +127,25 @@ func Test_tSourceList_insert(t *testing.T) {
 func Test_tSourceList_remove(t *testing.T) {
 	sl0 := &tSourceList{}
 	sl1 := &tSourceList{1, 2, 3, 4, 5}
-	wl1 := &tSourceList{2, 3, 4, 5}
-	wl2 := &tSourceList{2, 3, 4}
-	wl3 := &tSourceList{2, 4}
-	wl4 := &tSourceList{4}
 
 	tests := []struct {
 		name string
 		sl   *tSourceList
 		id   uint64
-		want *tSourceList
+		want bool
 	}{
-		{"0", sl0, 1, sl0},
-		{"1", sl1, 1, wl1},
-		{"2", sl1, 5, wl2},
-		{"3", sl1, 3, wl3},
-		{"4", sl1, 2, wl4},
-		{"5", sl1, 2, wl4},
-		{"6", sl1, 4, sl0},
+		{"0", sl0, 0, false}, // not found
+		{"1", sl1, 1, true},  // beginning
+		{"2", sl1, 5, true},  // end
+		{"3", sl1, 3, true},  // middle
+		{"4", sl1, 2, true},  // (new) beginning
+		{"5", sl1, 2, false}, // not found
+		{"6", sl1, 4, true},  // beginning == end
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.remove(tt.id); !got.compareTo(*tt.want) {
+			if got := tt.sl.remove(tt.id); got != tt.want {
 				t.Errorf("%q: tSourceList.remove() =\n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -176,9 +155,6 @@ func Test_tSourceList_remove(t *testing.T) {
 
 func Test_tSourceList_rename(t *testing.T) {
 	sl := &tSourceList{1, 2, 3}
-	wl1 := tSourceList{1, 2, 4}
-	wl2 := tSourceList{1, 2, 6}
-	wl3 := tSourceList{1, 2, 6}
 
 	type tArgs struct {
 		aOldID, aNewID uint64
@@ -186,17 +162,17 @@ func Test_tSourceList_rename(t *testing.T) {
 	tests := []struct {
 		name string
 		ids  tArgs
-		want tSourceList
+		want bool
 	}{
-		{"0", tArgs{}, *sl},
-		{"1", tArgs{3, 4}, wl1},
-		{"2", tArgs{4, 6}, wl2},
-		{"3", tArgs{3333, 333}, wl3},
+		{"0", tArgs{}, false},         // not found
+		{"1", tArgs{3, 4}, true},      // end
+		{"2", tArgs{4, 6}, true},      // (new) end
+		{"3", tArgs{3333, 333}, true}, // only new ID added
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := sl.rename(tt.ids.aOldID, tt.ids.aNewID); !got.compareTo(tt.want) {
+			if got := sl.rename(tt.ids.aOldID, tt.ids.aNewID); got != tt.want {
 				t.Errorf("%q: tSourceList.rename() =\n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}

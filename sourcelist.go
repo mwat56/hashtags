@@ -8,6 +8,7 @@ package hashtags
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 )
 
@@ -21,12 +22,12 @@ type (
 // --------------------------------------------------------------------------
 // constructor function
 
-// `newSourceList()` creates and returns a new instance of tSourceList.
+// `newSourceList()` creates and returns a new instance of `tSourceList`.
 //
-// The initial capacity of the list is set to 32 to optimize memory usage.
+// The initial capacity of the list is set to 32 to optimise memory usage.
 //
 // Returns:
-// - `*tSourceList`: A pointer to the newly created tSourceList instance.
+// - `*tSourceList`: A pointer to the newly created instance.
 func newSourceList() *tSourceList {
 	sl := make(tSourceList, 0, 32)
 
@@ -72,14 +73,14 @@ func (sl tSourceList) compareTo(aList tSourceList) bool {
 	return true
 } // compareTo()
 
-// `indexOf()` returns the list index of `aID`.
+// `findIndex()` returns the list index of `aID`.
 //
 // Parameters:
-// - `aID` is the string to look up.
+// - `aID` is the list element to look up.
 //
 // Returns:
-// - `int`: the index of `aID` in the list.
-func (sl tSourceList) indexOf(aID uint64) int {
+// - `int`: The index of `aID` in the list.
+func (sl tSourceList) findIndex(aID uint64) int {
 	sLen := len(sl)
 	if 0 == sLen { // empty list
 		return -1
@@ -95,7 +96,7 @@ func (sl tSourceList) indexOf(aID uint64) int {
 	}
 
 	return -1 // aID not found
-} // indexOf()
+} // findIndex()
 
 // `insert()` adds `aID` to the list while keeping the list sorted.
 //
@@ -103,15 +104,15 @@ func (sl tSourceList) indexOf(aID uint64) int {
 // - `aID` the source ID to insert to the list.
 //
 // Returns:
-// - `*tSourceList`: the current list.
-func (sl *tSourceList) insert(aID uint64) *tSourceList {
+// - `bool`: `true` if `aID` was inserted, or `false` otherwise.
+func (sl *tSourceList) insert(aID uint64) bool {
+	if nil == sl {
+		return false
+	}
 	sLen := len(*sl)
 	if 0 == sLen { // empty list
-		if nil != sl {
-			*sl = append(*sl, aID)
-		}
-
-		return sl
+		*sl = append(*sl, aID)
+		return true
 	}
 
 	// find the insertion index using binary search
@@ -121,26 +122,31 @@ func (sl *tSourceList) insert(aID uint64) *tSourceList {
 
 	if sLen == idx { // key not found
 		*sl = append(*sl, aID) // add new ID
-	} else if (*sl)[idx] != aID {
+		return true
+	}
+	if (*sl)[idx] != aID {
 		*sl = append(*sl, 0) // make room to insert new ID
 		copy((*sl)[idx+1:], (*sl)[idx:])
 		(*sl)[idx] = aID
+		return true
 	}
 
-	return sl
+	return false
 } // insert()
 
 // `remove()` deletes the list entry of `aID`.
+//
+// NOTE: The method's result is an change indicator.
 //
 // Parameters:
 // - `aID`: The ID to look up and delete.
 //
 // Returns:
-// - `*tSourceList`: The modified list.
-func (sl *tSourceList) remove(aID uint64) *tSourceList {
+// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+func (sl *tSourceList) remove(aID uint64) bool {
 	sLen := len(*sl)
 	if 0 == sLen { // empty list
-		return sl
+		return false
 	}
 
 	// Find the index of the old value
@@ -161,11 +167,10 @@ func (sl *tSourceList) remove(aID uint64) *tSourceList {
 		} else { // remove element in the middle
 			*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
 		}
-	} else {
-		idx = -1 // DEBUG breakpoint: aID not found
+		return true
 	}
 
-	return sl
+	return false
 } // remove()
 
 // `rename()` replaces all occurrences of `aOldID` by `aNewID`.
@@ -181,41 +186,56 @@ func (sl *tSourceList) remove(aID uint64) *tSourceList {
 // - `aNewID`: The replacement ID in this list.
 //
 // Returns:
-// - `*tSourceList`: The current list.
-func (sl *tSourceList) rename(aOldID, aNewID uint64) *tSourceList {
+// - `bool`: `true` if the the renaming was successful, or `false` otherwise.
+func (sl *tSourceList) rename(aOldID, aNewID uint64) bool {
+	if nil == sl {
+		return false
+	}
 	if (0 == len(*sl)) || (aOldID == aNewID) {
-		return sl
+		return false
 	}
 
-	if 0 > sl.indexOf(aOldID) { // ID not found
-		return sl
+	idx := sl.findIndex(aOldID)
+	if 0 > idx { // ID not found
+		return sl.insert(aNewID)
 	}
 
-	return sl.remove(aOldID).insert(aNewID)
+	if !sl.insert(aNewID) {
+		// This should only happen it there's an OOM problem.
+		// Hence we just replace the aOldID by aNewID and sort
+		// the list again.
+		if (*sl)[idx] != aNewID {
+			(*sl)[idx] = aNewID
+			sl.sort()
+			return true
+		}
+		return false
+	}
+
+	return sl.remove(aOldID)
 } // rename()
 
 // `sort()` sorts the list in ascending order.
 //
-// This method uses the `sort.SliceStable` function from the standard
+// This method uses the `slices.Sort` function from the standard
 // library to sort the list.
-// The sorting is stable, meaning that equal elements will retain their
-// original order.
 //
 // Returns:
 // - `*tSourceList`: The sorted `tSourceList` instance.
 func (sl *tSourceList) sort() *tSourceList {
 	if nil != sl {
-		sort.SliceStable(*sl, func(i, j int) bool {
-			return ((*sl)[i] < (*sl)[j]) // ascending
-		})
+		// sort.SliceStable(*sl, func(i, j int) bool {
+		// 	return ((*sl)[i] < (*sl)[j]) // ascending
+		// })
+		slices.Sort(*sl) // ascending
 	}
 
 	return sl
 } // sort()
 
-// `String()` returns the list as a linefeed separated string.
+// `String()` implements the `fmt.Stringer` interface.
 //
-// (Implements `Stringer` interface.)
+// The method returns the list as a linefeed separated string.
 //
 // Returns:
 // - `string`: The list's contents as a string.

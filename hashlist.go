@@ -14,7 +14,7 @@ import (
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 type (
-		// `tHashList` is a list of `#hashtags` and `@mentions`
+	// `tHashList` is a list of `#hashtags` and `@mentions`
 	// pointing to sources (i.e. IDs).
 	tHashList struct {
 		hm tHashMap // the actual map list of sources/IDs
@@ -57,36 +57,20 @@ func newHashList(aFilename string) (*tHashList, error) {
 // - `aID`: The referencing object to be added to the hash list.
 //
 // Returns:
-// - `*tHashList`: This hash list.
-func (hl *tHashList) add(aDelim byte, aName string, aID uint64) *tHashList {
+// - `bool`: `true` if `aID` was added, or `false` otherwise.
+func (hl *tHashList) add(aDelim byte, aName string, aID uint64) bool {
 	// prepare for case-insensitive search:
 	aName = strings.ToLower(strings.TrimSpace(aName))
 	if 0 == len(aName) {
-		return hl
+		return false
 	}
 
 	if aName[0] != aDelim {
 		aName = string(aDelim) + aName
 	}
 
-	return hl.add0(aName, aID)
+	return hl.hm.add(aName, aID)
 } // add()
-
-// `add0()` appends `aID` to the tag list associated with `aMapIdx`.
-//
-// Parameters:
-// - `aName`: The hashtag/mention to lookup.
-// - `aID` is to be added to the hash list.
-//
-// Returns:
-// - `*tHashList`: This hash list.
-func (hl *tHashList) add0(aName string, aID uint64) *tHashList {
-	// the mutex.Lock is done by the callers
-
-	hl.hm.add(aName, aID)
-
-	return hl
-} // add0()
 
 // `checksum()` returns the list's CRC32 checksum.
 //
@@ -170,15 +154,13 @@ func (hl *tHashList) idList(aID uint64) []string {
 // - `aID`: The object to remove from all references list.
 //
 // Returns:
-// - `*THashList`: The modified hash list.
-func (hl *tHashList) IDremove(aID uint64) *tHashList {
+// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+func (hl *tHashList) IDremove(aID uint64) bool {
 	if (nil == hl) || (0 == len(hl.hm)) {
-		return hl
+		return false
 	}
 
-	hl.hm.removeID((aID))
-
-	return hl
+	return hl.hm.removeID((aID))
 } // IDremove()
 
 // `IDrename()` replaces all occurrences of `aOldID` by `aNewID`.
@@ -191,16 +173,20 @@ func (hl *tHashList) IDremove(aID uint64) *tHashList {
 // - `aNewID`: The replacement in all lists.
 //
 // Returns:
-// - `*THashList`: The modified hash list.
-func (hl *tHashList) IDrename(aOldID, aNewID uint64) *tHashList {
+// - `bool`: `true` if the the renaming was successful, or `false` otherwise.
+func (hl *tHashList) IDrename(aOldID, aNewID uint64) bool {
 	if (aOldID == aNewID) || (0 == len(hl.hm)) {
-		return hl
-	}
-	for _, sl := range hl.hm {
-		sl.rename(aOldID, aNewID)
+		return false
 	}
 
-	return hl
+	var result bool
+	for _, sl := range hl.hm {
+		if sl.rename(aOldID, aNewID) {
+			result = true
+		}
+	}
+
+	return result
 } // IDrename()
 
 // `IDupdate()` checks `aText` removing all #hashtags/@mentions no longer
@@ -211,21 +197,21 @@ func (hl *tHashList) IDrename(aOldID, aNewID uint64) *tHashList {
 // - `aText`: The text to use.
 //
 // Returns:
-// - `*THashList`: The current hash list.
-func (hl *tHashList) IDupdate(aID uint64, aText []byte) *tHashList {
+// - `bool`: `true` if `aID` was updated, or `false` otherwise.
+func (hl *tHashList) IDupdate(aID uint64, aText []byte) bool {
 	if (nil == hl) || (0 == len(aText)) || (0 == len(hl.hm)) {
-		return hl
+		return false
 	}
 
-	return hl.IDremove(aID).parseID(aID, aText)
+	rr := hl.IDremove(aID)
+	rp := hl.parseID(aID, aText)
+
+	return (rr || rp)
 } // IDupdate()
 
 // `Len()` returns the current length of the list i.e. how many #hashtags
 // and @mentions are currently stored in the list.
 func (hl *tHashList) Len() int {
-	// hl.mtx.RLock()
-	// defer hl.mtx.RUnlock()
-
 	return len(hl.hm)
 } // Len()
 
@@ -235,9 +221,6 @@ func (hl *tHashList) Len() int {
 // Returns:
 // - `int`: The total length of all #hashtag/@mention lists.
 func (hl *tHashList) LenTotal() (rLen int) {
-	// hl.mtx.RLock()
-	// defer hl.mtx.RUnlock()
-
 	rLen = len(hl.hm)
 	for _, sl := range hl.hm {
 		rLen += len(*sl)
@@ -316,25 +299,26 @@ var (
 	htHyphenRE = regexp.MustCompile(`#[^-]*--`)
 )
 
-// `parseID()` checks whether `aText` contains strings starting
-// with `[@|#]` and – if found – adds them to the respective list.
+// `parseID()` checks whether `aText` contains strings starting with
+// `[@|#]` and - if found - adds them to the respective lists with `aID`.
 //
 // Parameters:
 // - `aID`: The ID to add to the list of hashes/mention.
 // - `aText`: The text to parse for hashtags and mentions.
 //
 // Returns:
-// - `*THashList`: The current hash list.
-func (hl *tHashList) parseID(aID uint64, aText []byte) *tHashList {
+// - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
+func (hl *tHashList) parseID(aID uint64, aText []byte) bool {
 	if 0 == len(aText) {
-		return hl
+		return false
 	}
 
 	matches := htHashMentionRE.FindAllSubmatch(aText, -1)
 	if (nil == matches) || (0 == len(matches)) {
-		return hl
+		return false
 	}
 
+	var result bool
 	for _, sub := range matches {
 		match0 := string(sub[0])
 		hash := string(sub[1])
@@ -356,7 +340,7 @@ func (hl *tHashList) parseID(aID uint64, aText []byte) *tHashList {
 				}
 
 			case ')':
-				// This is a tricky one: it can either be a
+				// This is a tricky one: It can either be a
 				// normal right round bracket or the end of
 				// a Markdown link. Here we assume that it's
 				// the latter one and ignore this match:
@@ -376,11 +360,18 @@ func (hl *tHashList) parseID(aID uint64, aText []byte) *tHashList {
 			if htHyphenRE.MatchString(hash) {
 				continue
 			}
+		} else if MarkMention == hash[0] {
+			if '.' == match0[len(match0)-1] {
+				// we assume that it's an email address
+				continue
+			}
 		}
-		hl.add(hash[0], hash, aID)
+		if hl.add(hash[0], hash, aID) {
+			result = true
+		}
 	}
 
-	return hl
+	return result
 } // parseID()
 
 // `removeHM()` deletes `aID` from the list of `aName`.
@@ -391,16 +382,14 @@ func (hl *tHashList) parseID(aID uint64, aText []byte) *tHashList {
 // - `aID` is the source to removeHM from the list.
 //
 // Returns:
-// - `*THashList`: The current hash list.
-func (hl *tHashList) removeHM(aDelim byte, aName string, aID uint64) *tHashList {
+// - `bool`: `true` if `aName` was removed, or `false` otherwise.
+func (hl *tHashList) removeHM(aDelim byte, aName string, aID uint64) bool {
 	aName = strings.ToLower(strings.TrimSpace(aName))
-	if (0 == len(aName)) || (0 == aID) {
-		return hl
+	if (0 == len(aName)) {
+		return false
 	}
 
-	hl.hm.remove(aDelim, aName, aID)
-
-	return hl
+	return hl.hm.removeHM(aDelim, aName, aID)
 } // removeHM()
 
 // `Store()` writes the whole list to the configured file
@@ -415,9 +404,6 @@ func (hl *tHashList) removeHM(aDelim byte, aName string, aID uint64) *tHashList 
 // - `int`: Number of bytes written to storage.
 // - `error`: A possible storage error, or `nil` in case of success.
 func (hl *tHashList) Store(aFilename string) (int, error) {
-	// hl.mtx.RLock()
-	// defer hl.mtx.RUnlock()
-
 	return hl.hm.store(aFilename)
 } // Store()
 
@@ -426,9 +412,6 @@ func (hl *tHashList) Store(aFilename string) (int, error) {
 // Returns:
 // - `string`: The string representation of this hash list.
 func (hl *tHashList) String() string {
-	// hl.mtx.RLock()
-	// defer hl.mtx.RUnlock()
-
 	return hl.hm.String()
 } // String()
 

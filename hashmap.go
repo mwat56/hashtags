@@ -85,20 +85,27 @@ func cmp4sort(a, b string) int {
 // - `aID` is to be added to the hash list.
 //
 // Returns:
-// - `*tHashMap`: This hash map.
-func (hm *tHashMap) add(aName string, aID uint64) *tHashMap {
+// - `bool`: `true` if `aID` was added, or `false` otherwise.
+func (hm *tHashMap) add(aName string, aID uint64) bool {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
-		return hm
+		return false
 	}
 
-	if sl, exists := (*hm)[aName]; exists {
-		sl.insert(aID) // changes in place
+	var result bool
+	if sl, ok := (*hm)[aName]; ok {
+		if sl.insert(aID) { // changes in place
+			result = true
+		}
 	} else {
-		(*hm)[aName] = newSourceList().insert(aID)
+		sl := newSourceList()
+		if sl.insert(aID) {
+			(*hm)[aName] = sl // assign the ID list to the hash
+			result = true
+		}
 	}
 
-	return hm
+	return result
 } // add()
 
 // `checksum()` computes the list's CRC32 checksum.
@@ -213,7 +220,7 @@ func (hm *tHashMap) idList(aID uint64) []string {
 
 	result = make([]string, 0, hLen)
 	for hash, sl := range *hm {
-		if 0 > sl.indexOf(aID) {
+		if 0 > sl.findIndex(aID) {
 			continue // ID not found
 		}
 		result = append(result, hash)
@@ -410,55 +417,62 @@ func (hm *tHashMap) loadText(aFile *os.File) (*tHashMap, error) {
 	return hm, nil
 } // loadText()
 
-// `remove()` deletes `aID` from the list of `aName`.
-//
-// Parameters:
-// - `aDelim`: The start character of words to use (either '@' or '#').
-// - `aName`: The hash/mention to lookup.
-// - `aID`: The referenced object to remove from the list.
-//
-// Returns:
-// - `*tHashMap`: The current hash map.
-func (hm *tHashMap) remove(aDelim byte, aName string, aID uint64) *tHashMap {
-	aName = strings.ToLower(strings.TrimSpace((aName)))
-	if 0 == len(aName) {
-		return hm
-	}
-
-	if aName[0] != aDelim {
-		aName = string(aDelim) + aName
-	}
-
-	if sl, ok := (*hm)[aName]; ok {
-		sl.remove(aID)
-		if 0 == len(*sl) {
-			delete(*hm, aName)
-		}
-	}
-
-	return hm
-} // remove()
-
 // `removeID()` deletes all #hashtags/@mentions associated with `aID`.
 //
 // Parameters:
 // - `aID`: The object to remove from all references list.
 //
 // Returns:
-// - `*tHashMap`: The updated hash map.
-func (hm *tHashMap) removeID(aID uint64) *tHashMap {
+// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+func (hm *tHashMap) removeID(aID uint64) bool {
 	if (nil == hm) || 0 == len(*hm) {
-		return hm
+		return false
 	}
+
+	var result bool
 	for hash, sl := range *hm {
-		sl = sl.remove(aID)
-		if 0 == len(*sl) {
-			delete(*hm, hash)
+		if sl.remove(aID) {
+			if 0 == len(*sl) {
+				delete(*hm, hash)
+			}
+			result = true
 		}
 	}
 
-	return hm
+	return result
 } // removeID()
+
+// `removeHM()` deletes `aID` from the list of `aName`.
+//
+// Parameters:
+// - `aDelim`: The start character of words to use (either '@' or '#').
+// - `aName`: The hash/mention to lookup.
+// - `aID`: The referenced object to removeHM from the list.
+//
+// Returns:
+// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+func (hm *tHashMap) removeHM(aDelim byte, aName string, aID uint64) bool {
+	aName = strings.ToLower(strings.TrimSpace((aName)))
+	if 0 == len(aName) {
+		return false
+	}
+
+	if aName[0] != aDelim {
+		aName = string(aDelim) + aName
+	}
+
+	result := false
+	if sl, ok := (*hm)[aName]; ok {
+		if ok = sl.remove(aID); ok {
+			if 0 == len(*sl) {
+				delete(*hm, aName)
+			}
+			result = true
+		}
+	}
+
+	return result
+} // removeHM()
 
 // `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
 //
@@ -467,17 +481,20 @@ func (hm *tHashMap) removeID(aID uint64) *tHashMap {
 // - `aNewID`: The replacement ID in this list.
 //
 // Returns:
-// - `*tHashMap`: The modified hash map.
-func (hm *tHashMap) renameID(aOldID, aNewID uint64) *tHashMap {
+// - `bool`: `true` if the the renaming was successful, or `false` otherwise.
+func (hm *tHashMap) renameID(aOldID, aNewID uint64) bool {
 	if (0 == len(*hm)) || (aOldID == aNewID) {
-		return hm
+		return false
 	}
 
-	for idx, sl := range *hm {
-		(*hm)[idx] = sl.rename(aOldID, aNewID)
+	var result bool
+	for _, sl := range *hm {
+		if ok := sl.rename(aOldID, aNewID); ok {
+			result = true
+		}
 	}
 
-	return hm
+	return result
 } // renameID()
 
 // `sort()` ensures that the hash map is sorted, which can improve the
