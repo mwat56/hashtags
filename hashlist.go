@@ -113,6 +113,9 @@ func (hl *tHashList) HashCount() int {
 
 // `HashLen()` returns the number of IDs stored for `aHash`.
 //
+// If `aHash` is empty it is silently ignored (i.e. this method
+// does nothing) returning `-1`.
+//
 // Parameters:
 // - `aHash` The list key to lookup.
 //
@@ -123,6 +126,9 @@ func (hl *tHashList) HashLen(aHash string) int {
 } // HashLen()
 
 // `HashList()` returns a list of IDs associated with `aHash`.
+//
+// If `aHash` is empty it is silently ignored (i.e. this method
+// does nothing), returning an empty slice.
 //
 // Parameters:
 // - `aName`: The hash to lookup.
@@ -164,6 +170,9 @@ func (hl *tHashList) IDremove(aID uint64) bool {
 } // IDremove()
 
 // `IDrename()` replaces all occurrences of `aOldID` by `aNewID`.
+//
+// If `aOldID` equals `aNewID` they are silently ignored (i.e. this
+// method does nothing), returning `false`.
 //
 // This method is intended for rare cases when the ID of a document
 // needs to get changed.
@@ -262,6 +271,9 @@ func (hl *tHashList) MentionCount() int {
 
 // `MentionLen()` returns the number of IDs stored for `aMention`.
 //
+// If `aMention` is empty it is silently ignored (i.e. this method
+// does nothing) returning `-1`.
+//
 // Parameters:
 // - `aMention` identifies the ID list to lookup.
 //
@@ -272,6 +284,9 @@ func (hl *tHashList) MentionLen(aMention string) int {
 } // MentionLen()
 
 // `MentionList()` returns a list of IDs associated with `aMention`.
+//
+// If `aMention` is empty it is silently ignored (i.e. this method
+// does nothing), returning an empty slice.
 //
 // Parameters:
 // - `aMention`: The mention to lookup.
@@ -301,6 +316,9 @@ var (
 
 // `parseID()` checks whether `aText` contains strings starting with
 // `[@|#]` and - if found - adds them to the respective lists with `aID`.
+//
+// If `aText` is empty it is silently ignored (i.e. this method
+// does nothing), returning `false`.
 //
 // Parameters:
 // - `aID`: The ID to add to the list of hashes/mention.

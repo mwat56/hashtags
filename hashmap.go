@@ -237,6 +237,9 @@ func (hm *tHashMap) idList(aID uint64) []string {
 
 // `idxLen()` returns the number of IDs stored for `aName`.
 //
+// If `aName` is empty it is silently ignored (i.e. this method
+// does nothing), returning `-1`.
+//
 // Parameters:
 // - `aDelim`: The first character of words to use (i.e. either '@' or '#').
 // - `aName`: The hash to lookup.
@@ -287,6 +290,9 @@ func (hm tHashMap) keys() []string {
 } // keys()
 
 // `list()` returns a list of object IDs associated with `aName`.
+//
+// If `aName` is empty it is silently ignored (i.e. this method
+// does nothing), returning an empty slice.
 //
 // Parameters:
 // - `aDelim` The start of words to search (i.e. either '@' or '#').
