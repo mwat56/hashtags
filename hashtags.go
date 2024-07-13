@@ -35,8 +35,9 @@ type (
 		fn      string       // the filename to use
 		hl      tHashList    // the actual map list of sources/IDs
 		mtx     sync.RWMutex // safeguard against concurrent accesses
-		µChange uint32       // internal change flag
-		µCC     tCountCache  // cache for `CountedList()`
+		changed uint32       // internal change flag
+		cc      tCountCache  // cache for `CountedList()`
+		safe    bool         // flag for optional thread safety
 	}
 )
 
@@ -60,14 +61,15 @@ var (
 //
 // Parameters:
 // - `aFilename` is the name of the file to use for reading and storing.
-func NewHashTags(aFilename string) (*THashTags, error) {
+func NewHashTags(aFilename string, aSafe bool) (*THashTags, error) {
 	hashlist, err := newHashList(aFilename)
 	if nil != err {
 		return nil, err
 	}
 	ht := &THashTags{
-		fn: aFilename,
-		hl: *hashlist,
+		fn:   aFilename,
+		hl:   *hashlist,
+		safe: aSafe,
 	}
 
 	return ht, nil
@@ -76,49 +78,12 @@ func NewHashTags(aFilename string) (*THashTags, error) {
 // -------------------------------------------------------------------------
 // methods of THashTags
 
-// `add()` appends `aID` to the list associated with `aMapIdx`.
-//
-// If either `aName` or `aID` are empty they are silently ignored
-// (i.e. this method does nothing) returning the current list.
-//
-// Parameters:
-// - `aDelim`: The start character of words to use (i.e. either '@' or '#').
-// - `aName`: The hashtag/mention to lookup.
-// - `aID`: The referencing object to be added to the hash list.
-//
-// Returns:
-// - `*THashTags`: This hash list.
-func (ht *THashTags) add(aDelim byte, aName string, aID uint64) *THashTags {
-	// prepare for case-insensitive search:
-	aName = strings.ToLower(strings.TrimSpace(aName))
-	if 0 == len(aName) {
-		return ht
-	}
-
-	oldCRC := ht.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.µChange) {
-			go func() {
-				ht.hl.Store(ht.fn)
-			}()
-		}
-	}()
-
-	if aName[0] != aDelim {
-		aName = string(aDelim) + aName
-	}
-	ht.hl.add0(aName, aID)
-	atomic.StoreUint32(&ht.µChange, 0)
-
-	return ht
-} // add()
-
 func (ht *THashTags) checksum() uint32 {
-	if 0 == atomic.LoadUint32(&ht.µChange) {
-		atomic.StoreUint32(&ht.µChange, ht.hl.checksum())
+	if 0 == atomic.LoadUint32(&ht.changed) {
+		atomic.StoreUint32(&ht.changed, ht.hl.checksum())
 	}
 
-	return atomic.LoadUint32(&ht.µChange)
+	return atomic.LoadUint32(&ht.changed)
 } // checksum()
 
 // `Checksum()` returns the list's CRC32 checksum.
@@ -128,8 +93,10 @@ func (ht *THashTags) checksum() uint32 {
 // Returns:
 // - `uint32`: The computed checksum.
 func (ht *THashTags) Checksum() uint32 {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
 	return ht.checksum()
 } // Checksum()
@@ -140,11 +107,13 @@ func (ht *THashTags) Checksum() uint32 {
 // Returns:
 // - `*THashTags`: This cleared list.
 func (ht *THashTags) Clear() *THashTags {
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
+	}
 
 	ht.hl.clear()
-	atomic.StoreUint32(&ht.µChange, 0)
+	atomic.StoreUint32(&ht.changed, 0)
 
 	return ht
 } // Clear()
@@ -157,8 +126,10 @@ func (ht *THashTags) Clear() *THashTags {
 // Returns:
 // - `bool`: True if the lists are identical, false otherwise.
 func (ht *THashTags) compareTo(aList *THashTags) bool {
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
+	}
 
 	return ht.hl.compareTo(&aList.hl)
 } // compareTo()
@@ -174,25 +145,22 @@ func (ht *THashTags) Filename() string {
 
 // `HashAdd()` appends `aID` to the list of `aHash`.
 //
-// If `aHash` is an empty string it is silently ignored
-// (i.e. this method does nothing).
+// If `aHash` is empty it is silently ignored (i.e. this method
+// does nothing) returning `false`.
 //
 // Parameters:
 // - `aHash`: The hash list index to use.
 // - `aID`: The object to be added to the hash list.
 //
 // Returns:
-// - `*THashTags`: This hash list.
-func (ht *THashTags) HashAdd(aHash string, aID uint64) *THashTags {
-	if 0 == len(aHash) {
-		return ht
+// - `bool`: `true` if `aID` was added, or `false` otherwise.
+func (ht *THashTags) HashAdd(aHash string, aID uint64) bool {
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
 	}
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
 
-	ht.add(MarkHash, aHash, aID)
-
-	return ht
+	return ht.insert(MarkHash, aHash, aID)
 } // HashAdd()
 
 // `HashCount()` counts the number of hashtags in the list.
@@ -203,10 +171,13 @@ func (ht *THashTags) HashCount() int {
 	ht.mtx.RLock()
 	defer ht.mtx.RUnlock()
 
-	return ht.hl.HashCount()
+	return ht.hl.hashCount()
 } // HashCount()
 
 // `HashLen()` returns the number of IDs stored for `aHash`.
+//
+// If `aHash` is empty it is silently ignored (i.e. this method
+// does nothing), returning `-1`.
 //
 // Parameters:
 // - `aHash` The list key to lookup.
@@ -214,13 +185,18 @@ func (ht *THashTags) HashCount() int {
 // Returns:
 // - `int`: The number of `aHash` in the list.
 func (ht *THashTags) HashLen(aHash string) int {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	return ht.hl.HashLen(aHash)
+	return ht.hl.hashLen(aHash)
 } // HashLen()
 
 // `HashList()` returns a list of IDs associated with `aHash`.
+//
+// If `aHash` is empty it is silently ignored (i.e. this method
+// does nothing), returning an empty slice.
 //
 // Parameters:
 // - `aName`: The hash to lookup.
@@ -228,10 +204,12 @@ func (ht *THashTags) HashLen(aHash string) int {
 // Returns:
 // - `[]uint64`: The number of references of `aName`.
 func (ht *THashTags) HashList(aHash string) []uint64 {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	return ht.hl.HashList(aHash)
+	return ht.hl.hashList(aHash)
 } // HashList()
 
 // `HashRemove()` deletes `aID` from the list of `aHash`.
@@ -241,13 +219,12 @@ func (ht *THashTags) HashList(aHash string) []uint64 {
 // - `aID`: The referenced object to remove from the list.
 //
 // Returns:
-// - `*THashTags`: The current hash list.
-func (ht *THashTags) HashRemove(aHash string, aID uint64) *THashTags {
-	if 0 == len(aHash) {
-		return ht
+// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+func (ht *THashTags) HashRemove(aHash string, aID uint64) bool {
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
 	}
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
 
 	return ht.removeHM(MarkHash, aHash, aID)
 } // HashRemove()
@@ -260,8 +237,10 @@ func (ht *THashTags) HashRemove(aHash string, aID uint64) *THashTags {
 // Returns:
 // - `[]string`: The list of #hashtags and @mentions associated with `aID`.
 func (ht *THashTags) IDlist(aID uint64) []string {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
 	return ht.hl.idList(aID)
 } // IDlist()
@@ -270,30 +249,34 @@ func (ht *THashTags) IDlist(aID uint64) []string {
 // strings starting with `[@|#]` and - if found - adds them to the
 // respective list.
 //
+// If `aText` is empty it is silently ignored (i.e. this method
+// does nothing), returning `false`.
+//
 // Parameters:
 // - `aID`: the ID to add to the list.
 // - `aText:` The text to search.
 //
 // Returns:
-// - `*THashTags`: The updated list.
-func (ht *THashTags) IDparse(aID uint64, aText []byte) *THashTags {
-	if 0 == len(aText) {
-		return ht
+// - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
+func (ht *THashTags) IDparse(aID uint64, aText []byte) bool {
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
 	}
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
 
 	oldCRC := ht.hl.checksum()
 	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.µChange) {
-			ht.hl.Store(ht.fn) //TODO: call ht.hl.method
+		if oldCRC != atomic.LoadUint32(&ht.changed) {
+			ht.hl.store(ht.fn) //TODO: call ht.hl.method
 		}
 	}()
 
-	ht.hl.parseID(aID, aText)
-	atomic.StoreUint32(&ht.µChange, 0)
+	result := ht.hl.parseID(aID, aText)
+	if result {
+		atomic.StoreUint32(&ht.changed, 0)
+	}
 
-	return ht
+	return result
 } // IDparse()
 
 // `IDremove()` deletes all @hashtags/@mentions associated with `aID`.
@@ -302,30 +285,34 @@ func (ht *THashTags) IDparse(aID uint64, aText []byte) *THashTags {
 // - `aID` is to be deleted from all lists.
 //
 // Returns:
-// - `*THashTags`: The updated list.
-func (ht *THashTags) IDremove(aID uint64) *THashTags {
-	if nil == ht {
-		return ht
+// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+func (ht *THashTags) IDremove(aID uint64) bool {
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
 	}
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
 
 	oldCRC := ht.hl.checksum()
 	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.µChange) {
+		if oldCRC != atomic.LoadUint32(&ht.changed) {
 			go func() {
-				ht.hl.Store(ht.fn)
+				ht.hl.store(ht.fn)
 			}()
 		}
 	}()
 
-	ht.hl.IDremove(aID)
-	atomic.StoreUint32(&ht.µChange, 0)
+	result := ht.hl.removeID(aID)
+	if result {
+		atomic.StoreUint32(&ht.changed, 0)
+	}
 
-	return ht
+	return result
 } // IDremove()
 
 // `IDrename()` replaces all occurrences of `aOldID` by `aNewID`.
+//
+// If `aOldID` equals `aNewID` they are silently ignored (i.e. this
+// method does nothing), returning `false`.
 //
 // This method is intended for rare cases when the ID of a document
 // needs to get changed.
@@ -335,27 +322,32 @@ func (ht *THashTags) IDremove(aID uint64) *THashTags {
 // - `aNewID` is the replacement in all lists.
 //
 // Returns:
-// - `*THashTags`: The updated list.
-func (ht *THashTags) IDrename(aOldID, aNewID uint64) *THashTags {
+// - `bool`: `true` if `aOldID` was renamed, or `false` otherwise.
+func (ht *THashTags) IDrename(aOldID, aNewID uint64) bool {
 	if aOldID == aNewID {
-		return ht
+		return false
 	}
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
+
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
+	}
 
 	oldCRC := ht.hl.checksum()
 	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.µChange) {
+		if oldCRC != atomic.LoadUint32(&ht.changed) {
 			go func() {
-				ht.hl.Store(ht.fn)
+				ht.hl.store(ht.fn)
 			}()
 		}
 	}()
 
-	ht.hl.IDrename(aOldID, aNewID)
-	atomic.StoreUint32(&ht.µChange, 0)
+	result := ht.hl.renameID(aOldID, aNewID)
+	if result {
+		atomic.StoreUint32(&ht.changed, 0)
+	}
 
-	return ht
+	return result
 } // IDrename()
 
 // `IDupdate()` checks `aText` removing all #hashtags/@mentions no longer
@@ -366,25 +358,65 @@ func (ht *THashTags) IDrename(aOldID, aNewID uint64) *THashTags {
 // - `aText`: The new text to use.
 //
 // Returns:
-// - `*THashTags`: The updated list.
-func (ht *THashTags) IDupdate(aID uint64, aText []byte) *THashTags {
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
+// - `bool`: `true` if `aID` was updated, or `false` otherwise.
+func (ht *THashTags) IDupdate(aID uint64, aText []byte) bool {
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
+	}
 
 	oldCRC := ht.hl.checksum()
 	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.µChange) {
+		if oldCRC != atomic.LoadUint32(&ht.changed) {
 			go func() {
-				ht.hl.Store(ht.fn)
+				ht.hl.store(ht.fn)
 			}()
 		}
 	}()
 
-	ht.hl.IDupdate(aID, aText)
-	atomic.StoreUint32(&ht.µChange, 0)
+	result := ht.hl.updateID(aID, aText)
+	if result {
+		atomic.StoreUint32(&ht.changed, 0)
+	}
 
-	return ht
+	return result
 } // IDupdate()
+
+// `insert()` appends `aID` to the list associated with `aName`.
+//
+// If `aName` is empty it is silently ignored (i.e. this method
+// does nothing) returning `false`.
+//
+// Parameters:
+// - `aDelim`: The start character of words to use (i.e. either '@' or '#').
+// - `aName`: The hashtag/mention to lookup.
+// - `aID`: The referencing object to be added to the hash list.
+//
+// Returns:
+// - `bool`: `true` if `aID` was added, or `false` otherwise.
+func (ht *THashTags) insert(aDelim byte, aName string, aID uint64) bool {
+	// prepare for case-insensitive search:
+	aName = strings.ToLower(strings.TrimSpace(aName))
+	if 0 == len(aName) {
+		return false
+	}
+
+	oldCRC := ht.checksum()
+	defer func() {
+		if oldCRC != atomic.LoadUint32(&ht.changed) {
+			go func() {
+				ht.hl.store(ht.fn)
+			}()
+		}
+	}()
+
+	result := ht.hl.add(aDelim, aName, aID)
+	if result {
+		atomic.StoreUint32(&ht.changed, 0)
+	}
+
+	return result
+} // insert()
 
 // `Len()` returns the current length of the list i.e. how many #hashtags
 // and @mentions are currently stored in the list.
@@ -392,10 +424,12 @@ func (ht *THashTags) IDupdate(aID uint64, aText []byte) *THashTags {
 // Returns:
 // - `int`: The length of all #hashtag/@mention list.
 func (ht *THashTags) Len() int {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	return ht.hl.Len()
+	return ht.hl.len()
 } // Len()
 
 // `LenTotal()` returns the length of all #hashtag/@mention lists stored
@@ -404,10 +438,12 @@ func (ht *THashTags) Len() int {
 // Returns:
 // - `int`: The total length of all #hashtag/@mention lists.
 func (ht *THashTags) LenTotal() (rLen int) {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	return ht.hl.LenTotal()
+	return ht.hl.lenTotal()
 } // LenTotal()
 
 // `List()` returns a list of #hashtags/@mentions with
@@ -416,17 +452,19 @@ func (ht *THashTags) LenTotal() (rLen int) {
 // Returns:
 // - `TCountList`: A list of #hashtags/@mentions with their counts of IDs.
 func (ht *THashTags) List() TCountList {
-	if (ht.hl.checksum() == ht.µCC.µCRC) && (0 < len(ht.µCC.µCounts)) {
-		return ht.µCC.µCounts
+	if (ht.hl.checksum() == ht.cc.µCRC) && (0 < len(ht.cc.µCounts)) {
+		return ht.cc.µCounts
 	}
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	ht.µCC.µCounts = nil
-	ht.µCC.µCRC = ht.hl.checksum()
-	ht.µCC.µCounts = ht.hl.List()
+	ht.cc.µCounts = nil
+	ht.cc.µCRC = ht.hl.checksum()
+	ht.cc.µCounts = ht.hl.countedList()
 
-	return ht.µCC.µCounts
+	return ht.cc.µCounts
 } // List()
 
 // `Load()` reads the configured file returning the data structure
@@ -438,35 +476,46 @@ func (ht *THashTags) List() TCountList {
 // - `*THashTags`: The updated list.
 // - `error`: If there is an error, it will be of type `*PathError`.
 func (ht *THashTags) Load() (*THashTags, error) {
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
+	}
 
-	_, err := ht.hl.Load(ht.fn)
+	oldCRC := ht.hl.checksum()
+	defer func() {
+		if oldCRC != atomic.LoadUint32(&ht.changed) {
+			go func() {
+				ht.hl.store(ht.fn)
+			}()
+		}
+	}()
+
+	_, err := ht.hl.load(ht.fn)
+	if nil == err {
+		atomic.StoreUint32(&ht.changed, 0)
+	}
 
 	return ht, err
 } // Load()
 
 // `MentionAdd()` appends `aID` to the list of `aMention`.
 //
-// If either `aMention` or `aID` are empty strings they are
-// silently ignored (i.e. this method does nothing).
+// If `aMention` is empty it is silently ignored (i.e. this method
+// does nothing) returning `false`.
 //
 // Parameters:
 // - `aMention`: The list index to lookup.
 // - `aID`: The ID to be added to the hash list.
 //
 // Returns:
-// - `*THashTags`: The updated list.
-func (ht *THashTags) MentionAdd(aMention string, aID uint64) *THashTags {
-	if 0 == len(aMention) {
-		return ht
+// - `bool`: `true` if `aID` was added, or `false` otherwise.
+func (ht *THashTags) MentionAdd(aMention string, aID uint64) bool {
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
 	}
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
 
-	ht.add(MarkMention, aMention, aID)
-
-	return ht
+	return ht.insert(MarkMention, aMention, aID)
 } // MentionAdd()
 
 // `MentionCount()` returns the number of mentions in the list.
@@ -474,13 +523,18 @@ func (ht *THashTags) MentionAdd(aMention string, aID uint64) *THashTags {
 // Returns:
 // - `int`: The number of mentions in the list.
 func (ht *THashTags) MentionCount() int {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	return ht.hl.MentionCount()
+	return ht.hl.mentionCount()
 } // MentionCount()
 
 // `MentionLen()` returns the number of IDs stored for `aMention`.
+//
+// If `aMention` is empty it is silently ignored (i.e. this method
+// does nothing) returning `-1`.
 //
 // Parameters:
 // - `aMention` identifies the ID list to lookup.
@@ -488,13 +542,18 @@ func (ht *THashTags) MentionCount() int {
 // Returns:
 // - `int`: The number of `aMention` in the list.
 func (ht *THashTags) MentionLen(aMention string) int {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	return ht.hl.MentionLen(aMention)
+	return ht.hl.mentionLen(aMention)
 } // MentionLen()
 
 // `MentionList()` returns a list of IDs associated with `aMention`.
+//
+// If `aMention` is empty it is silently ignored (i.e. this method
+// does nothing), returning an empty slice.
 //
 // Parameters:
 // - `aMention`: The mention to lookup.
@@ -502,31 +561,38 @@ func (ht *THashTags) MentionLen(aMention string) int {
 // Returns:
 // - `[]uint64`: The number of references of `aName`.
 func (ht *THashTags) MentionList(aMention string) []uint64 {
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	return ht.hl.MentionList(aMention)
+	return ht.hl.mentionList(aMention)
 } // MentionList()
 
 // `MentionRemove()` deletes `aID` from the list of `aMention`.
+//
+// If `aMention` is empty it is silently ignored (i.e. this method
+// does nothing) returning `false`.
 //
 // Parameters:
 // - `aMention`: The mention to lookup.
 // - `aID`: The referenced object to remove from the list.
 //
 // Returns:
-// - `*THashTags`: The current hash list.
-func (ht *THashTags) MentionRemove(aMention string, aID uint64) *THashTags {
-	if 0 == len(aMention) {
-		return ht
+// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+func (ht *THashTags) MentionRemove(aMention string, aID uint64) bool {
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
 	}
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
 
 	return ht.removeHM(MarkMention, aMention, aID)
 } // MentionRemove()
 
 // `removeHM()` deletes `aID` from the list of `aName`.
+//
+// If `aName` is empty it is silently ignored (i.e. this method
+// does nothing) returning `false`.
 //
 // Parameters:
 // - `aDelim` is the start character of words to use (i.e. either '@' or '#').
@@ -534,26 +600,28 @@ func (ht *THashTags) MentionRemove(aMention string, aID uint64) *THashTags {
 // - `aID`: The source to remove from the list.
 //
 // Returns:
-// - `*THashList`: The current hash list.
-func (ht *THashTags) removeHM(aDelim byte, aName string, aID uint64) *THashTags {
+// - `bool`: `true` if `aID` was updated, or `false` otherwise.
+func (ht *THashTags) removeHM(aDelim byte, aName string, aID uint64) bool {
 	aName = strings.ToLower(strings.TrimSpace(aName))
-	if (0 == len(aName)) || (0 == aID) {
-		return ht
+	if 0 == len(aName) {
+		return false
 	}
 
 	oldCRC := ht.hl.checksum()
 	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.µChange) {
+		if oldCRC != atomic.LoadUint32(&ht.changed) {
 			go func() {
-				ht.hl.Store(ht.fn)
+				ht.hl.store(ht.fn)
 			}()
 		}
 	}()
 
-	ht.hl.removeHM(aDelim, aName, aID)
-	atomic.StoreUint32(&ht.µChange, 0)
+	result := ht.hl.removeHM(aDelim, aName, aID)
+	if result {
+		atomic.StoreUint32(&ht.changed, 0)
+	}
 
-	return ht
+	return result
 } // removeHM()
 
 // `SetFilename()` sets `aFilename` to be used by this list.
@@ -564,8 +632,10 @@ func (ht *THashTags) removeHM(aDelim byte, aName string, aID uint64) *THashTags 
 // Returns:
 // - `*THashList`: The current hash list.
 func (ht *THashTags) SetFilename(aFilename string) *THashTags {
-	ht.mtx.Lock()
-	defer ht.mtx.Unlock()
+	if ht.safe {
+		ht.mtx.Lock()
+		defer ht.mtx.Unlock()
+	}
 
 	ht.fn = aFilename
 
@@ -581,10 +651,12 @@ func (ht *THashTags) SetFilename(aFilename string) *THashTags {
 // - `int`: Number of bytes written to storage.
 // - `error`: A possible storage error, or `nil` in case of success.
 func (ht *THashTags) Store() (int, error) {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
-	return ht.hl.Store(ht.fn)
+	return ht.hl.store(ht.fn)
 } // Store()
 
 // `String()` returns the whole list as a linefeed separated string.
@@ -592,8 +664,10 @@ func (ht *THashTags) Store() (int, error) {
 // Returns:
 // - `string`: The string representation of this hash list.
 func (ht *THashTags) String() string {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
 	return ht.hl.String()
 } // String()
