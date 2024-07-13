@@ -455,12 +455,13 @@ func (ht *THashTags) LenTotal() int {
 // Returns:
 // - `TCountList`: A list of #hashtags/@mentions with their counts of IDs.
 func (ht *THashTags) List() TCountList {
-	if (ht.hl.checksum() == ht.cc.crc) && (0 < len(ht.cc.cl)) {
-		return ht.cc.cl
-	}
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
+	}
+
+	if (ht.hl.checksum() == ht.cc.crc) && (0 < len(ht.cc.cl)) {
+		return ht.cc.cl
 	}
 
 	ht.cc.cl = nil
