@@ -12,6 +12,12 @@
 	- [Purpose](#purpose)
 	- [Installation](#installation)
 	- [Usage](#usage)
+		- [Methods](#methods)
+			- [Haschtag related methods](#haschtag-related-methods)
+			- [ID related methods](#id-related-methods)
+			- [Mentions related methods](#mentions-related-methods)
+			- [Maintenance methods](#maintenance-methods)
+		- [Basic Usage](#basic-usage)
 	- [Libraries](#libraries)
 	- [Licence](#licence)
 
@@ -31,36 +37,95 @@ You can use `Go` to install this package for you:
 
 ## Usage
 
-In principle for each `#hashtag` or `@mention` a list of _IDs_ is maintained.
-These _IDs_ can be any (string) data that identifies the text in which the `#hashtag` or `@mention` was found, e.g. a filename or some database record reference.
+For each `#hashtag` or `@mention` a list of _IDs_ is maintained.
+These _IDs_ can be any (`uint64`) data that identifies the text in which the `#hashtag` or `@mention` was found, e.g. some database record reference or article ID.
 The only condition is that it is unique as far as the program using this package is concerned.
 
 _Note_ that both `#hashtag` and `@mention` are stored lower-cased to allow for case-insensitive searches.
 
-To get a `THashList` instance there's a simple way:
+To get a `THashTags` instance there's a simple way:
 
 	fName := "mytags.lst"
-	ht, err := hashtags.New(fName)
+	ht, err := hashtags.New(fName, true)
 	if nil != err {
 		log.PrintF("Problem loading file '%s': %v", fName, err)
 	}
 
-	// …
+	// ...
 	// do something with the list
-	// …
+	// ...
 
 	written, err := ht.Store()
 	if nil != err {
 		log.PrintF("Problem writing file '%s': %v", fName, err)
 	}
 
-The package provides a boolean configuration variable called `UseBinaryStorage` which is `true` by default.
-It determines whether the data written by `Store()` and read by `Load()` use plain text (i.e. `hashtags.UseBinaryStorage = false`) or a binary data format.
-The advantage of the plain text format is that it can be inspected by any text related tool (like e.g. `grep` or `diff`).
-The advantage of the binary format is that it is about three to four times as fast when loading/storing data and it uses a few bytes less than the text format.
+The constructor function `New()` takes two arguments: `string` specifying the name of the file to use for loading/storing the list's data, and a `bool` value indicating whether the list should be thread-safe or not. The setting for the latter depends on the actual use-case.
+
+The package provides a boolean configuration variable called `UseBinaryStorage` which is `true` by default. It determines whether the data written by `Store()` and read by `Load()` use plain text (i.e. `hashtags.UseBinaryStorage = false`) or a binary data format.
+The advantage of the _plain text_ format is that it can be inspected by any text related tool (like e.g. `grep` or `diff`).
+The advantage of the _binary format_ is that it is about three to four times as fast when loading/storing data and it uses a few bytes less than the text format.
 For this reasons it's used by default (i.e. `hashtags.UseBinaryStorage == true`); during development of your own application using this package, however, you might want to change to text format for diagnostic purposes.
 
 For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/hashtags/).
+
+### Methods
+
+There are several kinds of methods provided:
+
+#### Haschtag related methods
+
+The following methods can be used to handle hashtags:
+
+ - `HashAdd(aHash string, aID uint64) bool` inserts `aHash` as used by document `aID`, returning whether anything changed.
+ - `HashCount() int` returns the number of hashtags currently handled.
+ - `HashLen(aHash string) int` returns the number of documents using `aHash`.
+ - `HashList(aHash string) []uint64` returns a list of all document IDs using `aHash`.
+ - `HashRemove(aHash string, aID uint64) bool` removes the document `aID` from the `aHash` list, returning whether anything changed.
+
+#### ID related methods
+
+The following methods can be used to handle the document IDs of the list entries.
+
+ - `IDlist(aID uint64) []string` returns a list of hashtags and mentions occurring in the document identified by `aID`.
+ - `IDparse(aID uint64, aText []byte) bool` parses the given `aText` for hashtags and mentions and stores `aID` in the respective hashtag/mention lists, returning whether anything changed.
+ - `IDremove(aID uint64) bool` deletes the given `aID` from all hashtag/mention lists, returning whether anything changed.
+ - `IDrename(aOldID, aNewID uint64) bool` changes the given `aOldID` to `aNewID` in the rare case that a document's ID changed, returning whether anything changed.
+ - `IDupdate(aID uint64, aText []byte) bool` replaces the current hashtags/mentions stored for `aID` with those found in `aText`, returning whether anything changed.
+
+#### Mentions related methods
+
+The following methods can be used to handle mentions:
+
+- `MentionAdd(aMention string, aID uint64) bool` inserts `aMention` as used by document `aID`, returning whether anything changed.
+- `MentionCount() int` returns the number of mentions currently handled.
+- `MentionLen(aMention string) int` returns the number of documents using `aMention`.
+- `MentionList(aMention string) []uint64` returns a list of all document IDs using `aMention`.
+- `MentionRemove(aMention string, aID uint64) bool` removes the document `aID` from the `aMention` list, returning whether anything changed.
+
+#### Maintenance methods
+
+ - `Clear() *THashTags` empties the internal data structures: all `#hashtags` and `@mentions` are deleted.
+ - `Filename() string` returns the filename given to the initial `New()` call for reading/storing the list's contents.
+ - `Len() int` returns the current length of the list i.e. how many #hashtags and @mentions are currently stored in the list.
+ - `LenTotal() int` returns the length of all #hashtag/@mention lists and their respective number of source IDs stored in the list.
+ - `List() TCountList`  returns a list of #hashtags/@mentions with their respective count of associated IDs.
+ - `Load() (*THashTags, error)` reads the configured file returning the data structure read from the file given with the `New()` call and a possible error condition.
+ - `SetFilename(aFilename string) *THashTags` sets the filename for loading/storing the hashtags, returning the updated list instance.
+ - `Store() (int, error)` writes the whole list to the configured file returning the number of bytes written and a possible error.
+ - `String() string` returns the whole list as a linefeed separated string.
+
+### Basic Usage
+
+Although there are a lot of options (methods) available, basically the module is quite straightforward to use.
+
+1. Create a new instance:
+
+		myList := hashtags.New("myFile.db", true)
+
+2. Whenever your application receives a new document, retrieve or create it's ID and text, then call
+
+		ok := myList.IDparse(docID, docText)
 
 ## Libraries
 
@@ -70,7 +135,7 @@ The following external libraries were used building `HashTags`:
 
 ## Licence
 
-	Copyright © 2019, 2024 M.Watermann, 10247 Berlin, Germany
+	Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
 			All rights reserved
 		EMail : <support@mwat.de>
 
