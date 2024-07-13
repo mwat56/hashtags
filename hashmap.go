@@ -300,7 +300,7 @@ func (hm tHashMap) keys() []string {
 //
 // Returns:
 // - `[]uint64`: The number of references of `aName`.
-func (hm *tHashMap) list(aDelim byte, aName string) (rList []uint64) {
+func (hm tHashMap) list(aDelim byte, aName string) (rList []uint64) {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
 		return
@@ -310,14 +310,14 @@ func (hm *tHashMap) list(aDelim byte, aName string) (rList []uint64) {
 		aName = string(aDelim) + aName
 	}
 
-	if sl, ok := (*hm)[aName]; ok {
+	if sl, ok := hm[aName]; ok {
 		rList = []uint64(*sl)
 	}
 
 	return
 } // list()
 
-// `Load()` reads the configured file returning the data structure
+// `load()` reads the configured file returning the data structure
 // read from the file and a possible error condition.
 //
 // If the hash file doesn't exist that is not considered an error.
@@ -329,7 +329,7 @@ func (hm *tHashMap) list(aDelim byte, aName string) (rList []uint64) {
 // Returns:
 // - `*tHashMap`: The loaded hash map.
 // - `error`: A possible I/O error.
-func (hm *tHashMap) Load(aFilename string) (*tHashMap, error) {
+func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 	if nil == hm {
 		return hm, se.Wrap(errors.New("nil == hashmap"), 1)
 	}
@@ -546,7 +546,7 @@ func (hm tHashMap) store(aFilename string) (int, error) {
 	file, err := os.OpenFile(aFilename,
 		os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660) //#nosec G302
 	if nil != err {
-		return 0, se.Wrap(err, 1)
+		return 0, se.Wrap(err, 3)
 	}
 	defer file.Close()
 
@@ -589,32 +589,32 @@ func (hm tHashMap) String() (rStr string) {
 	return
 } // String()
 
-// `walk()` traverses through all entries in the #hashtag/@mention
-// lists calling `aFunc` for each entry.
-//
-// If `aFunc` returns `false` when called the respective ID
-// will be removed from the associated #hashtag/@mention.
-//
-// NOTE: Since the order of the hashtags/mentions is NOT guaranteed
-// here the order of visits to the items isn't ordered either.
-//
-// Parameters:
-// - `aFunc` The function called for each ID in all lists.
-//
-// Returns:
-// - `bool`: `true` if a ID was removed, or `false` otherwise.
-func (hm *tHashMap) walk(aFunc TWalkFunc) bool {
-	var result bool
-	for hash, sl := range *hm {
-		for _, id := range *sl {
-			if !aFunc(hash, id) {
-				hm.removeID(id)
-				result = true
-			}
-		}
-	}
+// // `walk()` traverses through all entries in the #hashtag/@mention
+// // lists calling `aFunc` for each entry.
+// //
+// // If `aFunc` returns `false` when called the respective ID
+// // will be removed from the associated #hashtag/@mention.
+// //
+// // NOTE: Since the order of the hashtags/mentions is NOT guaranteed
+// // here the order of visits to the items isn't ordered either.
+// //
+// // Parameters:
+// // - `aFunc` The function called for each ID in all lists.
+// //
+// // Returns:
+// // - `bool`: `true` if a ID was removed, or `false` otherwise.
+// func (hm *tHashMap) walk(aFunc TWalkFunc) bool {
+// 	var result bool
+// 	for hash, sl := range *hm {
+// 		for _, id := range *sl {
+// 			if !aFunc(hash, id) {
+// 				hm.removeID(id)
+// 				result = true
+// 			}
+// 		}
+// 	}
 
-	return result
-} // walk()
+// 	return result
+// } // walk()
 
 /* EoF */

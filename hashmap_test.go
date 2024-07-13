@@ -345,7 +345,7 @@ func Test_tHashMap_Load(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			UseBinaryStorage = tt.binary
 			tt.hm.store(testHmStore)
-			got, err := tt.hm.Load(testHmStore)
+			got, err := tt.hm.load(testHmStore)
 			if (nil != err) != tt.wantErr {
 				t.Errorf("%q: tHashMap.Load() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, err, tt.wantErr)
@@ -577,26 +577,26 @@ func Test_tHashMap_String(t *testing.T) {
 	}
 } // Test_tHashMap_String()
 
-func Test_tHashMap_walk(t *testing.T) {
-	type args struct {
-		aFunc TWalkFunc
-	}
-	tests := []struct {
-		name      string
-		hm        *tHashMap
-		args      args
-		wantRBool bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if gotRBool := tt.hm.walk(tt.args.aFunc); gotRBool != tt.wantRBool {
-				t.Errorf("tHashMap.walk() = %v, want %v", gotRBool, tt.wantRBool)
-			}
-		})
-	}
-}
+// func Test_tHashMap_walk(t *testing.T) {
+// 	type args struct {
+// 		aFunc TWalkFunc
+// 	}
+// 	tests := []struct {
+// 		name      string
+// 		hm        *tHashMap
+// 		args      args
+// 		wantRBool bool
+// 	}{
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if gotRBool := tt.hm.walk(tt.args.aFunc); gotRBool != tt.wantRBool {
+// 				t.Errorf("tHashMap.walk() = %v, want %v", gotRBool, tt.wantRBool)
+// 			}
+// 		})
+// 	}
+// }
 
 func Benchmark_LoadTxT(b *testing.B) {
 	saveBinary := UseBinaryStorage
@@ -612,7 +612,7 @@ func Benchmark_LoadTxT(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		if _, err := hm.Load(testHmStore); nil != err {
+		if _, err := hm.load(testHmStore); nil != err {
 			log.Printf("LoadTxt(): %v", err)
 		}
 	}
@@ -632,7 +632,7 @@ func Benchmark_LoadBin(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		if _, err := hm.Load(testHmStore); nil != err {
+		if _, err := hm.load(testHmStore); nil != err {
 			log.Printf("LoadBin(): %v", err)
 		}
 	}

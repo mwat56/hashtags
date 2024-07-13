@@ -176,7 +176,7 @@ func TestTHashList_clear(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.clear().Len(); got != tt.want {
+			if got := tt.hl.clear().len(); got != tt.want {
 				t.Errorf("%q: THashList.Clear() = %v, want %v",
 					tt.name, got, tt.want)
 			}
@@ -217,82 +217,7 @@ func TestTHashList_compareTo(t *testing.T) {
 	}
 } // TestTHashList_compareTo()
 
-func TestTHashList_Len(t *testing.T) {
-	hl1, _ := newHashList("")
-
-	hl2, _ := newHashList("")
-	hl2.add(MarkHash, "#hash", 0)
-
-	hl3, _ := newHashList("")
-	hl3.add(MarkHash, "#hash2", 1)
-	hl3.add(MarkHash, "#hash3", 2)
-
-	hl4, _ := newHashList("")
-	hl4.add(MarkHash, "#hash2", 1)
-	hl4.add(MarkHash, "#hash3", 2)
-	hl4.add(MarkHash, "#hash4", 3)
-
-	tests := []struct {
-		name string
-		hl   *tHashList
-		want int
-	}{
-		{" 1", hl1, 0},
-		{" 2", hl2, 1},
-		{" 3", hl3, 2},
-		{" 4", hl4, 3},
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.Len(); got != tt.want {
-				t.Errorf("%q: THashList.Len() = %v, want %v",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_Len()
-
-func TestTHashList_LenTotal(t *testing.T) {
-	fn := htFilename()
-	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
-	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
-
-	hl1, _ := newHashList(fn)
-	hl1.add(MarkHash, hash1, id1)
-	hl1.add(MarkHash, hash2, id2)
-	hl1.add(MarkHash, hash2, id1)
-	hl1.add(MarkHash, hash1, id2)
-
-	hl2, _ := newHashList(fn)
-	hl2.add(MarkHash, hash1, id1)
-	hl2.add(MarkHash, hash2, id2)
-	hl2.add(MarkHash, hash2, id1)
-	hl2.add(MarkHash, hash1, id2)
-	hl2.add(MarkHash, hash3, id1)
-	hl2.add(MarkHash, hash3, id2)
-	hl2.add(MarkHash, hash3, id3)
-
-	tests := []struct {
-		name string
-		hl   *tHashList
-		want int
-	}{
-		{" 1", hl1, 6},
-		{" 2", hl2, 10},
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.LenTotal(); got != tt.want {
-				t.Errorf("%q: THashList.LenTotal() = %v, want %v",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_LenTotal()
-
-func TestTHashList_List(t *testing.T) {
+func TestTHashList_countedList(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "@mention1", "#another3"
 	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
 	hl1 := &tHashList{
@@ -329,13 +254,88 @@ func TestTHashList_List(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.List(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("%q: THashList.list() = \n%v\n>>>> want: >>>>\n%v",
+			if got := tt.hl.countedList(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("%q: THashList.countedList() = \n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-} // TestTHashList_List()
+} // TestTHashList_countedList()
+
+func TestTHashList_len(t *testing.T) {
+	hl1, _ := newHashList("")
+
+	hl2, _ := newHashList("")
+	hl2.add(MarkHash, "#hash", 0)
+
+	hl3, _ := newHashList("")
+	hl3.add(MarkHash, "#hash2", 1)
+	hl3.add(MarkHash, "#hash3", 2)
+
+	hl4, _ := newHashList("")
+	hl4.add(MarkHash, "#hash2", 1)
+	hl4.add(MarkHash, "#hash3", 2)
+	hl4.add(MarkHash, "#hash4", 3)
+
+	tests := []struct {
+		name string
+		hl   *tHashList
+		want int
+	}{
+		{" 1", hl1, 0},
+		{" 2", hl2, 1},
+		{" 3", hl3, 2},
+		{" 4", hl4, 3},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.len(); got != tt.want {
+				t.Errorf("%q: THashList.len() = %v, want %v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_len()
+
+func TestTHashList_lenTotal(t *testing.T) {
+	fn := htFilename()
+	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
+	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
+
+	hl1, _ := newHashList(fn)
+	hl1.add(MarkHash, hash1, id1)
+	hl1.add(MarkHash, hash2, id2)
+	hl1.add(MarkHash, hash2, id1)
+	hl1.add(MarkHash, hash1, id2)
+
+	hl2, _ := newHashList(fn)
+	hl2.add(MarkHash, hash1, id1)
+	hl2.add(MarkHash, hash2, id2)
+	hl2.add(MarkHash, hash2, id1)
+	hl2.add(MarkHash, hash1, id2)
+	hl2.add(MarkHash, hash3, id1)
+	hl2.add(MarkHash, hash3, id2)
+	hl2.add(MarkHash, hash3, id3)
+
+	tests := []struct {
+		name string
+		hl   *tHashList
+		want int
+	}{
+		{" 1", hl1, 6},
+		{" 2", hl2, 10},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.lenTotal(); got != tt.want {
+				t.Errorf("%q: THashList.lenTotal() = %v, want %v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_lenTotal()
 
 func funcHashMentionRE(aText string) int {
 	matches := htHashMentionRE.FindAllStringSubmatch(aText, -1)
@@ -525,7 +525,7 @@ func TestTHashList_removeID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := hl.IDremove(tt.id); got != tt.want {
+			if got := hl.removeID(tt.id); got != tt.want {
 				t.Errorf("%q: THashList.removeID() = %v,\nwant %v",
 					tt.name, got, tt.want)
 			}
@@ -571,7 +571,7 @@ func TestTHashList_renameID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := hl.IDrename(tt.args.aOldID, tt.args.aNewID); got != tt.want {
+			if got := hl.renameID(tt.args.aOldID, tt.args.aNewID); got != tt.want {
 				t.Errorf("%q: THashList.renameID() =\n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -642,7 +642,7 @@ func TestTHashList_updateID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := hl.IDupdate(tt.args.aID, tt.args.aText)
+			got := hl.updateID(tt.args.aID, tt.args.aText)
 			if got != tt.want {
 				t.Errorf("%q: THashList.IDupdate() =\n%v\n>>>> want: >>>>\n%v\n%v",
 					tt.name, got, tt.want, hl)
