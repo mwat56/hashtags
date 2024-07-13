@@ -69,40 +69,6 @@ func Test_newHashList(t *testing.T) {
 	}
 } // Test_newHashList()
 
-func TestTHashList_add(t *testing.T) {
-	hl0 := &tHashList{
-		hm: make(tHashMap, 64),
-	}
-
-	type tArgs struct {
-		aDelim byte
-		aName  string
-		aID    uint64
-	}
-	tests := []struct {
-		name   string
-		fields *tHashList
-		args   tArgs
-		want   bool
-	}{
-		{"0", hl0, tArgs{}, false},
-		{"1", hl0, tArgs{MarkHash, "hash1", 1}, true},
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hl := &tHashList{
-				hm: tt.fields.hm,
-			}
-			got := hl.add(tt.args.aDelim, tt.args.aName, tt.args.aID)
-			if got != tt.want {
-				t.Errorf("%q: THashList.add() =\n{%v}\n>>>> want: >>>>\n{%v}",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_add()
-
 func TestTHashList_checksum(t *testing.T) {
 	fn := htFilename()
 	hash1, hash2 := "#hash1", "#hash2"
@@ -116,9 +82,9 @@ func TestTHashList_checksum(t *testing.T) {
 		//
 	}
 	h1a, _ := newHashList(fn)
-	h1a.add(MarkHash, hash1, id2)
-	h1a.add(MarkHash, hash2, id1)
-	h1a.add(MarkHash, hash2, id3)
+	h1a.insert(MarkHash, hash1, id2)
+	h1a.insert(MarkHash, hash2, id1)
+	h1a.insert(MarkHash, hash2, id3)
 	w1 := h1a.hm.checksum()
 
 	hl2 := &tHashList{
@@ -129,12 +95,12 @@ func TestTHashList_checksum(t *testing.T) {
 		//
 	}
 	h2a, _ := newHashList(fn)
-	h2a.add(MarkHash, hash1, id1)
-	h2a.add(MarkHash, hash1, id2)
-	h2a.add(MarkHash, hash2, id2)
-	h2a.add(MarkHash, hash2, id3)
-	h2a.add(MarkHash, hash1, id2)
-	h2a.add(MarkHash, hash2, id3)
+	h2a.insert(MarkHash, hash1, id1)
+	h2a.insert(MarkHash, hash1, id2)
+	h2a.insert(MarkHash, hash2, id2)
+	h2a.insert(MarkHash, hash2, id3)
+	h2a.insert(MarkHash, hash1, id2)
+	h2a.insert(MarkHash, hash2, id3)
 	w2 := h2a.hm.checksum()
 
 	tests := []struct {
@@ -162,10 +128,10 @@ func TestTHashList_clear(t *testing.T) {
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := uint64(654), uint64(321)
 	hl1, _ := newHashList(fn)
-	hl1.add(MarkHash, hash1, id1)
-	hl1.add(MarkHash, hash2, id2)
-	hl1.add(MarkHash, hash2, id1)
-	hl1.add(MarkHash, hash1, id2)
+	hl1.insert(MarkHash, hash1, id1)
+	hl1.insert(MarkHash, hash2, id2)
+	hl1.insert(MarkHash, hash2, id1)
+	hl1.insert(MarkHash, hash1, id2)
 	tests := []struct {
 		name string
 		hl   *tHashList
@@ -195,8 +161,8 @@ func TestTHashList_compareTo(t *testing.T) {
 	wl2 := &tHashList{
 		hm: make(tHashMap, 64),
 	}
-	wl2.add(MarkHash, "hash2", 2222)
-	wl2.add(MarkMention, "Name", 2222)
+	wl2.insert(MarkHash, "hash2", 2222)
+	wl2.insert(MarkMention, "Name", 2222)
 
 	tests := []struct {
 		name string
@@ -262,20 +228,50 @@ func TestTHashList_countedList(t *testing.T) {
 	}
 } // TestTHashList_countedList()
 
+func TestTHashList_insert(t *testing.T) {
+	hl0 := &tHashList{
+		hm: make(tHashMap, 64),
+	}
+
+	type tArgs struct {
+		aDelim byte
+		aName  string
+		aID    uint64
+	}
+
+	tests := []struct {
+		name string
+		hl   *tHashList
+		args tArgs
+		want bool
+	}{
+		{"0", hl0, tArgs{}, false},
+		{"1", hl0, tArgs{MarkHash, "hash1", 1}, true},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		got := tt.hl.insert(tt.args.aDelim, tt.args.aName, tt.args.aID)
+		if got != tt.want {
+			t.Errorf("%q: THashList.insert() =\n{%v}\n>>>> want: >>>>\n{%v}",
+				tt.name, got, tt.want)
+		}
+	}
+} // TestTHashList_insert()
+
 func TestTHashList_len(t *testing.T) {
 	hl1, _ := newHashList("")
 
 	hl2, _ := newHashList("")
-	hl2.add(MarkHash, "#hash", 0)
+	hl2.insert(MarkHash, "#hash", 0)
 
 	hl3, _ := newHashList("")
-	hl3.add(MarkHash, "#hash2", 1)
-	hl3.add(MarkHash, "#hash3", 2)
+	hl3.insert(MarkHash, "#hash2", 1)
+	hl3.insert(MarkHash, "#hash3", 2)
 
 	hl4, _ := newHashList("")
-	hl4.add(MarkHash, "#hash2", 1)
-	hl4.add(MarkHash, "#hash3", 2)
-	hl4.add(MarkHash, "#hash4", 3)
+	hl4.insert(MarkHash, "#hash2", 1)
+	hl4.insert(MarkHash, "#hash3", 2)
+	hl4.insert(MarkHash, "#hash4", 3)
 
 	tests := []struct {
 		name string
@@ -304,19 +300,19 @@ func TestTHashList_lenTotal(t *testing.T) {
 	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
 
 	hl1, _ := newHashList(fn)
-	hl1.add(MarkHash, hash1, id1)
-	hl1.add(MarkHash, hash2, id2)
-	hl1.add(MarkHash, hash2, id1)
-	hl1.add(MarkHash, hash1, id2)
+	hl1.insert(MarkHash, hash1, id1)
+	hl1.insert(MarkHash, hash2, id2)
+	hl1.insert(MarkHash, hash2, id1)
+	hl1.insert(MarkHash, hash1, id2)
 
 	hl2, _ := newHashList(fn)
-	hl2.add(MarkHash, hash1, id1)
-	hl2.add(MarkHash, hash2, id2)
-	hl2.add(MarkHash, hash2, id1)
-	hl2.add(MarkHash, hash1, id2)
-	hl2.add(MarkHash, hash3, id1)
-	hl2.add(MarkHash, hash3, id2)
-	hl2.add(MarkHash, hash3, id3)
+	hl2.insert(MarkHash, hash1, id1)
+	hl2.insert(MarkHash, hash2, id2)
+	hl2.insert(MarkHash, hash2, id1)
+	hl2.insert(MarkHash, hash1, id2)
+	hl2.insert(MarkHash, hash3, id1)
+	hl2.insert(MarkHash, hash3, id2)
+	hl2.insert(MarkHash, hash3, id3)
 
 	tests := []struct {
 		name string
@@ -615,12 +611,12 @@ func TestTHashList_updateID(t *testing.T) {
 	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
 
 	hl, _ := newHashList("")
-	hl.add(MarkHash, hash1, id1)
-	hl.add(MarkHash, hash2, id1)
-	hl.add(MarkHash, hash3, id3)
-	hl.add(MarkMention, hash1, id3)
-	hl.add(MarkMention, hash2, id2)
-	hl.add(MarkMention, hash3, id2)
+	hl.insert(MarkHash, hash1, id1)
+	hl.insert(MarkHash, hash2, id1)
+	hl.insert(MarkHash, hash3, id3)
+	hl.insert(MarkMention, hash1, id3)
+	hl.insert(MarkMention, hash2, id2)
+	hl.insert(MarkMention, hash3, id2)
 
 	tx0 := []byte("not recognised: support@mwat.de; accepted: <support@dfg> doesn't")
 	tx1 := []byte("blabla #" + hash1 + " blabla @" + hash3 + " blabla")

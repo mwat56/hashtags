@@ -47,32 +47,6 @@ func newHashList(aFilename string) (*tHashList, error) {
 // -------------------------------------------------------------------------
 // methods of THashList
 
-// `add()` appends `aID` to the list associated with `aMapIdx`.
-//
-// If either `aName` or `aID` are empty they are silently ignored
-// (i.e. this method does nothing) returning the current list.
-//
-// Parameters:
-// - `aDelim`: The start character of words to use (i.e. either '@' or '#').
-// - `aName`: The hashtag/mention to lookup.
-// - `aID`: The referencing object to be added to the hash list.
-//
-// Returns:
-// - `bool`: `true` if `aID` was added, or `false` otherwise.
-func (hl *tHashList) add(aDelim byte, aName string, aID uint64) bool {
-	// prepare for case-insensitive search:
-	aName = strings.ToLower(strings.TrimSpace(aName))
-	if 0 == len(aName) {
-		return false
-	}
-
-	if aName[0] != aDelim {
-		aName = string(aDelim) + aName
-	}
-
-	return hl.hm.add(aName, aID)
-} // add()
-
 // `checksum()` returns the list's CRC32 checksum.
 //
 // This method can be used to get a kind of 'footprint'.
@@ -164,6 +138,32 @@ func (hl *tHashList) idList(aID uint64) []string {
 
 	return hl.hm.idList(aID)
 } // idList()
+
+// `insert()` adds `aID` to the sources list associated with `aName`.
+//
+// If either `aName` or `aID` are empty they are silently ignored
+// (i.e. this method does nothing) returning the current list.
+//
+// Parameters:
+// - `aDelim`: The start character of words to use (i.e. either '@' or '#').
+// - `aName`: The hashtag/mention to lookup.
+// - `aID`: The referencing object to be added to the hash list.
+//
+// Returns:
+// - `bool`: `true` if `aID` was added, or `false` otherwise.
+func (hl *tHashList) insert(aDelim byte, aName string, aID uint64) bool {
+	// prepare for case-insensitive search:
+	aName = strings.ToLower(strings.TrimSpace(aName))
+	if 0 == len(aName) {
+		return false
+	}
+
+	if aName[0] != aDelim {
+		aName = string(aDelim) + aName
+	}
+
+	return hl.hm.insert(aName, aID)
+} // insert()
 
 // `len()` returns the current length of the list i.e. how many #hashtags
 // and @mentions are currently stored in the list.
@@ -321,7 +321,7 @@ func (hl *tHashList) parseID(aID uint64, aText []byte) bool {
 				continue
 			}
 		}
-		if hl.add(hash[0], hash, aID) {
+		if hl.insert(hash[0], hash, aID) {
 			result = true
 		}
 	}

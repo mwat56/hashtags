@@ -78,36 +78,6 @@ func cmp4sort(a, b string) int {
 // -------------------------------------------------------------------------
 // methods of tHashMap
 
-// `add()` appends `aID` to the sources list associated with `aName`.
-//
-// Parameters:
-// - `aName` is the list index to lookup.
-// - `aID` is to be added to the hash list.
-//
-// Returns:
-// - `bool`: `true` if `aID` was added, or `false` otherwise.
-func (hm *tHashMap) add(aName string, aID uint64) bool {
-	aName = strings.ToLower(strings.TrimSpace((aName)))
-	if 0 == len(aName) {
-		return false
-	}
-
-	var result bool
-	if sl, ok := (*hm)[aName]; ok {
-		if sl.insert(aID) { // changes in place
-			result = true
-		}
-	} else {
-		sl := newSourceList()
-		if sl.insert(aID) {
-			(*hm)[aName] = sl // assign the ID list to the hash
-			result = true
-		}
-	}
-
-	return result
-} // add()
-
 // `checksum()` computes the list's CRC32 checksum.
 //
 // Returns:
@@ -263,6 +233,36 @@ func (hm tHashMap) idxLen(aDelim byte, aName string) int {
 	return -1
 } // idxLen()
 
+// `insert()` adds `aID` to the sources list associated with `aName`.
+//
+// Parameters:
+// - `aName` is the list index to lookup.
+// - `aID` is to be added to the hash list.
+//
+// Returns:
+// - `bool`: `true` if `aID` was added, or `false` otherwise.
+func (hm *tHashMap) insert(aName string, aID uint64) bool {
+	aName = strings.ToLower(strings.TrimSpace((aName)))
+	if 0 == len(aName) {
+		return false
+	}
+
+	var result bool
+	if sl, ok := (*hm)[aName]; ok {
+		if sl.insert(aID) { // changes in place
+			result = true
+		}
+	} else {
+		sl := newSourceList()
+		if sl.insert(aID) {
+			(*hm)[aName] = sl // assign the ID list to the hash
+			result = true
+		}
+	}
+
+	return result
+} // insert()
+
 // `keys()` returns a slice of all keys in the hash map.
 // If the hash map is empty, it returns an empty slice.
 //
@@ -413,7 +413,7 @@ func (hm *tHashMap) loadText(aFile *os.File) (*tHashMap, error) {
 			if ui64, err := strconv.ParseUint(line, 10, 64); nil == err {
 				id = ui64
 			}
-			hm.add(hash, id)
+			hm.insert(hash, id)
 		}
 	}
 	if err := scanner.Err(); nil != err {

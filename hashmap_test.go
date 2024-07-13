@@ -28,44 +28,14 @@ func hmFilename() string {
 func prepHashMap() *tHashMap {
 	hm := make(tHashMap, 8)
 	// add already sorts keys
-	hm.add("#hash1", 111)
-	hm.add("#hash2", 222)
-	hm.add("#hash3", 333)
-	hm.add("@mention1", 111)
-	hm.add("@mention2", 222)
+	hm.insert("#hash1", 111)
+	hm.insert("#hash2", 222)
+	hm.insert("#hash3", 333)
+	hm.insert("@mention1", 111)
+	hm.insert("@mention2", 222)
 
 	return &hm
 } // prepHashMap()
-
-func Test_tHashMap_add(t *testing.T) {
-	hm1 := prepHashMap()
-	hm2 := prepHashMap()
-	hm2.add("#hash4", 444)
-
-	type tArgs struct {
-		aName string
-		aID   uint64
-	}
-	tests := []struct {
-		name string
-		hm   *tHashMap
-		args tArgs
-		want bool
-	}{
-		{"0", hm1, tArgs{"", 0}, false},            // empty hash
-		{"1", hm1, tArgs{"@mention2", 222}, false}, // already added
-		{"2", hm2, tArgs{"#hash4", 222}, true},
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.add(tt.args.aName, tt.args.aID); got != tt.want {
-				t.Errorf("%q: tHashMap.add() =\n%v\n>>>> want: >>>>\n%v",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-} // Test_tHashMap_add()
 
 func Test_tHashMap_clear(t *testing.T) {
 	hm1 := prepHashMap()
@@ -93,7 +63,7 @@ func Test_tHashMap_compareTo(t *testing.T) {
 	hm1 := prepHashMap()
 	om1 := prepHashMap()
 	om2 := prepHashMap()
-	om2.add("#hash4", 222)
+	om2.insert("#hash4", 222)
 
 	tests := []struct {
 		name string
@@ -119,10 +89,10 @@ func Test_tHashMap_count(t *testing.T) {
 	hm1 := prepHashMap()
 	wm1 := 3
 	hm2 := prepHashMap()
-	hm2.add("#hash4", 222) //.sort()
+	hm2.insert("#hash4", 222) //.sort()
 	wm2 := 4
 	hm3 := prepHashMap()
-	hm3.add("@mention3", 222) //.sort()
+	hm3.insert("@mention3", 222) //.sort()
 	wm3 := 3
 
 	tests := []struct {
@@ -158,7 +128,7 @@ func Test_tHashMap_countedList(t *testing.T) {
 	}
 
 	hm2 := prepHashMap()
-	hm2.add("@Alphons", 222)
+	hm2.insert("@Alphons", 222)
 	wc2 := TCountList{
 		{1, "#hash1"},
 		{1, "#hash2"},
@@ -223,7 +193,7 @@ func Test_tHashMap_idList(t *testing.T) {
 
 func Test_tHashMap_idxLen(t *testing.T) {
 	hm := prepHashMap()
-	hm.add("#hash2", 333)
+	hm.insert("#hash2", 333)
 
 	type tArgs struct {
 		aDelim byte
@@ -251,6 +221,36 @@ func Test_tHashMap_idxLen(t *testing.T) {
 	}
 } // Test_tHashMap_idxLen()
 
+func Test_tHashMap_insert(t *testing.T) {
+	hm1 := prepHashMap()
+	hm2 := prepHashMap()
+	hm2.insert("#hash4", 444)
+
+	type tArgs struct {
+		aName string
+		aID   uint64
+	}
+	tests := []struct {
+		name string
+		hm   *tHashMap
+		args tArgs
+		want bool
+	}{
+		{"0", hm1, tArgs{"", 0}, false},            // empty hash
+		{"1", hm1, tArgs{"@mention2", 222}, false}, // already added
+		{"2", hm2, tArgs{"#hash4", 222}, true},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hm.insert(tt.args.aName, tt.args.aID); got != tt.want {
+				t.Errorf("%q: tHashMap.insert() =\n%v\n>>>> want: >>>>\n%v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+} // Test_tHashMap_insert()
+
 func Test_tHashMap_keys(t *testing.T) {
 	// hm.add("#hash1", 111).
 	// 	add("#hash2", 222).
@@ -260,7 +260,7 @@ func Test_tHashMap_keys(t *testing.T) {
 	hm0 := &tHashMap{}
 	var wl0 []string
 	hm1 := prepHashMap()
-	hm1.add("#hash4", 444)
+	hm1.insert("#hash4", 444)
 	wm1 := []string{"#hash1", "#hash2", "#hash3", "#hash4", "@mention1", "@mention2"}
 
 	tests := []struct {
@@ -284,7 +284,7 @@ func Test_tHashMap_keys(t *testing.T) {
 
 func Test_tHashMap_list(t *testing.T) {
 	hm := prepHashMap()
-	hm.add("#hash3", 33)
+	hm.insert("#hash3", 33)
 	wl0 := tSourceList{}
 	wl1 := tSourceList{
 		111,
@@ -326,9 +326,9 @@ func Test_tHashMap_Load(t *testing.T) {
 		UseBinaryStorage = saveBinary
 	}()
 	hm1 := prepHashMap()
-	hm1.add("@CrashTestDummy", 1)
+	hm1.insert("@CrashTestDummy", 1)
 	wm1 := prepHashMap()
-	wm1.add("@CrashTestDummy", 1)
+	wm1.insert("@CrashTestDummy", 1)
 
 	tests := []struct {
 		name    string
@@ -366,8 +366,8 @@ func Test_tHashMap_remove(t *testing.T) {
 	// hm.add("#hash3", 333)
 	// hm.add("@mention1", 111)
 	// hm.add("@mention2", 222)
-	hm.add("#nameX", 999)
-	hm.add("#hash3", 333)
+	hm.insert("#nameX", 999)
+	hm.insert("#hash3", 333)
 
 	type tArgs struct {
 		aDelim byte
@@ -399,9 +399,9 @@ func Test_tHashMap_removeID(t *testing.T) {
 	hm0 := newHashMap()
 
 	hm1 := prepHashMap()
-	hm1.add("#hash2", 999)
-	hm1.add("#hash3", 888)
-	hm1.add("#CrashTestDummy", 777)
+	hm1.insert("#hash2", 999)
+	hm1.insert("#hash3", 888)
+	hm1.insert("#CrashTestDummy", 777)
 
 	tests := []struct {
 		name string
@@ -429,13 +429,13 @@ func Test_tHashMap_renameID(t *testing.T) {
 	id1, id2, id3 := uint64(11), uint64(22), uint64(33)
 
 	hm1 := prepHashMap()
-	hm1.add("#hash1", id1)
-	hm1.add("#hash1", id3)
-	hm1.add("@mention1", id3)
+	hm1.insert("#hash1", id1)
+	hm1.insert("#hash1", id3)
+	hm1.insert("@mention1", id3)
 
 	hm3 := prepHashMap()
-	hm3.add("#hash3", id2)
-	hm3.add("#hash4", id2)
+	hm3.insert("#hash3", id2)
+	hm3.insert("#hash4", id2)
 
 	type tArgs struct {
 		aOldID, aNewID uint64
@@ -520,7 +520,7 @@ func Test_tHashMap_sort(t *testing.T) {
 func Test_tHashMap_store(t *testing.T) {
 	fn := hmFilename()
 	hm1 := prepHashMap()
-	hm1.add("@alphons", 1)
+	hm1.insert("@alphons", 1)
 
 	tests := []struct {
 		name      string
@@ -605,7 +605,7 @@ func Benchmark_LoadTxT(b *testing.B) {
 		UseBinaryStorage = saveBinary
 	}()
 	hm := prepHashMap()
-	hm.add("@CrashTestDummy", 1)
+	hm.insert("@CrashTestDummy", 1)
 	UseBinaryStorage = false
 
 	hm.store(testHmStore)
@@ -625,7 +625,7 @@ func Benchmark_LoadBin(b *testing.B) {
 		UseBinaryStorage = saveBinary
 	}()
 	hm := prepHashMap()
-	hm.add("@CrashTestDummy", 1)
+	hm.insert("@CrashTestDummy", 1)
 	UseBinaryStorage = true
 
 	hm.store(testHmStore)
@@ -645,7 +645,7 @@ func Benchmark_StoreTxt(b *testing.B) {
 		UseBinaryStorage = saveBinary
 	}()
 	hm := prepHashMap()
-	hm.add("@CrashTestDummy", 1)
+	hm.insert("@CrashTestDummy", 1)
 	UseBinaryStorage = false
 
 	for n := 0; n < b.N; n++ {
@@ -662,7 +662,7 @@ func Benchmark_StoreBin(b *testing.B) {
 		UseBinaryStorage = saveBinary
 	}()
 	hm := prepHashMap()
-	hm.add("@CrashTestDummy", 1)
+	hm.insert("@CrashTestDummy", 1)
 	UseBinaryStorage = true
 
 	for n := 0; n < b.N; n++ {

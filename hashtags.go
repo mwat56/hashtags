@@ -410,7 +410,7 @@ func (ht *THashTags) insert(aDelim byte, aName string, aID uint64) bool {
 		}
 	}()
 
-	result := ht.hl.add(aDelim, aName, aID)
+	result := ht.hl.insert(aDelim, aName, aID)
 	if result {
 		atomic.StoreUint32(&ht.changed, 0)
 	}
