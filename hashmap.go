@@ -168,7 +168,7 @@ func (hm tHashMap) countedList() TCountList {
 	// result := make(TCountList, 0, len(hm))
 	result := TCountList{}
 	for name, sl := range hm {
-		result.insert(TCountItem{len(*sl), name})
+		result.Insert(TCountItem{len(*sl), name})
 	}
 
 	return result // *result.sort()
