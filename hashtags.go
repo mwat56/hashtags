@@ -53,7 +53,7 @@ var (
 // --------------------------------------------------------------------------
 // constructor function
 
-// `NewHashTags()` returns a new `THashTags` instance after reading
+// `New()` returns a new `THashTags` instance after reading
 // the given file.
 //
 // If the hash file doesn't exist that is not considered an error.
@@ -61,7 +61,7 @@ var (
 //
 // Parameters:
 // - `aFilename` is the name of the file to use for reading and storing.
-func NewHashTags(aFilename string, aSafe bool) (*THashTags, error) {
+func New(aFilename string, aSafe bool) (*THashTags, error) {
 	hashlist, err := newHashList(aFilename)
 	if nil != err {
 		return nil, err
@@ -73,7 +73,7 @@ func NewHashTags(aFilename string, aSafe bool) (*THashTags, error) {
 	}
 
 	return ht, nil
-} // NewHashTags()
+} // New()
 
 // -------------------------------------------------------------------------
 // methods of THashTags

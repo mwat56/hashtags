@@ -22,9 +22,9 @@ func TestTHashTags_compareTo(t *testing.T) {
 		os.Remove(testHtStore)
 	}()
 
-	ht1, _ := NewHashTags("", false)
-	wt1, _ := NewHashTags("", false)
-	wt2, _ := NewHashTags("", false)
+	ht1, _ := New("", false)
+	wt1, _ := New("", false)
+	wt2, _ := New("", false)
 	wt2.HashAdd("hash1", 0)
 
 	tests := []struct {
