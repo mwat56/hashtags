@@ -25,8 +25,8 @@ const (
 type (
 	// Data cache for `CountedList()`
 	tCountCache struct {
-		µCRC    uint32
-		µCounts TCountList
+		crc uint32     // current CRC
+		cl  TCountList // last list of counted items
 	}
 
 	// `THashTags` is a list of `#hashtags` and `@mentions`
@@ -88,7 +88,8 @@ func (ht *THashTags) checksum() uint32 {
 
 // `Checksum()` returns the list's CRC32 checksum.
 //
-// This method can be used to get a kind of 'footprint'.
+// This method can be used to get a kind of 'footprint' of the current
+// contents of the handled data.
 //
 // Returns:
 // - `uint32`: The computed checksum.
@@ -168,8 +169,10 @@ func (ht *THashTags) HashAdd(aHash string, aID uint64) bool {
 // Returns:
 // - `int`: The number of hashes in the list.
 func (ht *THashTags) HashCount() int {
-	ht.mtx.RLock()
-	defer ht.mtx.RUnlock()
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
 
 	return ht.hl.hashCount()
 } // HashCount()
@@ -437,7 +440,7 @@ func (ht *THashTags) Len() int {
 //
 // Returns:
 // - `int`: The total length of all #hashtag/@mention lists.
-func (ht *THashTags) LenTotal() (rLen int) {
+func (ht *THashTags) LenTotal() int {
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
@@ -452,19 +455,19 @@ func (ht *THashTags) LenTotal() (rLen int) {
 // Returns:
 // - `TCountList`: A list of #hashtags/@mentions with their counts of IDs.
 func (ht *THashTags) List() TCountList {
-	if (ht.hl.checksum() == ht.cc.µCRC) && (0 < len(ht.cc.µCounts)) {
-		return ht.cc.µCounts
+	if (ht.hl.checksum() == ht.cc.crc) && (0 < len(ht.cc.cl)) {
+		return ht.cc.cl
 	}
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
 	}
 
-	ht.cc.µCounts = nil
-	ht.cc.µCRC = ht.hl.checksum()
-	ht.cc.µCounts = ht.hl.countedList()
+	ht.cc.cl = nil
+	ht.cc.crc = ht.hl.checksum()
+	ht.cc.cl = ht.hl.countedList()
 
-	return ht.cc.µCounts
+	return ht.cc.cl
 } // List()
 
 // `Load()` reads the configured file returning the data structure
