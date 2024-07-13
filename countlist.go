@@ -15,7 +15,7 @@ import (
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 type (
-	// A list of `TCountItem`s
+	// A list of `TCountItems
 	TCountList []TCountItem
 )
 
@@ -47,11 +47,11 @@ func (cl TCountList) compareTo(aList TCountList) bool {
 	return true
 } // compareTo()
 
-// `insert()` appends `aItem` to the list.
+// `Insert()` appends `aItem` to the list.
 //
 // Parameters:
-// - `aItem`: The source ID to insert to the list.
-func (cl *TCountList) insert(aItem TCountItem) *TCountList {
+// - `aItem`: The source ID to insert into the list.
+func (cl *TCountList) Insert(aItem TCountItem) *TCountList {
 	sLen := len(*cl)
 	if 0 == sLen { // empty list
 		*cl = append(*cl, aItem)
