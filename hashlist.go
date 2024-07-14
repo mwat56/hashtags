@@ -63,21 +63,6 @@ func (hl *tHashList) clear() *tHashList {
 	return hl
 } // clear()
 
-// ` compareTo()` compares the current list with another list.
-//
-// Parameters:
-// - `aList`: The list to compare with.
-//
-// Returns:
-// - `bool`: `true` if the lists are identical, `false` otherwise.
-func (hl *tHashList) compareTo(aList *tHashList) bool {
-	if len((*hl).hm) != len((*aList).hm) {
-		return false
-	}
-
-	return hl.hm.compareTo(aList.hm)
-} // compareTo()
-
 // `countedList()` returns a list of #hashtags/@mentions with
 // their respective count of associated IDs.
 //
@@ -87,6 +72,22 @@ func (hl *tHashList) compareTo(aList *tHashList) bool {
 func (hl *tHashList) countedList() TCountList {
 	return hl.hm.countedList()
 } // countedList()
+
+
+// `equals()` compares the current list with another list.
+//
+// Parameters:
+// - `aList`: The list to compare with.
+//
+// Returns:
+// - `bool`: `true` if the lists are identical, `false` otherwise.
+func (hl *tHashList) equals(aList *tHashList) bool {
+	if len((*hl).hm) != len((*aList).hm) {
+		return false
+	}
+
+	return hl.hm.equals(aList.hm)
+} // equals()
 
 // `hashCount()` counts the number of hashtags in the list.
 //

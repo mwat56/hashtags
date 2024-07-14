@@ -109,32 +109,6 @@ func (hm *tHashMap) clear() *tHashMap {
 	return hm
 } // clear()
 
-// `compareTo()` returns whether the current hash map is equal to the
-// provided hash map.
-//
-// Parameters:
-// - `aMap`: The hash map to compare with.
-//
-// Returns:
-// - `bool`: Whether the hash maps are equal.
-func (hm tHashMap) compareTo(aMap tHashMap) bool {
-	if len(hm) != len(aMap) {
-		return false
-	}
-
-	for hash, sl := range hm {
-		osl, ok := aMap[hash]
-		if !ok {
-			return false
-		}
-		if !sl.compareTo(*osl) {
-			return false
-		}
-	}
-
-	return true
-} // compareTo()
-
 // `count()` returns the number of hashtags (if `aDelim == '#'`) or
 // mentions (if `aDelim == '@'`).
 //
@@ -173,6 +147,32 @@ func (hm tHashMap) countedList() TCountList {
 
 	return result // *result.sort()
 } // countedList()
+
+// `equals()` returns whether the current hash map is equal to the
+// provided hash map.
+//
+// Parameters:
+// - `aMap`: The hash map to compare with.
+//
+// Returns:
+// - `bool`: Whether the hash maps are equal.
+func (hm tHashMap) equals(aMap tHashMap) bool {
+	if len(hm) != len(aMap) {
+		return false
+	}
+
+	for hash, sl := range hm {
+		osl, ok := aMap[hash]
+		if !ok {
+			return false
+		}
+		if !sl.equals(*osl) {
+			return false
+		}
+	}
+
+	return true
+} // equals()
 
 // `idList()` returns a list of #hashtags and @mentions associated with `aID`.
 //

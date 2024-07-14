@@ -31,7 +31,7 @@ func Test_tSourceList_clear(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.clear(); !got.compareTo(*tt.want) {
+			if got := tt.sl.clear(); !got.equals(*tt.want) {
 				t.Errorf("%q: tSourceList.clear() = %v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -39,7 +39,7 @@ func Test_tSourceList_clear(t *testing.T) {
 	}
 } // Test_tSourceList_clear()
 
-func Test_tSourceList_compareTo(t *testing.T) {
+func Test_tSourceList_equals(t *testing.T) {
 	sl1 := tSourceList{
 		1,
 		2,
@@ -64,13 +64,13 @@ func Test_tSourceList_compareTo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.compareTo(tt.list); got != tt.want {
-				t.Errorf("%q: tSourceList.compareTo() = %v\n>>>> want: >>>>\n%v",
+			if got := tt.sl.equals(tt.list); got != tt.want {
+				t.Errorf("%q: tSourceList.equals() = %v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-} // Test_tSourceList_compareTo()
+} // Test_tSourceList_equals()
 
 func Test_tSourceList_findIndex(t *testing.T) {
 	sl1 := &tSourceList{

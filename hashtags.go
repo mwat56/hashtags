@@ -119,20 +119,20 @@ func (ht *THashTags) Clear() *THashTags {
 	return ht
 } // Clear()
 
-// `compareTo()` compares the current list with another list.
+// `equals()` compares the current list with another list.
 //
 // Parameters:
 // - `aList`: The list to compare with.
 //
 // Returns:
 // - `bool`: True if the lists are identical, false otherwise.
-func (ht *THashTags) compareTo(aList *THashTags) bool {
+func (ht *THashTags) equals(aList *THashTags) bool {
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
 	}
 
-	return ht.hl.compareTo(&aList.hl)
+	return ht.hl.equals(&aList.hl)
 } // compareTo()
 
 // `Filename()` returns the configured filename for reading/storing

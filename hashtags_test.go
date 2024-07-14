@@ -17,7 +17,7 @@ const (
 	testHtStore = "testHtStore.db"
 )
 
-func TestTHashTags_compareTo(t *testing.T) {
+func TestTHashTags_equals(t *testing.T) {
 	defer func() {
 		os.Remove(testHtStore)
 	}()
@@ -40,12 +40,12 @@ func TestTHashTags_compareTo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ht := tt.list
-			if got := ht.compareTo(tt.other); got != tt.want {
-				t.Errorf("%q: tHashTags.compareTo() =\n%v\n>>>> want >>>>\n%v",
+			if got := ht.equals(tt.other); got != tt.want {
+				t.Errorf("%q: tHashTags.equals() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-} // TestTHashTags_compareTo()
+} // TestTHashTags_equals()
 
 /* EoF */

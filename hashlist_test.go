@@ -150,39 +150,6 @@ func TestTHashList_clear(t *testing.T) {
 	}
 } // TestTHashList_clear()
 
-func TestTHashList_compareTo(t *testing.T) {
-	hl1 := &tHashList{
-		hm: make(tHashMap, 64),
-	}
-	wl1 := &tHashList{
-		hm: make(tHashMap, 64),
-	}
-
-	wl2 := &tHashList{
-		hm: make(tHashMap, 64),
-	}
-	wl2.insert(MarkHash, "hash2", 2222)
-	wl2.insert(MarkMention, "Name", 2222)
-
-	tests := []struct {
-		name string
-		hl   *tHashList
-		list *tHashList
-		want bool
-	}{
-		{"1", hl1, wl1, true},
-		{"2", hl1, wl2, false},
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.compareTo(tt.list); got != tt.want {
-				t.Errorf("THashList.compareTo() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_compareTo()
-
 func TestTHashList_countedList(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "@mention1", "#another3"
 	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
@@ -227,6 +194,39 @@ func TestTHashList_countedList(t *testing.T) {
 		})
 	}
 } // TestTHashList_countedList()
+
+func TestTHashList_equals(t *testing.T) {
+	hl1 := &tHashList{
+		hm: make(tHashMap, 64),
+	}
+	wl1 := &tHashList{
+		hm: make(tHashMap, 64),
+	}
+
+	wl2 := &tHashList{
+		hm: make(tHashMap, 64),
+	}
+	wl2.insert(MarkHash, "hash2", 2222)
+	wl2.insert(MarkMention, "Name", 2222)
+
+	tests := []struct {
+		name string
+		hl   *tHashList
+		list *tHashList
+		want bool
+	}{
+		{"1", hl1, wl1, true},
+		{"2", hl1, wl2, false},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hl.equals(tt.list); got != tt.want {
+				t.Errorf("THashList.equals() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // TestTHashList_equals()
 
 func TestTHashList_insert(t *testing.T) {
 	hl0 := &tHashList{

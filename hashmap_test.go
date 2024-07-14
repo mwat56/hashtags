@@ -51,39 +51,13 @@ func Test_tHashMap_clear(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.clear(); !got.compareTo(tt.want) {
+			if got := tt.hm.clear(); !got.equals(tt.want) {
 				t.Errorf("%q: tHashMap.clear() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
 } // Test_tHashMap_clear()
-
-func Test_tHashMap_compareTo(t *testing.T) {
-	hm1 := prepHashMap()
-	om1 := prepHashMap()
-	om2 := prepHashMap()
-	om2.insert("#hash4", 222)
-
-	tests := []struct {
-		name string
-		hm   *tHashMap
-		oMap *tHashMap
-		want bool
-	}{
-		{"1", hm1, om1, true},
-		{"2", hm1, om2, false},
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.compareTo(*tt.oMap); got != tt.want {
-				t.Errorf("%q: tHashMap.compareTo() = %v, want %v",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-} // Test_tHashMap_compareTo()
 
 func Test_tHashMap_count(t *testing.T) {
 	hm1 := prepHashMap()
@@ -156,6 +130,32 @@ func Test_tHashMap_countedList(t *testing.T) {
 		})
 	}
 } // Test_tHashMap_countedList()
+
+func Test_tHashMap_equals(t *testing.T) {
+	hm1 := prepHashMap()
+	om1 := prepHashMap()
+	om2 := prepHashMap()
+	om2.insert("#hash4", 222)
+
+	tests := []struct {
+		name string
+		hm   *tHashMap
+		oMap *tHashMap
+		want bool
+	}{
+		{"1", hm1, om1, true},
+		{"2", hm1, om2, false},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hm.equals(*tt.oMap); got != tt.want {
+				t.Errorf("%q: tHashMap.equals() = %v, want %v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+} // Test_tHashMap_equals()
 
 func Test_tHashMap_idList(t *testing.T) {
 	hm := prepHashMap()
@@ -311,7 +311,7 @@ func Test_tHashMap_list(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotList := hm.list(tt.args.aDelim, tt.args.aName)
-			if !tt.wantList.compareTo(gotList) {
+			if !tt.wantList.equals(gotList) {
 				t.Errorf("%q: tHashMap.list() =\n%v\n>>>> want: >>>>\n%v",
 					tt.name, gotList, tt.wantList)
 			}
@@ -351,7 +351,7 @@ func Test_tHashMap_Load(t *testing.T) {
 					tt.name, err, tt.wantErr)
 				return
 			}
-			if !tt.want.compareTo(*got) {
+			if !tt.want.equals(*got) {
 				t.Errorf("%q: tHashMap.Load() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -509,7 +509,7 @@ func Test_tHashMap_sort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.sort(); !got.compareTo(tt.want) {
+			if got := tt.hm.sort(); !got.equals(tt.want) {
 				t.Errorf("%q: tHashMap.sort() = \n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}

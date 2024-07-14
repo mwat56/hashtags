@@ -45,7 +45,7 @@ func (sl *tSourceList) clear() *tSourceList {
 	return sl
 } // clear()
 
-// `compareTo()` returns whether the current source list is equal
+// `equals()` returns whether the current source list is equal
 // to the provided source list.
 //
 // Parameters:
@@ -53,24 +53,9 @@ func (sl *tSourceList) clear() *tSourceList {
 //
 // Returns:
 // - `bool`: Whether the source lists are equal.
-func (sl tSourceList) compareTo(aList tSourceList) bool {
-	if len(sl) != len(aList) {
-		return false
-	}
-
-	// Iterate over the source lists and compare each element.
-	for idx, id := range sl {
-		// If the element in the current source list does not
-		// match the corresponding element in the provided source
-		// list, the source lists are not equal.
-		if id != aList[idx] {
-			return false
-		}
-	}
-
-	// If no mismatches were found, the source lists are equal.
-	return true
-} // compareTo()
+func (sl tSourceList) equals(aList tSourceList) bool {
+	return slices.Equal(sl, aList)
+} // equals()
 
 // `findIndex()` returns the list index of `aID`.
 //
