@@ -60,7 +60,7 @@ To get a `THashTags` instance there's a simple way:
 		log.PrintF("Problem writing file '%s': %v", fName, err)
 	}
 
-The constructor function `New()` takes two arguments: `string` specifying the name of the file to use for loading/storing the list's data, and a `bool` value indicating whether the list should be thread-safe or not. The setting for the latter depends on the actual use-case.
+The constructor function `New()` takes two arguments: A `string` specifying the name of the file to use for loading/storing the list's data, and a `bool` value indicating whether the list should be thread-safe or not. The setting for the latter depends on the actual use-case.
 
 The package provides a boolean configuration variable called `UseBinaryStorage` which is `true` by default. It determines whether the data written by `Store()` and read by `Load()` use plain text (i.e. `hashtags.UseBinaryStorage = false`) or a binary data format.
 The advantage of the _plain text_ format is that it can be inspected by any text related tool (like e.g. `grep` or `diff`).
