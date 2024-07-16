@@ -15,14 +15,16 @@ import (
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-const (
-	testHmStore = "testHmStore.db"
+var (
+	exts = map[bool]string{
+		true:  ".gob",
+		false: ".lst",
+	}
 )
 
-func hmFilename() string {
-	os.Remove(testHmStore)
-
-	return testHmStore
+func hmFilename(useBinary bool) string {
+	UseBinaryStorage = useBinary
+	return "testHmStore" + exts[UseBinaryStorage]
 } // hmFilename()
 
 func prepHashMap() *tHashMap {
@@ -322,11 +324,12 @@ func Test_tHashMap_list(t *testing.T) {
 func Test_tHashMap_Load(t *testing.T) {
 	saveBinary := UseBinaryStorage
 	defer func() {
-		os.Remove(testHmStore)
 		UseBinaryStorage = saveBinary
 	}()
+
 	hm1 := prepHashMap()
 	hm1.insert("@CrashTestDummy", 1)
+
 	wm1 := prepHashMap()
 	wm1.insert("@CrashTestDummy", 1)
 
@@ -337,15 +340,17 @@ func Test_tHashMap_Load(t *testing.T) {
 		want    tHashMap
 		wantErr bool
 	}{
-		{"1", hm1, true, *wm1, false},
-		{"2", hm1, false, *wm1, false},
+		{"1", hm1, false, *wm1, false},
+		{"2", hm1, true, *wm1, false},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			UseBinaryStorage = tt.binary
-			tt.hm.store(testHmStore)
-			got, err := tt.hm.load(testHmStore)
+			fName := hmFilename(tt.binary)
+			// make sure there's actually data in the file:
+			tt.hm.store(fName)
+
+			got, err := tt.hm.load(fName)
 			if (nil != err) != tt.wantErr {
 				t.Errorf("%q: tHashMap.Load() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, err, tt.wantErr)
@@ -355,6 +360,8 @@ func Test_tHashMap_Load(t *testing.T) {
 				t.Errorf("%q: tHashMap.Load() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, got, tt.want)
 			}
+			// fName = hmFilename(!tt.binary)
+			// tt.hm.store(fName)
 		})
 	}
 } // Test_tHashMap_Load()
@@ -518,24 +525,27 @@ func Test_tHashMap_sort(t *testing.T) {
 } // Test_tHashMap_sort()
 
 func Test_tHashMap_store(t *testing.T) {
-	fn := hmFilename()
+	saveBinary := UseBinaryStorage
+	defer func() {
+		UseBinaryStorage = saveBinary
+	}()
+
 	hm1 := prepHashMap()
 	hm1.insert("@alphons", 1)
 
 	tests := []struct {
-		name      string
-		hm        *tHashMap
-		useBinary bool
-		wantInt   int
-		wantErr   bool
+		name    string
+		hm      *tHashMap
+		binary  bool
+		wantInt int
+		wantErr bool
 	}{
-		{"1", hm1, false, 84, false},
+		{"1", hm1, false, 164, false},
 		{"2", hm1, true, 109, false},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
-		fName := fn + tt.name
-		UseBinaryStorage = tt.useBinary
+		fName := hmFilename(tt.binary)
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.hm.store(fName)
 			if (nil != err) != tt.wantErr {
@@ -555,8 +565,9 @@ func Test_tHashMap_store(t *testing.T) {
 func Test_tHashMap_String(t *testing.T) {
 	sl0 := tHashMap{}
 	ws0 := ""
+
 	sl1 := prepHashMap()
-	ws1 := "[#hash1]\n111\n[#hash2]\n222\n[#hash3]\n333\n[@mention1]\n111\n[@mention2]\n222\n"
+	ws1 := "[#hash1]\n000000000000006f\n[#hash2]\n00000000000000de\n[#hash3]\n000000000000014d\n[@mention1]\n000000000000006f\n[@mention2]\n00000000000000de\n"
 
 	tests := []struct {
 		name string
@@ -601,18 +612,18 @@ func Test_tHashMap_String(t *testing.T) {
 func Benchmark_LoadTxT(b *testing.B) {
 	saveBinary := UseBinaryStorage
 	defer func() {
-		os.Remove(testHmStore)
 		UseBinaryStorage = saveBinary
 	}()
+	fn := hmFilename(false)
+
 	hm := prepHashMap()
 	hm.insert("@CrashTestDummy", 1)
-	UseBinaryStorage = false
 
-	hm.store(testHmStore)
+	hm.store(fn)
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		if _, err := hm.load(testHmStore); nil != err {
+		if _, err := hm.load(fn); nil != err {
 			log.Printf("LoadTxt(): %v", err)
 		}
 	}
@@ -621,18 +632,18 @@ func Benchmark_LoadTxT(b *testing.B) {
 func Benchmark_LoadBin(b *testing.B) {
 	saveBinary := UseBinaryStorage
 	defer func() {
-		os.Remove(testHmStore)
 		UseBinaryStorage = saveBinary
 	}()
+	fn := hmFilename(true)
+
 	hm := prepHashMap()
 	hm.insert("@CrashTestDummy", 1)
-	UseBinaryStorage = true
 
-	hm.store(testHmStore)
+	hm.store(fn)
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		if _, err := hm.load(testHmStore); nil != err {
+		if _, err := hm.load(fn); nil != err {
 			log.Printf("LoadBin(): %v", err)
 		}
 	}
@@ -641,15 +652,15 @@ func Benchmark_LoadBin(b *testing.B) {
 func Benchmark_StoreTxt(b *testing.B) {
 	saveBinary := UseBinaryStorage
 	defer func() {
-		os.Remove(testHmStore)
 		UseBinaryStorage = saveBinary
 	}()
+	fn := hmFilename(false)
+
 	hm := prepHashMap()
 	hm.insert("@CrashTestDummy", 1)
-	UseBinaryStorage = false
 
 	for n := 0; n < b.N; n++ {
-		if _, err := hm.store(testHmStore); nil != err {
+		if _, err := hm.store(fn); nil != err {
 			log.Printf("StoreTxt(): %v", err)
 		}
 	}
@@ -658,15 +669,15 @@ func Benchmark_StoreTxt(b *testing.B) {
 func Benchmark_StoreBin(b *testing.B) {
 	saveBinary := UseBinaryStorage
 	defer func() {
-		os.Remove(testHmStore)
 		UseBinaryStorage = saveBinary
 	}()
+	fn := hmFilename(true)
+
 	hm := prepHashMap()
 	hm.insert("@CrashTestDummy", 1)
-	UseBinaryStorage = true
 
 	for n := 0; n < b.N; n++ {
-		if _, err := hm.store(testHmStore); nil != err {
+		if _, err := hm.store(fn); nil != err {
 			log.Printf("StoreBin(): %v", err)
 		}
 	}

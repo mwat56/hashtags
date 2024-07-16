@@ -236,31 +236,30 @@ func (hm tHashMap) idxLen(aDelim byte, aName string) int {
 // `insert()` adds `aID` to the sources list associated with `aName`.
 //
 // Parameters:
-// - `aName` is the list index to lookup.
-// - `aID` is to be added to the hash list.
+//   - `aName` is the list index to lookup.
+//   - `aID` is to be added to the hash list.
 //
 // Returns:
-// - `bool`: `true` if `aID` was added, or `false` otherwise.
+//   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (hm *tHashMap) insert(aName string, aID uint64) bool {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
 		return false
 	}
 
-	var result bool
 	if sl, ok := (*hm)[aName]; ok {
 		if sl.insert(aID) { // changes in place
-			result = true
+			return true
 		}
 	} else {
 		sl := newSourceList()
 		if sl.insert(aID) {
 			(*hm)[aName] = sl // assign the ID list to the hash
-			result = true
+			return true
 		}
 	}
 
-	return result
+	return false
 } // insert()
 
 // `keys()` returns a slice of all keys in the hash map.
@@ -324,11 +323,11 @@ func (hm tHashMap) list(aDelim byte, aName string) (rList []uint64) {
 // If there is an error, it will be of type `*PathError`.
 //
 // Parameters:
-// - `aFilename`: Name of the file to load.
+//   - `aFilename`: Name of the file to load.
 //
 // Returns:
-// - `*tHashMap`: The loaded hash map.
-// - `error`: A possible I/O error.
+//   - `*tHashMap`: The loaded hash map.
+//   - `error`: A possible I/O error.
 func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 	if nil == hm {
 		return hm, se.Wrap(errors.New("nil == hashmap"), 1)
@@ -348,13 +347,13 @@ func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 	defer file.Close()
 
 	if UseBinaryStorage {
-		_, err = hm.loadBinary(file)
+		err = hm.loadBinary(file)
 	} else {
-		_, err = hm.loadText(file)
+		err = hm.loadText(file)
 	}
 
 	return hm, err
-} // Load()
+} // load()
 
 // `loadBinary()` reads a file written by store() returning the modified
 // list and a possible error.
@@ -365,31 +364,74 @@ func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 // Returns:
 // - (*tHashMap, error): The modified hash map.
 // - `error`: A possible I/O error.
-func (hm *tHashMap) loadBinary(aFile *os.File) (*tHashMap, error) {
+func (hm *tHashMap) loadBinary(aFile *os.File) error {
+
+	iMap, iErr := loadBinaryInts(aFile)
+	if nil != iErr {
+		sMap, sErr := loadBinaryStrings(aFile)
+		if nil == sErr {
+			(*hm) = *sMap
+			return nil
+		}
+		return iErr
+	}
+	(*hm) = *iMap
+
+	return nil
+} // loadBinary()
+
+func loadBinaryInts(aFile *os.File) (*tHashMap, error) {
 	var decodedMap tHashMap
 
+	aFile.Seek(0, io.SeekStart)
 	decoder := gob.NewDecoder(aFile)
 	if err := decoder.Decode(&decodedMap); nil != err {
 		// `decoder.Decode()` returns `io.EOF` if the input
 		// is at EOF which we do not consider an error here.
 		if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			return hm, se.Wrap(err, 4)
+			return nil, se.Wrap(err, 4)
 		}
 
 		// some other error occurred
-		(*hm) = *newHashMap()
-		return hm, se.Wrap(err, 9)
+		return nil, se.Wrap(err, 8)
 	}
-	hm = &decodedMap
 
-	return hm, nil
-} // loadBinary()
+	return &decodedMap, nil
+} // loadBinaryInts()
+
+func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
+	var decodedMap map[string][]string
+
+	aFile.Seek(0, io.SeekStart)
+	decoder := gob.NewDecoder(aFile)
+	if err := decoder.Decode(&decodedMap); nil != err {
+		// `decoder.Decode()` returns `io.EOF` if the input
+		// is at EOF which we do not consider an error here.
+		if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			return nil, se.Wrap(err, 4)
+		}
+
+		// some other error occurred
+		return nil, se.Wrap(err, 8)
+	}
+
+	result := newHashMap()
+	for key, sArr := range decodedMap {
+		for _, str := range sArr {
+			if ui64, err := strconv.ParseUint(str, 16, 64); nil == err {
+				result.insert(key, ui64)
+			}
+		}
+	}
+
+	return result, nil
+} // loadBinaryStrings()
 
 // `loadText()` parses a file written by `store()` returning
 // the modified list and a possible error.
 //
 // This method reads one line of the file at a time.
-func (hm *tHashMap) loadText(aFile *os.File) (*tHashMap, error) {
+func (hm *tHashMap) loadText(aFile *os.File) error {
 	var (
 		hash string
 		read int
@@ -409,18 +451,16 @@ func (hm *tHashMap) loadText(aFile *os.File) (*tHashMap, error) {
 		if matches := htHashHeadRE.FindStringSubmatch(line); nil != matches {
 			hash = strings.ToLower(strings.TrimSpace(matches[1]))
 		} else {
-			var id uint64
-			if ui64, err := strconv.ParseUint(line, 10, 64); nil == err {
-				id = ui64
+			if ui64, err := strconv.ParseUint(line, 16, 64); nil == err {
+				hm.insert(hash, ui64)
 			}
-			hm.insert(hash, id)
 		}
 	}
 	if err := scanner.Err(); nil != err {
-		return hm, se.Wrap(err, 2)
+		return se.Wrap(err, 2)
 	}
 
-	return hm, nil
+	return nil
 } // loadText()
 
 // `removeID()` deletes all #hashtags/@mentions associated with `aID`.
