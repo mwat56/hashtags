@@ -9,6 +9,7 @@ package hashtags
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
@@ -213,13 +214,19 @@ func (sl *tSourceList) sort() *tSourceList {
 // `String()` implements the `fmt.Stringer` interface.
 //
 // The method returns the list as a linefeed separated string.
+// All IDs are represented as strings of 16 hexadecimal characters.
 //
 // Returns:
 // - `string`: The list's contents as a string.
 func (sl tSourceList) String() string {
 	var result string
+
 	for _, id := range sl {
-		result += fmt.Sprintf("%d\n", id)
+		strID := fmt.Sprintf("%x\n", id)
+		if 17 > len(strID) { // 16 hex chars + LF
+			strID = strings.Repeat("0", 17-len(strID)) + strID
+		}
+		result += strID
 	}
 
 	return result

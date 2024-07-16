@@ -215,7 +215,7 @@ func Test_tSourceList_String(t *testing.T) {
 		2,
 		3,
 	}
-	wl1 := "1\n2\n3\n"
+	wl1 := "0000000000000001\n0000000000000002\n0000000000000003\n"
 
 	sl2 := &tSourceList{}
 	wl2 := ""
