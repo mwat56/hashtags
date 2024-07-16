@@ -1,4 +1,6 @@
 *.db*
+*.gob
+*.lst
 *~
 .git/
 .github/
@@ -6,5 +8,4 @@
 TODO*
 _config.yml
 load.*
-sortedmap.go
-sortedslice.go
+testHmStore.*
