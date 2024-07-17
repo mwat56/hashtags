@@ -396,7 +396,7 @@ func loadBinaryInts(aFile *os.File) (*tHashMap, error) {
 		return nil, se.Wrap(err, 8)
 	}
 
-	return &decodedMap, nil
+	return decodedMap.sort(), nil
 } // loadBinaryInts()
 
 func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
