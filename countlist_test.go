@@ -12,7 +12,41 @@ import (
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-func TestTCountList_compareTo(t *testing.T) {
+func TestTCountList_Compare(t *testing.T) {
+	cl0 := TCountList{}
+	wl0 := TCountList{}
+
+	cl2 := TCountList{TCountItem{2, "#two"}}
+	wl2 := TCountList{TCountItem{2, "@two"}}
+
+	wl4 := TCountList{TCountItem{1, "@two"}}
+	wl5 := TCountList{TCountItem{1, "zero"}}
+
+	tests := []struct {
+		name string
+		cl   TCountList
+		ol   TCountList
+		want int
+	}{
+		{"0", cl0, wl0, 0},
+		{"1", cl0, wl2, -1},
+		{"2", cl2, wl0, 1},
+		{"3", cl2, wl2, 0},
+		{"4", cl2, wl4, 1},
+		{"2", wl4, wl5, -1},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cl.Compare(tt.ol); got != tt.want {
+				t.Errorf("%q: TCountList.Compare() = %v, want %v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+} // TestTCountList_Compare()
+
+func TestTCountList_Equal(t *testing.T) {
 	cl1 := TCountList{}
 	wl1 := TCountList{}
 
@@ -42,13 +76,13 @@ func TestTCountList_compareTo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cl.compareTo(tt.list); got != tt.want {
+			if got := tt.cl.Equal(tt.list); got != tt.want {
 				t.Errorf("%q: TCountList.compareTo() = %v, want %v",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-} // TestTCountList_compareTo()
+} // TestTCountList_Equal()
 
 func TestTCountList_Insert(t *testing.T) {
 	cl := TCountList{}
@@ -73,7 +107,7 @@ func TestTCountList_Insert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := cl.Insert(tt.item); !got.compareTo(*tt.want) {
+			if got := cl.Insert(tt.item); !got.Equal(*tt.want) {
 				t.Errorf("%q: TCountList.Insert() = \n%v\n>>>> want: >>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -81,7 +115,7 @@ func TestTCountList_Insert(t *testing.T) {
 	}
 } // TestTCountList_Insert()
 
-func TestTCountList_len(t *testing.T) {
+func TestTCountList_Len(t *testing.T) {
 	cl0 := TCountList{}
 	cl1 := TCountList{TCountItem{1, "one"}}
 
@@ -96,13 +130,13 @@ func TestTCountList_len(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cl.len(); got != tt.want {
+			if got := tt.cl.Len(); got != tt.want {
 				t.Errorf("%q: TCountList.len() = %d, want %d",
 					tt.name, got, tt.want)
 			}
 		})
 	}
-} // TestTCountList_len()
+} // TestTCountList_Len()
 
 func TestTCountList_sort(t *testing.T) {
 	cl0 := &TCountList{}
@@ -188,7 +222,7 @@ func TestTCountList_sort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cl.sort(); !got.compareTo(tt.want) {
+			if got := tt.cl.sort(); !got.Equal(tt.want) {
 				t.Errorf("%q: TCountList.sort() =\n%v\n>>>> want: >>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -255,7 +289,7 @@ func TestTCountList_Swap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := cl.Swap(tt.args.i, tt.args.j); !got.compareTo(tt.want) {
+			if got := cl.Swap(tt.args.i, tt.args.j); !got.Equal(tt.want) {
 				t.Errorf("%q: TCountList.Swap() =\n%v\n>>>> want: >>>\n%v",
 					tt.name, got, tt.want)
 			}

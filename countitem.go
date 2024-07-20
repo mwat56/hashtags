@@ -16,17 +16,20 @@ type (
 	}
 )
 
-// `compareTo()` checks whether the current `TCountItem` is equal to `aID`.
+// -------------------------------------------------------------------------
+// methods of TCountItem
+
+// `Compare()` compares two `TCountItem` instances based on their tags
+// and counts.
 //
 // Parameters:
-// - `aItem`: The other item to compare with.
+//   - aItem: The other TCountItem instance to compare with.
 //
 // Returns:
-// - `bool`: Whether the two items are equal.
-func (ci TCountItem) compareTo(aItem TCountItem) bool {
-	if 0 == len(ci.Tag) {
-		return 0 == len(aItem.Tag)
-	}
+//   - `-1` if the current instance is less than `aItem`.
+//   - ` 0` if the current instance is equal to `aItem`.
+//   - `+1` if the current instance is greater than `aItem`.
+func (ci TCountItem) Compare(aItem TCountItem) int {
 	at, bt := ci.Tag+"Z", aItem.Tag+"Z" // avoid empty strings
 
 	if MarkHash == at[0] || MarkMention == at[0] {
@@ -35,35 +38,44 @@ func (ci TCountItem) compareTo(aItem TCountItem) bool {
 	if MarkHash == bt[0] || MarkMention == bt[0] {
 		bt = bt[1:]
 	}
-	if at == bt {
-		return ci.Count == aItem.Count
+
+	switch true {
+	case at < bt:
+		return -1
+	case at > bt:
+		return +1
+	default:
+		switch true {
+		case ci.Count < aItem.Count:
+			return -1
+		case ci.Count > aItem.Count:
+			return 1
+		}
 	}
 
-	return false
-} // compareTo()
+	return 0
+} // Compare()
+
+// `Equal()` checks whether the current `TCountItem` is equal to `aItem`.
+//
+// Parameters:
+//   - `aItem`: The other item to compare with.
+//
+// Returns:
+//   - `bool`: Whether the two items are equal.
+func (ci TCountItem) Equal(aItem TCountItem) bool {
+	return (0 == ci.Compare(aItem))
+} // Equal()
 
 // `Less()` checks whether this `TCountItem` is less than `aItem`.
 //
-// * Parameters:
-// - `aItem`: The other `TCountItem` instance to compare with.
+// Parameters:
+//   - `aItem`: The other `TCountItem` instance to compare with.
 //
-// * Returns:
-// - `bool`: Whether the current instance's tag is less than the
-// other instance's tag.
+// Returns:
+//   - `bool`: Whether the current instance is less than the other item.
 func (ci TCountItem) Less(aItem TCountItem) bool {
-	at, bt := ci.Tag+"Z", aItem.Tag+"Z" // avoid empty strings
-
-	if MarkHash == at[0] || MarkMention == at[0] {
-		at = at[1:]
-	}
-	if MarkHash == bt[0] || MarkMention == bt[0] {
-		bt = bt[1:]
-	}
-	if at < bt {
-		return ci.Count < aItem.Count
-	}
-
-	return false
+	return (-1 == ci.Compare(aItem))
 } // Less()
 
 /* EoF */
