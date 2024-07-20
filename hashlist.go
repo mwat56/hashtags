@@ -24,14 +24,14 @@ type (
 // --------------------------------------------------------------------------
 // constructor function
 
-// `newHashList()` returns a new `THashList` instance after reading
+// `newHashList()` returns a new `tHashList` instance after reading
 // the given file.
 //
 // If the hash file doesn't exist that is not considered an error.
 // If there is an error, it will be of type *PathError.
 //
 // Parameters:
-// - `aFilename` is the name of the file to use for reading and storing.
+//   - `aFilename` is the name of the file to use for reading and storing.
 func newHashList(aFilename string) (*tHashList, error) {
 	result := &tHashList{
 		hm: make(tHashMap, 64),
@@ -45,18 +45,26 @@ func newHashList(aFilename string) (*tHashList, error) {
 } // newHashList()
 
 // -------------------------------------------------------------------------
-// methods of THashList
+// methods of tHashList
 
 // `checksum()` returns the list's CRC32 checksum.
 //
 // This method can be used to get a kind of 'footprint'.
 //
 // Returns:
-// - `uint32`: The computed checksum.
+//   - `uint32`: The computed checksum.
 func (hl *tHashList) checksum() uint32 {
 	return hl.hm.checksum()
 } // checksum()
 
+// `clear()` removes all entries from the hash list.
+//
+// This function is used to reset the hash list to an empty state.
+// After calling this function, the hash list will not contain any
+// #hashtag/@mention entries.
+//
+// Returns:
+//   - `*tHashList`: A pointer to the updated hash list.
 func (hl *tHashList) clear() *tHashList {
 	hl.hm.clear()
 
@@ -67,12 +75,10 @@ func (hl *tHashList) clear() *tHashList {
 // their respective count of associated IDs.
 //
 // Returns:
-// - `TCountList`: A list of #hashtags/@mentions with their
-// respective counts of associated IDs.
+//   - `TCountList`: A list of #hashtags/@mentions with their respective counts of associated IDs.
 func (hl *tHashList) countedList() TCountList {
 	return hl.hm.countedList()
 } // countedList()
-
 
 // `equals()` compares the current list with another list.
 //
@@ -92,7 +98,7 @@ func (hl *tHashList) equals(aList *tHashList) bool {
 // `hashCount()` counts the number of hashtags in the list.
 //
 // Returns:
-// - `int`: The number of hashes in the list.
+//   - `int`: The number of hashes in the list.
 func (hl *tHashList) hashCount() int {
 	return hl.hm.count(MarkHash)
 } // hashCount()
@@ -103,10 +109,10 @@ func (hl *tHashList) hashCount() int {
 // does nothing) returning `-1`.
 //
 // Parameters:
-// - `aHash` The list key to lookup.
+//   - `aHash` The list key to lookup.
 //
 // Returns:
-// - `int`: The number of `aHash` in the list.
+//   - `int`: The number of `aHash` in the list.
 func (hl *tHashList) hashLen(aHash string) int {
 	return hl.hm.idxLen(MarkHash, aHash)
 } // hashLen()
@@ -117,10 +123,10 @@ func (hl *tHashList) hashLen(aHash string) int {
 // does nothing), returning an empty slice.
 //
 // Parameters:
-// - `aName`: The hash to lookup.
+//   - `aName`: The hash to lookup.
 //
 // Returns:
-// - `[]uint64`: The number of references of `aName`.
+//   - `[]uint64`: The number of references of `aName`.
 func (hl *tHashList) hashList(aHash string) []uint64 {
 	return hl.hm.list(MarkHash, aHash)
 } // hashList()
@@ -128,10 +134,10 @@ func (hl *tHashList) hashList(aHash string) []uint64 {
 // `IDlist()` returns a list of #hashtags and @mentions associated with `aID`.
 //
 // Parameters:
-// - `aID`: The referenced object to lookup.
+//   - `aID`: The referenced object to lookup.
 //
 // Returns:
-// - `[]string`: The list of #hashtags and @mentions associated with `aID`.
+//   - `[]string`: The list of #hashtags and @mentions associated with `aID`.
 func (hl *tHashList) idList(aID uint64) []string {
 	if 0 == len(hl.hm) {
 		return nil
@@ -146,12 +152,12 @@ func (hl *tHashList) idList(aID uint64) []string {
 // (i.e. this method does nothing) returning the current list.
 //
 // Parameters:
-// - `aDelim`: The start character of words to use (i.e. either '@' or '#').
-// - `aName`: The hashtag/mention to lookup.
-// - `aID`: The referencing object to be added to the hash list.
+//   - `aDelim`: The start character of words to use (i.e. either '@' or '#').
+//   - `aName`: The hashtag/mention to lookup.
+//   - `aID`: The referencing object to be added to the hash list.
 //
 // Returns:
-// - `bool`: `true` if `aID` was added, or `false` otherwise.
+//   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (hl *tHashList) insert(aDelim byte, aName string, aID uint64) bool {
 	// prepare for case-insensitive search:
 	aName = strings.ToLower(strings.TrimSpace(aName))
@@ -176,7 +182,7 @@ func (hl *tHashList) len() int {
 // in the hash list.
 //
 // Returns:
-// - `int`: The total length of all #hashtag/@mention lists.
+//   - `int`: The total length of all #hashtag/@mention lists.
 func (hl *tHashList) lenTotal() (rLen int) {
 	rLen = len(hl.hm)
 	for _, sl := range hl.hm {
@@ -192,8 +198,8 @@ func (hl *tHashList) lenTotal() (rLen int) {
 // If the hash file doesn't exist that is not considered an error.
 //
 // Returns:
-// - `*THashList`: The updated list.
-// - `error`: If there is an error, it will be of type `*PathError`.
+//   - `*THashList`: The updated list.
+//   - `error`: If there is an error, it will be of type `*PathError`.
 func (hl *tHashList) load(aFilename string) (*tHashList, error) {
 	_, err := hl.hm.load(aFilename)
 	return hl, err
@@ -202,7 +208,7 @@ func (hl *tHashList) load(aFilename string) (*tHashList, error) {
 // `mentionCount()` returns the number of mentions in the list.
 //
 // Returns:
-// - `int`: The number of mentions in the list.
+//   - `int`: The number of mentions in the list.
 func (hl *tHashList) mentionCount() int {
 	return hl.hm.count(MarkMention)
 } // mentionCount()
@@ -213,10 +219,10 @@ func (hl *tHashList) mentionCount() int {
 // does nothing) returning `-1`.
 //
 // Parameters:
-// - `aMention` identifies the ID list to lookup.
+//   - `aMention` identifies the ID list to lookup.
 //
 // Returns:
-// - `int`: The number of `aMention` in the list.
+//   - `int`: The number of `aMention` in the list.
 func (hl *tHashList) mentionLen(aMention string) int {
 	return hl.hm.idxLen(MarkMention, aMention)
 } // mentionLen()
@@ -227,10 +233,10 @@ func (hl *tHashList) mentionLen(aMention string) int {
 // does nothing), returning an empty slice.
 //
 // Parameters:
-// - `aMention`: The mention to lookup.
+//   - `aMention`: The mention to lookup.
 //
 // Returns:
-// - `[]uint64`: The number of references of `aName`.
+//   - `[]uint64`: The number of references of `aName`.
 func (hl tHashList) mentionList(aMention string) []uint64 {
 	return hl.hm.list(MarkMention, aMention)
 } // mentionList()
@@ -252,6 +258,18 @@ var (
 	htHyphenRE = regexp.MustCompile(`#[^-]*--`)
 )
 
+// `HashMentionRE()` returns a compiled regular expression used to
+// identify #hashtags and @mentions in a text.
+//
+// This regular expression matches strings that start with either '@'
+// or '#' followed by any number of characters that are not whitespace.
+//
+// Returns:
+//   - `*regexp.Regexp`: A pointer to the compiled regular expression.
+func HashMentionRE() *regexp.Regexp {
+	return htHashMentionRE
+} // HashMentionRE()
+
 // `parseID()` checks whether `aText` contains strings starting with
 // `[@|#]` and - if found - adds them to the respective lists with `aID`.
 //
@@ -259,11 +277,11 @@ var (
 // does nothing), returning `false`.
 //
 // Parameters:
-// - `aID`: The ID to add to the list of hashes/mention.
-// - `aText`: The text to parse for hashtags and mentions.
+//   - `aID`: The ID to add to the list of hashes/mention.
+//   - `aText`: The text to parse for hashtags and mentions.
 //
 // Returns:
-// - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
+//   - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
 func (hl *tHashList) parseID(aID uint64, aText []byte) bool {
 	if 0 == len(aText) {
 		return false
@@ -333,12 +351,12 @@ func (hl *tHashList) parseID(aID uint64, aText []byte) bool {
 // `removeHM()` deletes `aID` from the list of `aName`.
 //
 // Parameters:
-// - `aDelim` is the start character of words to use (i.e. either '@' or '#').
-// - `aName`: The hash/mention to lookup for `aID`.
-// - `aID` is the source to removeHM from the list.
+//   - `aDelim` is the start character of words to use (i.e. either '@' or '#').
+//   - `aName`: The hash/mention to lookup for `aID`.
+//   - `aID` is the source to removeHM from the list.
 //
 // Returns:
-// - `bool`: `true` if `aName` was removed, or `false` otherwise.
+//   - `bool`: `true` if `aName` was removed, or `false` otherwise.
 func (hl *tHashList) removeHM(aDelim byte, aName string, aID uint64) bool {
 	aName = strings.ToLower(strings.TrimSpace(aName))
 	if 0 == len(aName) {
@@ -351,10 +369,10 @@ func (hl *tHashList) removeHM(aDelim byte, aName string, aID uint64) bool {
 // `removeID()` deletes all #hashtags/@mentions associated with `aID`.
 //
 // Parameters:
-// - `aID`: The object to remove from all references list.
+//   - `aID`: The object to remove from all references list.
 //
 // Returns:
-// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+//   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (hl *tHashList) removeID(aID uint64) bool {
 	if (nil == hl) || (0 == len(hl.hm)) {
 		return false
@@ -372,11 +390,11 @@ func (hl *tHashList) removeID(aID uint64) bool {
 // needs to get changed.
 //
 // Parameters:
-// - `aOldID`: The ID to be replaced in all lists.
-// - `aNewID`: The replacement in all lists.
+//   - `aOldID`: The ID to be replaced in all lists.
+//   - `aNewID`: The replacement in all lists.
 //
 // Returns:
-// - `bool`: `true` if the the renaming was successful, or `false` otherwise.
+//   - `bool`: `true` if the the renaming was successful, or `false` otherwise.
 func (hl *tHashList) renameID(aOldID, aNewID uint64) bool {
 	if (aOldID == aNewID) || (0 == len(hl.hm)) {
 		return false
@@ -398,11 +416,11 @@ func (hl *tHashList) renameID(aOldID, aNewID uint64) bool {
 // If there is an error, it will be of type `*PathError`.
 //
 // Parameters:
-// - 'aFilename`: The name of the file to write.
+//   - 'aFilename`: The name of the file to write.
 //
 // Returns:
-// - `int`: Number of bytes written to storage.
-// - `error`: A possible storage error, or `nil` in case of success.
+//   - `int`: Number of bytes written to storage.
+//   - `error`: A possible storage error, or `nil` in case of success.
 func (hl *tHashList) store(aFilename string) (int, error) {
 	return hl.hm.store(aFilename)
 } // Store()
@@ -410,7 +428,7 @@ func (hl *tHashList) store(aFilename string) (int, error) {
 // `String()` returns the whole list as a linefeed separated string.
 //
 // Returns:
-// - `string`: The string representation of this hash list.
+//   - `string`: The string representation of this hash list.
 func (hl *tHashList) String() string {
 	return hl.hm.String()
 } // String()
@@ -419,11 +437,11 @@ func (hl *tHashList) String() string {
 // longer present and adds #hashtags/@mentions new in `aText`.
 //
 // Parameters:
-// - `aID`: The ID to update.
-// - `aText`: The text to use.
+//   - `aID`: The ID to update.
+//   - `aText`: The text to use.
 //
 // Returns:
-// - `bool`: `true` if `aID` was updated, or `false` otherwise.
+//   - `bool`: `true` if `aID` was updated, or `false` otherwise.
 func (hl *tHashList) updateID(aID uint64, aText []byte) bool {
 	if (nil == hl) || (0 == len(aText)) || (0 == len(hl.hm)) {
 		return false

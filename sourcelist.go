@@ -27,7 +27,7 @@ type (
 // The initial capacity of the list is set to 32 to optimise memory usage.
 //
 // Returns:
-// - `*tSourceList`: A pointer to the newly created instance.
+//   - `*tSourceList`: A pointer to the newly created instance.
 func newSourceList() *tSourceList {
 	sl := make(tSourceList, 0, 32)
 
@@ -38,6 +38,9 @@ func newSourceList() *tSourceList {
 // methods of tSourceList
 
 // `clear()` removes all entries in this list.
+//
+// Returns:
+//   - `*tSourceList`: A pointer to the updated sources list.
 func (sl *tSourceList) clear() *tSourceList {
 	if nil != sl {
 		(*sl) = (*sl)[:0]
@@ -50,10 +53,10 @@ func (sl *tSourceList) clear() *tSourceList {
 // to the provided source list.
 //
 // Parameters:
-// - `aList`: The source list to compare with.
+//   - `aList`: The source list to compare with.
 //
 // Returns:
-// - `bool`: Whether the source lists are equal.
+//   - `bool`: Whether the source lists are equal.
 func (sl tSourceList) equals(aList tSourceList) bool {
 	return slices.Equal(sl, aList)
 } // equals()
@@ -61,10 +64,10 @@ func (sl tSourceList) equals(aList tSourceList) bool {
 // `findIndex()` returns the list index of `aID`.
 //
 // Parameters:
-// - `aID` is the list element to look up.
+//   - `aID` is the list element to look up.
 //
 // Returns:
-// - `int`: The index of `aID` in the list.
+//   - `int`: The index of `aID` in the list.
 func (sl tSourceList) findIndex(aID uint64) int {
 	sLen := len(sl)
 	if 0 == sLen { // empty list
@@ -87,10 +90,10 @@ func (sl tSourceList) findIndex(aID uint64) int {
 // `insert()` adds `aID` to the list while keeping the list sorted.
 //
 // Parameters:
-// - `aID` the source ID to insert to the list.
+//   - `aID` the source ID to insert to the list.
 //
 // Returns:
-// - `bool`: `true` if `aID` was inserted, or `false` otherwise.
+//   - `bool`: `true` if `aID` was inserted, or `false` otherwise.
 func (sl *tSourceList) insert(aID uint64) bool {
 	if nil == sl {
 		return false
@@ -123,10 +126,10 @@ func (sl *tSourceList) insert(aID uint64) bool {
 // NOTE: The method's result is an change indicator.
 //
 // Parameters:
-// - `aID`: The ID to look up and delete.
+//   - `aID`: The ID to look up and delete.
 //
 // Returns:
-// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+//   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (sl *tSourceList) remove(aID uint64) bool {
 	sLen := len(*sl)
 	if 0 == sLen { // empty list
@@ -163,11 +166,11 @@ func (sl *tSourceList) remove(aID uint64) bool {
 // gets changed.
 //
 // Parameters:
-// - `aOldID`: ID to be replaced in this list.
-// - `aNewID`: The replacement ID in this list.
+//   - `aOldID`: ID to be replaced in this list.
+//   - `aNewID`: The replacement ID in this list.
 //
 // Returns:
-// - `bool`: `true` if the the renaming was successful, or `false` otherwise.
+//   - `bool`: `true` if the the renaming was successful, or `false` otherwise.
 func (sl *tSourceList) rename(aOldID, aNewID uint64) bool {
 	if nil == sl {
 		return false
@@ -202,7 +205,7 @@ func (sl *tSourceList) rename(aOldID, aNewID uint64) bool {
 // library to sort the list.
 //
 // Returns:
-// - `*tSourceList`: The sorted `tSourceList` instance.
+//   - `*tSourceList`: The sorted `tSourceList` instance.
 func (sl *tSourceList) sort() *tSourceList {
 	if nil != sl {
 		slices.Sort(*sl) // ascending
@@ -217,7 +220,7 @@ func (sl *tSourceList) sort() *tSourceList {
 // All IDs are represented as strings of 16 hexadecimal characters.
 //
 // Returns:
-// - `string`: The list's contents as a string.
+//   - `string`: The list's contents as a string.
 func (sl tSourceList) String() string {
 	var result string
 

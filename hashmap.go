@@ -81,7 +81,7 @@ func cmp4sort(a, b string) int {
 // `checksum()` computes the list's CRC32 checksum.
 //
 // Returns:
-// - `uint32`: The computed checksum.
+//   - `uint32`: The computed checksum.
 func (hm *tHashMap) checksum() (rSum uint32) {
 	// We use `string()` because it sorts internally
 	// thus generating reproducible results:
@@ -96,7 +96,7 @@ func (hm *tHashMap) checksum() (rSum uint32) {
 // all `#hashtags` and `@mentions` are deleted.
 //
 // Returns:
-// - `*tHashMap`: The cleared hash map.
+//   - `*tHashMap`: The cleared hash map.
 func (hm *tHashMap) clear() *tHashMap {
 	if (nil == hm) || (0 == len(*hm)) {
 		return hm
@@ -113,10 +113,10 @@ func (hm *tHashMap) clear() *tHashMap {
 // mentions (if `aDelim == '@'`).
 //
 // Parameters:
-// - `aDelim`: The start of words to search (i.e. either '@' or '#').
+//   - `aDelim`: The start of words to search (i.e. either '@' or '#').
 //
 // Returns:
-// - `int`: The number of hashtags/mentions.
+//   - `int`: The number of hashtags/mentions.
 func (hm tHashMap) count(aDelim byte) int {
 	var result int
 	for hash := range hm {
@@ -132,8 +132,7 @@ func (hm tHashMap) count(aDelim byte) int {
 // their respective count of associated IDs.
 //
 // Returns:
-// - `TCountList`: A list of #hashtags/@mentions with
-// their respective count of associated IDs.
+//   - `TCountList`: A list of #hashtags/@mentions with their respective count of associated IDs.
 func (hm tHashMap) countedList() TCountList {
 	if 0 == len(hm) {
 		return nil
@@ -152,10 +151,10 @@ func (hm tHashMap) countedList() TCountList {
 // provided hash map.
 //
 // Parameters:
-// - `aMap`: The hash map to compare with.
+//   - `aMap`: The hash map to compare with.
 //
 // Returns:
-// - `bool`: Whether the hash maps are equal.
+//   - `bool`: Whether the hash maps are equal.
 func (hm tHashMap) equals(aMap tHashMap) bool {
 	if len(hm) != len(aMap) {
 		return false
@@ -177,10 +176,10 @@ func (hm tHashMap) equals(aMap tHashMap) bool {
 // `idList()` returns a list of #hashtags and @mentions associated with `aID`.
 //
 // Parameters:
-// - `aID`: The referenced object to lookup.
+//   - `aID`: The referenced object to lookup.
 //
 // Returns:
-// - `[]string`: The list of #hashtags and @mentions associated with `aID`.
+// ^ - `[]string`: The list of #hashtags and @mentions associated with `aID`.
 func (hm *tHashMap) idList(aID uint64) []string {
 	var result []string
 	hLen := len(*hm)
@@ -211,11 +210,11 @@ func (hm *tHashMap) idList(aID uint64) []string {
 // does nothing), returning `-1`.
 //
 // Parameters:
-// - `aDelim`: The first character of words to use (i.e. either '@' or '#').
-// - `aName`: The hash to lookup.
+//   - `aDelim`: The first character of words to use (i.e. either '@' or '#').
+//   - `aName`: The hash to lookup.
 //
 // Returns:
-// - `int: The number of references of `aName`, or `-1` if not found.
+//   - `int: The number of references of `aName`, or `-1` if not found.
 func (hm tHashMap) idxLen(aDelim byte, aName string) int {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
@@ -268,7 +267,7 @@ func (hm *tHashMap) insert(aName string, aID uint64) bool {
 // The function does not modify the hash map.
 //
 // Returns:
-// - `[]string`: A sorted slice of all keys in the hash map.
+//   - `[]string`: A sorted slice of all keys in the hash map.
 func (hm tHashMap) keys() []string {
 	hLen := len(hm)
 	if 0 == hLen {
@@ -294,11 +293,11 @@ func (hm tHashMap) keys() []string {
 // does nothing), returning an empty slice.
 //
 // Parameters:
-// - `aDelim` The start of words to search (i.e. either '@' or '#').
-// - `aName`: The hash to lookup.
+//   - `aDelim` The start of words to search (i.e. either '@' or '#').
+//   - `aName`: The hash to lookup.
 //
 // Returns:
-// - `[]uint64`: The number of references of `aName`.
+//   - `[]uint64`: The number of references of `aName`.
 func (hm tHashMap) list(aDelim byte, aName string) (rList []uint64) {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
@@ -359,11 +358,11 @@ func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 // list and a possible error.
 //
 // Parameters:
-// - aFile: The file to read from.
+//   - aFile: The file to read from.
 //
 // Returns:
-// - (*tHashMap, error): The modified hash map.
-// - `error`: A possible I/O error.
+//   - (*tHashMap, error): The modified hash map.
+//   - `error`: A possible I/O error.
 func (hm *tHashMap) loadBinary(aFile *os.File) error {
 
 	iMap, iErr := loadBinaryInts(aFile)
@@ -427,10 +426,15 @@ func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 	return result, nil
 } // loadBinaryStrings()
 
-// `loadText()` parses a file written by `store()` returning
-// the modified list and a possible error.
+// `loadText()` parses a file written by `store()` returning a possible error.
 //
 // This method reads one line of the file at a time.
+//
+// Parameters:
+//   - `aFile`: The file to read from.
+//
+// Returns:
+//   - `error`: A possible I/O error.
 func (hm *tHashMap) loadText(aFile *os.File) error {
 	var (
 		hash string
@@ -450,10 +454,8 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 
 		if matches := htHashHeadRE.FindStringSubmatch(line); nil != matches {
 			hash = strings.ToLower(strings.TrimSpace(matches[1]))
-		} else {
-			if ui64, err := strconv.ParseUint(line, 16, 64); nil == err {
-				hm.insert(hash, ui64)
-			}
+		} else if ui64, err := strconv.ParseUint(line, 16, 64); nil == err {
+			hm.insert(hash, ui64)
 		}
 	}
 	if err := scanner.Err(); nil != err {
@@ -466,10 +468,10 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 // `removeID()` deletes all #hashtags/@mentions associated with `aID`.
 //
 // Parameters:
-// - `aID`: The object to remove from all references list.
+//   - `aID`: The object to remove from all references list.
 //
 // Returns:
-// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+//   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (hm *tHashMap) removeID(aID uint64) bool {
 	if (nil == hm) || 0 == len(*hm) {
 		return false
@@ -491,12 +493,12 @@ func (hm *tHashMap) removeID(aID uint64) bool {
 // `removeHM()` deletes `aID` from the list of `aName`.
 //
 // Parameters:
-// - `aDelim`: The start character of words to use (either '@' or '#').
-// - `aName`: The hash/mention to lookup.
-// - `aID`: The referenced object to removeHM from the list.
+//   - `aDelim`: The start character of words to use (either '@' or '#').
+//   - `aName`: The hash/mention to lookup.
+//   - `aID`: The referenced object to removeHM from the list.
 //
 // Returns:
-// - `bool`: `true` if `aID` was removed, or `false` otherwise.
+//   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (hm *tHashMap) removeHM(aDelim byte, aName string, aID uint64) bool {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
@@ -523,11 +525,11 @@ func (hm *tHashMap) removeHM(aDelim byte, aName string, aID uint64) bool {
 // `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
 //
 // Parameters:
-// - `aOldID`: The ID to be replaced in this list.
-// - `aNewID`: The replacement ID in this list.
+//   - `aOldID`: The ID to be replaced in this list.
+//   - `aNewID`: The replacement ID in this list.
 //
 // Returns:
-// - `bool`: `true` if the the renaming was successful, or `false` otherwise.
+//   - `bool`: `true` if the the renaming was successful, or `false` otherwise.
 func (hm *tHashMap) renameID(aOldID, aNewID uint64) bool {
 	if (0 == len(*hm)) || (aOldID == aNewID) {
 		return false
@@ -550,7 +552,7 @@ func (hm *tHashMap) renameID(aOldID, aNewID uint64) bool {
 // and understand, as it presents the keys in a consistent order.
 //
 // Returns:
-// - `*tHashMap`: The sorted hash map.
+//   - `*tHashMap`: The sorted hash map.
 func (hm *tHashMap) sort() *tHashMap {
 	hLen := len(*hm)
 	if 0 == hLen {
@@ -574,10 +576,10 @@ func (hm *tHashMap) sort() *tHashMap {
 // `store()` writes the whole hash/mention list to `aFilename`.
 //
 // Parameters:
-// - `aFileName`: Name of the file to use for storing the current hash map.
+//   - `aFileName`: Name of the file to use for storing the current hash map.
 //
 // Returns:
-// - `int`: Number of bytes written to storage.
+//   - `int`: Number of bytes written to storage.
 func (hm tHashMap) store(aFilename string) (int, error) {
 	if "" == aFilename {
 		return 0, se.Wrap(errors.New("missing filename in store()"), 1)
@@ -613,7 +615,7 @@ func (hm tHashMap) store(aFilename string) (int, error) {
 // for debugging purposes.
 //
 // Returns:
-// - `string`: The string representation of this hash map.
+//   - `string`: The string representation of this hash map.
 func (hm tHashMap) String() (rStr string) {
 	if 0 == len(hm) {
 		return
@@ -653,7 +655,6 @@ func (hm tHashMap) String() (rStr string) {
 // 			}
 // 		}
 // 	}
-
 // 	return result
 // } // walk()
 
