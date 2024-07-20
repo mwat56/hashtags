@@ -125,7 +125,7 @@ func Test_tHashMap_countedList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.countedList(); !got.compareTo(tt.want) {
+			if got := tt.hm.countedList(); !got.Equal(tt.want) {
 				t.Errorf("%q: tHashMap.countedList() = \n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}

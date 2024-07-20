@@ -31,7 +31,11 @@ type (
 // If there is an error, it will be of type *PathError.
 //
 // Parameters:
-//   - `aFilename` is the name of the file to use for reading and storing.
+//   - `aFilename` is the name of the file to use for loading and storing.
+//
+// Returns:
+//   - `*THashTags`: The new `THashTags` instance.
+//   - `error`: If there is an error, it will be from reading `aFilename`.
 func newHashList(aFilename string) (*tHashList, error) {
 	result := &tHashList{
 		hm: make(tHashMap, 64),

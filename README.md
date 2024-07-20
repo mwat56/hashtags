@@ -27,7 +27,7 @@
 
 Sometimes one might want to search and find socalled `#hashtags` or `@mentions` in one's texts (in a broader sense) and store them for later retrieval.
 This package offers that facility.
-It provides the `THashList` class which can be used to parse texts for the occurrence of both `#hashtags` and `@mentions` and store the hits in an internal list for later lookup; that list can be stored in a file and later read from that file.
+It provides the `THashTags` class which can be used to parse texts for the occurrence of both `#hashtags` and `@mentions` and store the hits in an internal list for later lookup; that list can be stored in a file and later loaded from that file.
 
 ## Installation
 
@@ -62,10 +62,10 @@ To get a `THashTags` instance there's a simple way:
 
 The constructor function `New()` takes two arguments: A `string` specifying the name of the file to use for loading/storing the list's data, and a `bool` value indicating whether the list should be thread-safe or not. The setting for the latter depends on the actual use-case.
 
-The package provides a boolean configuration variable called `UseBinaryStorage` which is `true` by default. It determines whether the data written by `Store()` and read by `Load()` use plain text (i.e. `hashtags.UseBinaryStorage = false`) or a binary data format.
+The package provides a global boolean configuration variable called `UseBinaryStorage` which is `true` by default. It determines whether the data written by `Store()` and read by `Load()` use plain text (i.e. `hashtags.UseBinaryStorage = false`) or a binary data format.
 The advantage of the _plain text_ format is that it can be inspected by any text related tool (like e.g. `grep` or `diff`).
 The advantage of the _binary format_ is that it is about three to four times as fast when loading/storing data and it uses a few bytes less than the text format.
-For this reasons it's used by default (i.e. `hashtags.UseBinaryStorage == true`); during development of your own application using this package, however, you might want to change to text format for diagnostic purposes.
+For this reasons it's used by default (i.e. `hashtags.UseBinaryStorage == true`). During development of your own application using this package, however, you might want to change to text format for diagnostic purposes.
 
 For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/hashtags/).
 

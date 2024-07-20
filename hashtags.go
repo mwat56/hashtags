@@ -60,7 +60,11 @@ var (
 // If there is an error, it will be of type *PathError.
 //
 // Parameters:
-//   - `aFilename` is the name of the file to use for reading and storing.
+//   - `aFilename`: The name of the file to use for loading and storing.
+//
+// Returns:
+//   - `*THashTags`: The new `THashTags` instance.
+//   - `error`: If there is an error, it will be from reading `aFilename`.
 func New(aFilename string, aSafe bool) (*THashTags, error) {
 	hashlist, err := newHashList(aFilename)
 	if nil != err {
