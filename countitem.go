@@ -1,9 +1,10 @@
 /*
 Copyright © 2023, 2024  M.Watermann, 10247 Berlin, Germany
 
-		All rights reserved
-	EMail : <support@mwat.de>
+			All rights reserved
+		EMail : <support@mwat.de>
 */
+
 package hashtags
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions

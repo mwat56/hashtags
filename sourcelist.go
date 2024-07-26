@@ -1,9 +1,10 @@
 /*
 Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
 
-		All rights reserved
-	EMail : <support@mwat.de>
+			All rights reserved
+		EMail : <support@mwat.de>
 */
+
 package hashtags
 
 import (
@@ -16,7 +17,7 @@ import (
 
 type (
 	// `tSourceList` is storing the IDs using a certain #hashtag/@mention.
-	tSourceList []uint64
+	tSourceList []int64
 )
 
 // --------------------------------------------------------------------------
@@ -68,7 +69,7 @@ func (sl tSourceList) equals(aList tSourceList) bool {
 //
 // Returns:
 //   - `int`: The index of `aID` in the list.
-func (sl tSourceList) findIndex(aID uint64) int {
+func (sl tSourceList) findIndex(aID int64) int {
 	sLen := len(sl)
 	if 0 == sLen { // empty list
 		return -1
@@ -94,7 +95,7 @@ func (sl tSourceList) findIndex(aID uint64) int {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was inserted, or `false` otherwise.
-func (sl *tSourceList) insert(aID uint64) bool {
+func (sl *tSourceList) insert(aID int64) bool {
 	if nil == sl {
 		return false
 	}
@@ -130,7 +131,7 @@ func (sl *tSourceList) insert(aID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
-func (sl *tSourceList) remove(aID uint64) bool {
+func (sl *tSourceList) remove(aID int64) bool {
 	sLen := len(*sl)
 	if 0 == sLen { // empty list
 		return false
@@ -171,7 +172,7 @@ func (sl *tSourceList) remove(aID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if the the renaming was successful, or `false` otherwise.
-func (sl *tSourceList) rename(aOldID, aNewID uint64) bool {
+func (sl *tSourceList) rename(aOldID, aNewID int64) bool {
 	if nil == sl {
 		return false
 	}

@@ -1,9 +1,10 @@
 /*
 Copyright © 2023, 2024  M.Watermann, 10247 Berlin, Germany
 
-		All rights reserved
-	EMail : <support@mwat.de>
+			All rights reserved
+		EMail : <support@mwat.de>
 */
+
 package hashtags
 
 import (
@@ -162,13 +163,13 @@ func Test_tHashMap_equals(t *testing.T) {
 func Test_tHashMap_idList(t *testing.T) {
 	hm := prepHashMap()
 
-	id1 := uint64(111)
+	id1 := int64(111)
 	wl1 := []string{
 		"#hash1",
 		"@mention1",
 	}
 
-	id2 := uint64(222)
+	id2 := int64(222)
 	wl2 := []string{
 		"#hash2",
 		"@mention2",
@@ -176,7 +177,7 @@ func Test_tHashMap_idList(t *testing.T) {
 
 	tests := []struct {
 		name string
-		id   uint64
+		id   int64
 		want []string
 	}{
 		{"1", id1, wl1},
@@ -230,7 +231,7 @@ func Test_tHashMap_insert(t *testing.T) {
 
 	type tArgs struct {
 		aName string
-		aID   uint64
+		aID   int64
 	}
 	tests := []struct {
 		name string
@@ -379,7 +380,7 @@ func Test_tHashMap_remove(t *testing.T) {
 	type tArgs struct {
 		aDelim byte
 		aName  string
-		aID    uint64
+		aID    int64
 	}
 	tests := []struct {
 		name string
@@ -413,7 +414,7 @@ func Test_tHashMap_removeID(t *testing.T) {
 	tests := []struct {
 		name string
 		hm   *tHashMap
-		id   uint64
+		id   int64
 		want bool
 	}{
 		{"0", hm0, 999, false},
@@ -433,7 +434,7 @@ func Test_tHashMap_removeID(t *testing.T) {
 } // Test_tHashMap_removeID()
 
 func Test_tHashMap_renameID(t *testing.T) {
-	id1, id2, id3 := uint64(11), uint64(22), uint64(33)
+	id1, id2, id3 := int64(11), int64(22), int64(33)
 
 	hm1 := prepHashMap()
 	hm1.insert("#hash1", id1)
@@ -445,7 +446,7 @@ func Test_tHashMap_renameID(t *testing.T) {
 	hm3.insert("#hash4", id2)
 
 	type tArgs struct {
-		aOldID, aNewID uint64
+		aOldID, aNewID int64
 	}
 	tests := []struct {
 		name string
@@ -471,38 +472,38 @@ func Test_tHashMap_renameID(t *testing.T) {
 func Test_tHashMap_sort(t *testing.T) {
 	hm1 := &tHashMap{
 		"#hash1": &tSourceList{
-			uint64(111),
+			int64(111),
 		},
 		"@mention1": &tSourceList{
-			uint64(111),
+			int64(111),
 		},
 		"#hash2": &tSourceList{
-			uint64(222),
+			int64(222),
 		},
 		"@mention2": &tSourceList{
-			uint64(333),
-			uint64(222),
+			int64(333),
+			int64(222),
 		},
 		"#hash3": &tSourceList{
-			uint64(333),
+			int64(333),
 		},
 	}
 	wm1 := tHashMap{
 		"#hash1": &tSourceList{
-			uint64(111),
+			int64(111),
 		},
 		"#hash2": &tSourceList{
-			uint64(222),
+			int64(222),
 		},
 		"#hash3": &tSourceList{
-			uint64(333),
+			int64(333),
 		},
 		"@mention1": &tSourceList{
-			uint64(111),
+			int64(111),
 		},
 		"@mention2": &tSourceList{
-			uint64(222),
-			uint64(333),
+			int64(222),
+			int64(333),
 		},
 	}
 
@@ -541,7 +542,7 @@ func Test_tHashMap_store(t *testing.T) {
 		wantErr bool
 	}{
 		{"1", hm1, false, 164, false},
-		{"2", hm1, true, 109, false},
+		{"2", hm1, true, 113, false},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {

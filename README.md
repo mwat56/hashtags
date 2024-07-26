@@ -38,7 +38,7 @@ You can use `Go` to install this package for you:
 ## Usage
 
 For each `#hashtag` or `@mention` a list of _IDs_ is maintained.
-These _IDs_ can be any (`uint64`) data that identifies the text in which the `#hashtag` or `@mention` was found, e.g. some database record reference or article ID.
+These _IDs_ can be any (`int64`) data that identifies the text in which the `#hashtag` or `@mention` was found, e.g. some database record reference or article ID.
 The only condition is that it is unique as far as the program using this package is concerned.
 
 _Note_ that both `#hashtag` and `@mention` are stored lower-cased to allow for case-insensitive searches.
@@ -77,31 +77,31 @@ There are several kinds of methods provided:
 
 The following methods can be used to handle hashtags:
 
- - `HashAdd(aHash string, aID uint64) bool` inserts `aHash` as used by document `aID`, returning whether anything changed.
+ - `HashAdd(aHash string, aID int64) bool` inserts `aHash` as used by document `aID`, returning whether anything changed.
  - `HashCount() int` returns the number of hashtags currently handled.
  - `HashLen(aHash string) int` returns the number of documents using `aHash`.
- - `HashList(aHash string) []uint64` returns a list of all document IDs using `aHash`.
- - `HashRemove(aHash string, aID uint64) bool` removes the document `aID` from the `aHash` list, returning whether anything changed.
+ - `HashList(aHash string) []int64` returns a list of all document IDs using `aHash`.
+ - `HashRemove(aHash string, aID int64) bool` removes the document `aID` from the `aHash` list, returning whether anything changed.
 
 #### ID related methods
 
 The following methods can be used to handle the document IDs of the list entries.
 
- - `IDlist(aID uint64) []string` returns a list of hashtags and mentions occurring in the document identified by `aID`.
- - `IDparse(aID uint64, aText []byte) bool` parses the given `aText` for hashtags and mentions and stores `aID` in the respective hashtag/mention lists, returning whether anything changed.
- - `IDremove(aID uint64) bool` deletes the given `aID` from all hashtag/mention lists, returning whether anything changed.
- - `IDrename(aOldID, aNewID uint64) bool` changes the given `aOldID` to `aNewID` in the rare case that a document's ID changed, returning whether anything changed.
- - `IDupdate(aID uint64, aText []byte) bool` replaces the current hashtags/mentions stored for `aID` with those found in `aText`, returning whether anything changed.
+ - `IDlist(aID int64) []string` returns a list of hashtags and mentions occurring in the document identified by `aID`.
+ - `IDparse(aID int64, aText []byte) bool` parses the given `aText` for hashtags and mentions and stores `aID` in the respective hashtag/mention lists, returning whether anything changed.
+ - `IDremove(aID int64) bool` deletes the given `aID` from all hashtag/mention lists, returning whether anything changed.
+ - `IDrename(aOldID, aNewID int64) bool` changes the given `aOldID` to `aNewID` in the rare case that a document's ID changed, returning whether anything changed.
+ - `IDupdate(aID int64, aText []byte) bool` replaces the current hashtags/mentions stored for `aID` with those found in `aText`, returning whether anything changed.
 
 #### Mentions related methods
 
 The following methods can be used to handle mentions:
 
-- `MentionAdd(aMention string, aID uint64) bool` inserts `aMention` as used by document `aID`, returning whether anything changed.
+- `MentionAdd(aMention string, aID int64) bool` inserts `aMention` as used by document `aID`, returning whether anything changed.
 - `MentionCount() int` returns the number of mentions currently handled.
 - `MentionLen(aMention string) int` returns the number of documents using `aMention`.
-- `MentionList(aMention string) []uint64` returns a list of all document IDs using `aMention`.
-- `MentionRemove(aMention string, aID uint64) bool` removes the document `aID` from the `aMention` list, returning whether anything changed.
+- `MentionList(aMention string) []int64` returns a list of all document IDs using `aMention`.
+- `MentionRemove(aMention string, aID int64) bool` removes the document `aID` from the `aMention` list, returning whether anything changed.
 
 #### Maintenance methods
 

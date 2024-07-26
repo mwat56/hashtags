@@ -1,9 +1,10 @@
 /*
 Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
 
-	    All rights reserved
-	EMail : <support@mwat.de>
+			All rights reserved
+		EMail : <support@mwat.de>
 */
+
 package hashtags
 
 import (
@@ -34,7 +35,7 @@ func Test_newHashList(t *testing.T) {
 	}()
 
 	// hash1, hash2 := "#hash1", "#hash2"
-	// id1, id2 := uint64(654), uint64(321)
+	// id1, id2 := int64(654), int64(321)
 
 	hl1, _ := newHashList(fn1)
 	// hl1.hashAdd(hash1, id1).
@@ -72,7 +73,7 @@ func Test_newHashList(t *testing.T) {
 func TestTHashList_checksum(t *testing.T) {
 	fn := htFilename()
 	hash1, hash2 := "#hash1", "#hash2"
-	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
+	id1, id2, id3 := int64(987), int64(654), int64(321)
 
 	hl1 := &tHashList{
 		hm: tHashMap{
@@ -126,7 +127,7 @@ func TestTHashList_checksum(t *testing.T) {
 func TestTHashList_clear(t *testing.T) {
 	fn := htFilename()
 	hash1, hash2 := "#hash1", "#hash2"
-	id1, id2 := uint64(654), uint64(321)
+	id1, id2 := int64(654), int64(321)
 	hl1, _ := newHashList(fn)
 	hl1.insert(MarkHash, hash1, id1)
 	hl1.insert(MarkHash, hash2, id2)
@@ -152,7 +153,7 @@ func TestTHashList_clear(t *testing.T) {
 
 func TestTHashList_countedList(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "@mention1", "#another3"
-	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
+	id1, id2, id3 := int64(987), int64(654), int64(321)
 	hl1 := &tHashList{
 		hm: tHashMap{
 			hash1: &tSourceList{id2},
@@ -236,7 +237,7 @@ func TestTHashList_insert(t *testing.T) {
 	type tArgs struct {
 		aDelim byte
 		aName  string
-		aID    uint64
+		aID    int64
 	}
 
 	tests := []struct {
@@ -297,7 +298,7 @@ func TestTHashList_len(t *testing.T) {
 func TestTHashList_lenTotal(t *testing.T) {
 	fn := htFilename()
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
-	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
+	id1, id2, id3 := int64(987), int64(654), int64(321)
 
 	hl1, _ := newHashList(fn)
 	hl1.insert(MarkHash, hash1, id1)
@@ -378,7 +379,7 @@ func TestTHashList_parseID(t *testing.T) {
 	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "#hash4"
 	hyphTx1, hyphTx2, hyphTx3 := `#--------------`, `#---text ---`, `#-text-`
 
-	id1, id2, id3, id4, id5, id6 := uint64(987), uint64(654), uint64(321), uint64(123), uint64(456), uint64(789)
+	id1, id2, id3, id4, id5, id6 := int64(987), int64(654), int64(321), int64(123), int64(456), int64(789)
 
 	hl1, _ := newHashList("")
 	tx1 := []byte("1blabla " + hash1 + " blabla " + hash3 + ". Blabla")
@@ -421,7 +422,7 @@ func TestTHashList_parseID(t *testing.T) {
 	tx10 := []byte(tmp)
 
 	type tArgs struct {
-		aID   uint64
+		aID   int64
 		aText []byte
 	}
 	tests := []struct {
@@ -457,7 +458,7 @@ func TestTHashList_parseID(t *testing.T) {
 
 func TestTHashList_removeHM(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
-	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
+	id1, id2, id3 := int64(987), int64(654), int64(321)
 
 	hl := &tHashList{
 		hm: tHashMap{
@@ -471,7 +472,7 @@ func TestTHashList_removeHM(t *testing.T) {
 	type tArgs struct {
 		aDelim byte
 		aName  string
-		aID    uint64
+		aID    int64
 	}
 	tests := []struct {
 		name string
@@ -499,7 +500,7 @@ func TestTHashList_removeHM(t *testing.T) {
 
 func TestTHashList_removeID(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
-	id1, id2, id3 := uint64(123), uint64(345), uint64(456)
+	id1, id2, id3 := int64(123), int64(345), int64(456)
 	hl := &tHashList{
 		hm: tHashMap{
 			hash1: &tSourceList{id1, id3},
@@ -510,7 +511,7 @@ func TestTHashList_removeID(t *testing.T) {
 
 	tests := []struct {
 		name string
-		id   uint64
+		id   int64
 		want bool
 	}{
 		{" 0", 0, false},
@@ -531,7 +532,7 @@ func TestTHashList_removeID(t *testing.T) {
 
 func TestTHashList_renameID(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
-	id1, id2, id3, id4, id5, id6 := uint64(11), uint64(22), uint64(33), uint64(44), uint64(55), uint64(66)
+	id1, id2, id3, id4, id5, id6 := int64(11), int64(22), int64(33), int64(44), int64(55), int64(66)
 	if 0 == id6 || 0 == id5 || 0 == id4 {
 		id6 = 66
 	}
@@ -550,8 +551,8 @@ func TestTHashList_renameID(t *testing.T) {
 	hl := getHL()
 
 	type tArgs struct {
-		aOldID uint64
-		aNewID uint64
+		aOldID int64
+		aNewID int64
 	}
 	tests := []struct {
 		name string
@@ -577,7 +578,7 @@ func TestTHashList_renameID(t *testing.T) {
 
 // func TestTHashList_SetFilename(t *testing.T) {
 // 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
-// 	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
+// 	id1, id2, id3 := int64(987), int64(654), int64(321)
 // 	hl1 := &tHashList{
 // 		hm: tHashMap{
 // 			hash1: &tSourceList{id1, id3},
@@ -608,7 +609,7 @@ func TestTHashList_renameID(t *testing.T) {
 
 func TestTHashList_updateID(t *testing.T) {
 	hash1, hash2, hash3 := "hash1", "hash2", "hash3"
-	id1, id2, id3 := uint64(987), uint64(654), uint64(321)
+	id1, id2, id3 := int64(987), int64(654), int64(321)
 
 	hl, _ := newHashList("")
 	hl.insert(MarkHash, hash1, id1)
@@ -623,7 +624,7 @@ func TestTHashList_updateID(t *testing.T) {
 	tx2 := []byte("blabla @" + hash1 + " blabla #" + hash3 + " blabla")
 
 	type tArgs struct {
-		aID   uint64
+		aID   int64
 		aText []byte
 	}
 	tests := []struct {

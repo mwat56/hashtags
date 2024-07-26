@@ -1,9 +1,10 @@
 /*
 Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
 
-		All rights reserved
-	EMail : <support@mwat.de>
+			All rights reserved
+		EMail : <support@mwat.de>
 */
+
 package hashtags
 
 import (
@@ -80,7 +81,7 @@ func Test_tSourceList_findIndex(t *testing.T) {
 	tests := []struct {
 		name string
 		sl   *tSourceList
-		id   uint64
+		id   int64
 		want int
 	}{
 		{"0", &tSourceList{}, 1, -1}, // empty list
@@ -105,7 +106,7 @@ func Test_tSourceList_insert(t *testing.T) {
 
 	tests := []struct {
 		name string
-		id   uint64
+		id   int64
 		want bool
 	}{
 		{"0", 1, true}, // beginning
@@ -131,7 +132,7 @@ func Test_tSourceList_remove(t *testing.T) {
 	tests := []struct {
 		name string
 		sl   *tSourceList
-		id   uint64
+		id   int64
 		want bool
 	}{
 		{"0", sl0, 0, false}, // not found
@@ -157,7 +158,7 @@ func Test_tSourceList_rename(t *testing.T) {
 	sl := &tSourceList{1, 2, 3}
 
 	type tArgs struct {
-		aOldID, aNewID uint64
+		aOldID, aNewID int64
 	}
 	tests := []struct {
 		name string

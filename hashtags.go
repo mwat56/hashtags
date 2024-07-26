@@ -1,9 +1,10 @@
 /*
 Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
 
-		All rights reserved
-	EMail : <support@mwat.de>
+			All rights reserved
+		EMail : <support@mwat.de>
 */
+
 package hashtags
 
 import (
@@ -159,7 +160,7 @@ func (ht *THashTags) Filename() string {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
-func (ht *THashTags) HashAdd(aHash string, aID uint64) bool {
+func (ht *THashTags) HashAdd(aHash string, aID int64) bool {
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -209,8 +210,8 @@ func (ht *THashTags) HashLen(aHash string) int {
 //   - `aName`: The hash to lookup.
 //
 // Returns:
-//   - `[]uint64`: The number of references of `aName`.
-func (ht *THashTags) HashList(aHash string) []uint64 {
+//   - `[]int64`: The number of references of `aName`.
+func (ht *THashTags) HashList(aHash string) []int64 {
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
@@ -227,7 +228,7 @@ func (ht *THashTags) HashList(aHash string) []uint64 {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
-func (ht *THashTags) HashRemove(aHash string, aID uint64) bool {
+func (ht *THashTags) HashRemove(aHash string, aID int64) bool {
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -243,7 +244,7 @@ func (ht *THashTags) HashRemove(aHash string, aID uint64) bool {
 //
 // Returns:
 //   - `[]string`: The list of #hashtags and @mentions associated with `aID`.
-func (ht *THashTags) IDlist(aID uint64) []string {
+func (ht *THashTags) IDlist(aID int64) []string {
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
@@ -265,7 +266,7 @@ func (ht *THashTags) IDlist(aID uint64) []string {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
-func (ht *THashTags) IDparse(aID uint64, aText []byte) bool {
+func (ht *THashTags) IDparse(aID int64, aText []byte) bool {
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -293,7 +294,7 @@ func (ht *THashTags) IDparse(aID uint64, aText []byte) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
-func (ht *THashTags) IDremove(aID uint64) bool {
+func (ht *THashTags) IDremove(aID int64) bool {
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -330,7 +331,7 @@ func (ht *THashTags) IDremove(aID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aOldID` was renamed, or `false` otherwise.
-func (ht *THashTags) IDrename(aOldID, aNewID uint64) bool {
+func (ht *THashTags) IDrename(aOldID, aNewID int64) bool {
 	if aOldID == aNewID {
 		return false
 	}
@@ -366,7 +367,7 @@ func (ht *THashTags) IDrename(aOldID, aNewID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was updated, or `false` otherwise.
-func (ht *THashTags) IDupdate(aID uint64, aText []byte) bool {
+func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -401,7 +402,7 @@ func (ht *THashTags) IDupdate(aID uint64, aText []byte) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
-func (ht *THashTags) insert(aDelim byte, aName string, aID uint64) bool {
+func (ht *THashTags) insert(aDelim byte, aName string, aID int64) bool {
 	// prepare for case-insensitive search:
 	aName = strings.ToLower(strings.TrimSpace(aName))
 	if 0 == len(aName) {
@@ -517,7 +518,7 @@ func (ht *THashTags) Load() (*THashTags, error) {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
-func (ht *THashTags) MentionAdd(aMention string, aID uint64) bool {
+func (ht *THashTags) MentionAdd(aMention string, aID int64) bool {
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -567,8 +568,8 @@ func (ht *THashTags) MentionLen(aMention string) int {
 //   - `aMention`: The mention to lookup.
 //
 // Returns:
-//   - `[]uint64`: The number of references of `aName`.
-func (ht *THashTags) MentionList(aMention string) []uint64 {
+//   - `[]int64`: The number of references of `aName`.
+func (ht *THashTags) MentionList(aMention string) []int64 {
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
@@ -588,7 +589,7 @@ func (ht *THashTags) MentionList(aMention string) []uint64 {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
-func (ht *THashTags) MentionRemove(aMention string, aID uint64) bool {
+func (ht *THashTags) MentionRemove(aMention string, aID int64) bool {
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -609,7 +610,7 @@ func (ht *THashTags) MentionRemove(aMention string, aID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was updated, or `false` otherwise.
-func (ht *THashTags) removeHM(aDelim byte, aName string, aID uint64) bool {
+func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
 	aName = strings.ToLower(strings.TrimSpace(aName))
 	if 0 == len(aName) {
 		return false

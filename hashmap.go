@@ -1,9 +1,10 @@
 /*
 Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
 
-		All rights reserved
-	EMail : <support@mwat.de>
+			All rights reserved
+		EMail : <support@mwat.de>
 */
+
 package hashtags
 
 import (
@@ -180,7 +181,7 @@ func (hm tHashMap) equals(aMap tHashMap) bool {
 //
 // Returns:
 // ^ - `[]string`: The list of #hashtags and @mentions associated with `aID`.
-func (hm *tHashMap) idList(aID uint64) []string {
+func (hm *tHashMap) idList(aID int64) []string {
 	var result []string
 	hLen := len(*hm)
 	if 0 == hLen {
@@ -240,7 +241,7 @@ func (hm tHashMap) idxLen(aDelim byte, aName string) int {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
-func (hm *tHashMap) insert(aName string, aID uint64) bool {
+func (hm *tHashMap) insert(aName string, aID int64) bool {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
 		return false
@@ -297,8 +298,8 @@ func (hm tHashMap) keys() []string {
 //   - `aName`: The hash to lookup.
 //
 // Returns:
-//   - `[]uint64`: The number of references of `aName`.
-func (hm tHashMap) list(aDelim byte, aName string) (rList []uint64) {
+//   - `[]int64`: The number of references of `aName`.
+func (hm tHashMap) list(aDelim byte, aName string) (rList []int64) {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
 		return
@@ -309,7 +310,7 @@ func (hm tHashMap) list(aDelim byte, aName string) (rList []uint64) {
 	}
 
 	if sl, ok := hm[aName]; ok {
-		rList = []uint64(*sl)
+		rList = []int64(*sl)
 	}
 
 	return
@@ -417,8 +418,8 @@ func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 	result := newHashMap()
 	for key, sArr := range decodedMap {
 		for _, str := range sArr {
-			if ui64, err := strconv.ParseUint(str, 16, 64); nil == err {
-				result.insert(key, ui64)
+			if i64, err := strconv.ParseInt(str, 16, 64); nil == err {
+				result.insert(key, i64)
 			}
 		}
 	}
@@ -454,8 +455,8 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 
 		if matches := htHashHeadRE.FindStringSubmatch(line); nil != matches {
 			hash = strings.ToLower(strings.TrimSpace(matches[1]))
-		} else if ui64, err := strconv.ParseUint(line, 16, 64); nil == err {
-			hm.insert(hash, ui64)
+		} else if i64, err := strconv.ParseInt(line, 16, 64); nil == err {
+			hm.insert(hash, i64)
 		}
 	}
 	if err := scanner.Err(); nil != err {
@@ -472,7 +473,7 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
-func (hm *tHashMap) removeID(aID uint64) bool {
+func (hm *tHashMap) removeID(aID int64) bool {
 	if (nil == hm) || 0 == len(*hm) {
 		return false
 	}
@@ -499,7 +500,7 @@ func (hm *tHashMap) removeID(aID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
-func (hm *tHashMap) removeHM(aDelim byte, aName string, aID uint64) bool {
+func (hm *tHashMap) removeHM(aDelim byte, aName string, aID int64) bool {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
 	if 0 == len(aName) {
 		return false
@@ -530,7 +531,7 @@ func (hm *tHashMap) removeHM(aDelim byte, aName string, aID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if the the renaming was successful, or `false` otherwise.
-func (hm *tHashMap) renameID(aOldID, aNewID uint64) bool {
+func (hm *tHashMap) renameID(aOldID, aNewID int64) bool {
 	if (0 == len(*hm)) || (aOldID == aNewID) {
 		return false
 	}

@@ -1,9 +1,10 @@
 /*
 Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
 
-		All rights reserved
-	EMail : <support@mwat.de>
+			All rights reserved
+		EMail : <support@mwat.de>
 */
+
 package hashtags
 
 import (
@@ -130,8 +131,8 @@ func (hl *tHashList) hashLen(aHash string) int {
 //   - `aName`: The hash to lookup.
 //
 // Returns:
-//   - `[]uint64`: The number of references of `aName`.
-func (hl *tHashList) hashList(aHash string) []uint64 {
+//   - `[]int64`: The number of references of `aName`.
+func (hl *tHashList) hashList(aHash string) []int64 {
 	return hl.hm.list(MarkHash, aHash)
 } // hashList()
 
@@ -142,7 +143,7 @@ func (hl *tHashList) hashList(aHash string) []uint64 {
 //
 // Returns:
 //   - `[]string`: The list of #hashtags and @mentions associated with `aID`.
-func (hl *tHashList) idList(aID uint64) []string {
+func (hl *tHashList) idList(aID int64) []string {
 	if 0 == len(hl.hm) {
 		return nil
 	}
@@ -162,7 +163,7 @@ func (hl *tHashList) idList(aID uint64) []string {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
-func (hl *tHashList) insert(aDelim byte, aName string, aID uint64) bool {
+func (hl *tHashList) insert(aDelim byte, aName string, aID int64) bool {
 	// prepare for case-insensitive search:
 	aName = strings.ToLower(strings.TrimSpace(aName))
 	if 0 == len(aName) {
@@ -240,8 +241,8 @@ func (hl *tHashList) mentionLen(aMention string) int {
 //   - `aMention`: The mention to lookup.
 //
 // Returns:
-//   - `[]uint64`: The number of references of `aName`.
-func (hl tHashList) mentionList(aMention string) []uint64 {
+//   - `[]int64`: The number of references of `aName`.
+func (hl tHashList) mentionList(aMention string) []int64 {
 	return hl.hm.list(MarkMention, aMention)
 } // mentionList()
 
@@ -286,7 +287,7 @@ func HashMentionRE() *regexp.Regexp {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
-func (hl *tHashList) parseID(aID uint64, aText []byte) bool {
+func (hl *tHashList) parseID(aID int64, aText []byte) bool {
 	if 0 == len(aText) {
 		return false
 	}
@@ -361,7 +362,7 @@ func (hl *tHashList) parseID(aID uint64, aText []byte) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aName` was removed, or `false` otherwise.
-func (hl *tHashList) removeHM(aDelim byte, aName string, aID uint64) bool {
+func (hl *tHashList) removeHM(aDelim byte, aName string, aID int64) bool {
 	aName = strings.ToLower(strings.TrimSpace(aName))
 	if 0 == len(aName) {
 		return false
@@ -377,7 +378,7 @@ func (hl *tHashList) removeHM(aDelim byte, aName string, aID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
-func (hl *tHashList) removeID(aID uint64) bool {
+func (hl *tHashList) removeID(aID int64) bool {
 	if (nil == hl) || (0 == len(hl.hm)) {
 		return false
 	}
@@ -399,7 +400,7 @@ func (hl *tHashList) removeID(aID uint64) bool {
 //
 // Returns:
 //   - `bool`: `true` if the the renaming was successful, or `false` otherwise.
-func (hl *tHashList) renameID(aOldID, aNewID uint64) bool {
+func (hl *tHashList) renameID(aOldID, aNewID int64) bool {
 	if (aOldID == aNewID) || (0 == len(hl.hm)) {
 		return false
 	}
@@ -446,7 +447,7 @@ func (hl *tHashList) String() string {
 //
 // Returns:
 //   - `bool`: `true` if `aID` was updated, or `false` otherwise.
-func (hl *tHashList) updateID(aID uint64, aText []byte) bool {
+func (hl *tHashList) updateID(aID int64, aText []byte) bool {
 	if (nil == hl) || (0 == len(aText)) || (0 == len(hl.hm)) {
 		return false
 	}
@@ -472,12 +473,12 @@ func (hl *tHashList) updateID(aID uint64, aText []byte) bool {
 // 	// or `false` otherwise
 // 	//
 // 	// see `Walk()`
-// 	TWalkFunc func(aHash string, aID uint64) bool
+// 	TWalkFunc func(aHash string, aID int64) bool
 
 // 	// `IHashWalker` is used by `Walker()` when visiting an entry
 // 	// in the #hashtag/@mentions lists.
 // 	IHashWalker interface {
-// 		Walk(aHash string, aID uint64) bool
+// 		Walk(aHash string, aID int64) bool
 // 	}
 // )
 
