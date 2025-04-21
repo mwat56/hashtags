@@ -26,7 +26,7 @@ import (
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 type (
-	// `tHashMap` is indexed by `#hashtags`/`@mentions`
+	// `tHashMap` is indexed by `#hashtags` and `@mentions`
 	// pointing to a `tSourceList`.
 	tHashMap map[string]*tSourceList
 )
@@ -64,16 +64,19 @@ func cmp4sort(a, b string) int {
 	case MarkHash, MarkMention:
 		a = a[1:]
 	}
+
 	switch b[0] {
 	case MarkHash, MarkMention:
 		b = b[1:]
 	}
+
 	if a < b {
 		return -1
 	}
 	if a > b {
 		return 1
 	}
+
 	return 0
 } // cmp4sort()
 
@@ -117,19 +120,23 @@ func (hm *tHashMap) clear() *tHashMap {
 	return hm
 } // clear()
 
-// `count()` returns the number of hashtags (if `aDelim == '#'`) or
-// mentions (if `aDelim == '@'`).
+// `count()` returns the number of `#hashtags` (if `aDelim == '#'`) or
+// `@mentions` (if `aDelim == '@'`).
 //
 // Parameters:
 //   - `aDelim`: The start of words to search (i.e. either '@' or '#').
 //
 // Returns:
-//   - `int`: The number of hashtags/mentions.
+//   - `int`: The number of `#hashtags` and `@mentions`.
 func (hm tHashMap) count(aDelim byte) int {
+	if 0 == len(hm) {
+		return 0
+	}
 	var (
-		result int
 		hash   string
+		result int
 	)
+
 	for hash = range hm {
 		if hash[0] == aDelim {
 			result++
@@ -139,11 +146,11 @@ func (hm tHashMap) count(aDelim byte) int {
 	return result
 } // count()
 
-// `countedList()` returns a list of `#hashtags`/`@mentions` with
+// `countedList()` returns a list of `#hashtags` and `@mentions` with
 // their respective count of associated IDs.
 //
 // Returns:
-//   - `TCountList`: A list of `#hashtags`/`@mentions` with their respective count of associated IDs.
+//   - `TCountList`: A list of `#hashtags` and `@mentions` with their respective count of associated IDs.
 func (hm tHashMap) countedList() TCountList {
 	if 0 == len(hm) {
 		return nil
@@ -192,13 +199,14 @@ func (hm tHashMap) equals(aMap tHashMap) bool {
 	return true
 } // equals()
 
-// `idList()` returns a list of #hashtags and @mentions associated with `aID`.
+// `idList()` returns a list of `#hashtags` and `@mentions` associated
+// with `aID`.
 //
 // Parameters:
 //   - `aID`: The referenced object to lookup.
 //
 // Returns:
-//   - `[]string`: The list of #hashtags and @mentions associated with `aID`.
+//   - `[]string`: List of `#hashtags` and `@mentions` associated with `aID`.
 func (hm *tHashMap) idList(aID int64) []string {
 	var (
 		hash   string
@@ -353,7 +361,6 @@ func (hm tHashMap) list(aDelim byte, aName string) (rList []int64) {
 //   - `error`: A possible I/O error.
 func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 	if ("" == aFilename) || (nil == hm) {
-		//
 		return hm, nil
 	}
 
@@ -362,7 +369,7 @@ func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 		file *os.File
 	)
 
-	file, err = os.OpenFile(aFilename, os.O_RDONLY, 0)
+	file, err = os.OpenFile(aFilename, os.O_RDONLY, 0) //#nosec G304
 	if nil != err {
 		if os.IsNotExist(err) {
 			return hm, nil
@@ -383,7 +390,7 @@ func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 // `loadBinary()` reads a file written by `store()` returning the modified
 // list and a possible error.
 //
-// Note: This method updates the list in place.
+// NOTE: This method updates the list in place.
 //
 // Parameters:
 //   - `aFile`: The file to read from.
@@ -405,10 +412,19 @@ func (hm *tHashMap) loadBinary(aFile *os.File) error {
 	return nil
 } // loadBinary()
 
+// `loadBinaryInts()` reads a binary encoded integer map from `aFile`
+// and converts it into a `tHashMap`.
+//
+// Parameters:
+//   - `aFile`: The file handle to read from.
+//
+// Returns:
+//   - `*tHashMap`: The decoded and converted hash map.
+//   - `error`: A possible decoding or conversion error.
 func loadBinaryInts(aFile *os.File) (*tHashMap, error) {
 	var decodedMap tHashMap
 
-	aFile.Seek(0, io.SeekStart)
+	_, _ = aFile.Seek(0, io.SeekStart)
 	decoder := gob.NewDecoder(aFile)
 	if err := decoder.Decode(&decodedMap); nil != err {
 		// `decoder.Decode()` returns `io.EOF` if the input
@@ -424,10 +440,19 @@ func loadBinaryInts(aFile *os.File) (*tHashMap, error) {
 	return decodedMap.sort(), nil
 } // loadBinaryInts()
 
+// `loadBinaryStrings()` reads a binary encoded string map from `aFile`
+// and converts it into a `tHashMap`.
+//
+// Parameters:
+//   - `aFile`: The file handle to read from.
+//
+// Returns:
+//   - `*tHashMap`: The decoded and converted hash map.
+//   - `error`: A possible decoding or conversion error.
 func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 	var decodedMap map[string][]string
 
-	aFile.Seek(0, io.SeekStart)
+	_, _ = aFile.Seek(0, io.SeekStart) //#nosec G104
 	decoder := gob.NewDecoder(aFile)
 	if err := decoder.Decode(&decodedMap); nil != err {
 		// `decoder.Decode()` returns `io.EOF` if the input
@@ -504,7 +529,7 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 	return nil
 } // loadText()
 
-// `removeID()` deletes all #hashtags/@mentions associated with `aID`.
+// `removeID()` deletes all `#hashtags` and `@mentions` associated with `aID`.
 //
 // Parameters:
 //   - `aID`: The object to remove from all references list.
@@ -641,8 +666,7 @@ func (hm tHashMap) store(aFilename string) (int, error) {
 		}, 5)
 	}
 
-	file, err := os.OpenFile(aFilename,
-		os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660) //#nosec G302
+	file, err := os.OpenFile(aFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660) //#nosec G302 #nosec G304
 	if nil != err {
 		return 0, se.Wrap(err, 3)
 	}
@@ -667,8 +691,8 @@ func (hm tHashMap) store(aFilename string) (int, error) {
 
 // `String()` is used to generate a footprint of the hash map.
 //
-// It is also used to generate a list of hashtags/@mentions mostly
-// for debugging purposes.
+// It is also used to generate a list of `#hashtags` and `@mentions`
+// mostly for debugging purposes.
 //
 // Returns:
 //   - `string`: The string representation of this hash map.
