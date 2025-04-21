@@ -77,20 +77,21 @@ func cmp4sort(a, b string) int {
 } // cmp4sort()
 
 // -------------------------------------------------------------------------
-// methods of tHashMap
+// methods of `tHashMap`
+
+var (
+	// `gCRCtable` should be considered `const`.
+	gCRCtable = crc32.MakeTable(0) // other table types may not be reproducible
+)
 
 // `checksum()` computes the list's CRC32 checksum.
 //
 // Returns:
 //   - `uint32`: The computed checksum.
-func (hm *tHashMap) checksum() (rSum uint32) {
-	// We use `string()` because it sorts internally
-	// thus generating reproducible results:
-	rSum = crc32.Update(0,
-		crc32.MakeTable(0), // other table types may not be reproducible
-		[]byte(hm.String()))
-
-	return
+func (hm *tHashMap) checksum() uint32 {
+	// We use `String()` because it sorts internally
+	// thus generating reproducible results
+	return crc32.Update(0, gCRCtable, []byte(hm.String()))
 } // checksum()
 
 // `clear()` empties the internal data structures:
