@@ -1,10 +1,9 @@
 /*
-Copyright © 2023, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2023, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
@@ -34,7 +33,8 @@ func TestTCountList_Compare(t *testing.T) {
 		{"2", cl2, wl0, 1},
 		{"3", cl2, wl2, 0},
 		{"4", cl2, wl4, 1},
-		{"2", wl4, wl5, -1},
+		{"5", wl4, wl5, -1},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -73,6 +73,7 @@ func TestTCountList_Equal(t *testing.T) {
 		{"3", cl1, wl3, false},
 		{"4", cl4, wl4, false},
 		{"5", cl5, wl5, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -104,6 +105,7 @@ func TestTCountList_Insert(t *testing.T) {
 		{"1", i1, wl1},
 		{"2", i2, wl2},
 		{"3", i3, wl3},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -127,6 +129,7 @@ func TestTCountList_Len(t *testing.T) {
 	}{
 		{"0", cl0, 0},
 		{"1", cl1, 1},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -219,6 +222,7 @@ func TestTCountList_sort(t *testing.T) {
 		{"5", cl5, wl5},
 		{"6", cl6, wl6},
 		{"7", cl7, wl7},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -244,6 +248,7 @@ func TestTCountList_String(t *testing.T) {
 		want string
 	}{
 		{"1", ws},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -286,6 +291,7 @@ func TestTCountList_Swap(t *testing.T) {
 		{"1", tArgs{c1, c2}, *cl}, // index out of bounds
 		{"2", tArgs{0, 1}, wl2},   // actual swap
 		{"3", tArgs{1, 2}, wl3},   // actual swap
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {

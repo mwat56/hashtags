@@ -1,19 +1,18 @@
 /*
-Copyright © 2023, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2023, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 type (
-	// `TCountItem` holds a #hashtag/@mention and its number of occurrences.
+	// `TCountItem` holds a `#hashtag` and its number of occurrences.
 	TCountItem struct {
-		Count int    // number of IDs for this #hashtag/@mention
-		Tag   string // name of #hashtag/@mention
+		Count int    // number of IDs for this `#hashtag`
+		Tag   string // name of `#hashtag`
 	}
 )
 
@@ -24,7 +23,7 @@ type (
 // and counts.
 //
 // Parameters:
-//   - aItem: The other TCountItem instance to compare with.
+//   - `aItem`: The other TCountItem instance to compare with.
 //
 // Returns:
 //   - `-1` if the current instance is less than `aItem`.

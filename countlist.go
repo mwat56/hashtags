@@ -1,10 +1,9 @@
 /*
-Copyright © 2023, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2023, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
@@ -16,7 +15,7 @@ import (
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 type (
-	// A list of `TCountItems
+	// `TCountList` is a list of `TCountItems`.
 	TCountList []TCountItem
 )
 
@@ -59,19 +58,9 @@ func (cl TCountList) Compare(aList TCountList) int {
 // Returns:
 //   - `bool`: True if the lists are identical, false otherwise.
 func (cl TCountList) Equal(aList TCountList) bool {
-	// if len(cl) != len(aList) {
-	// 	return false
-	// }
-
-	// for idx, ci := range cl {
-	// 	oci := aList[idx]
-	// 	if ci.Tag != oci.Tag {
-	// 		return false
-	// 	}
-	// 	if ci.Count != oci.Count {
-	// 		return false
-	// 	}
-	// }
+	if len(cl) != len(aList) {
+		return false
+	}
 
 	return (0 == cl.Compare(aList))
 } // Equal()
@@ -106,7 +95,7 @@ func (cl *TCountList) Insert(aItem TCountItem) *TCountList {
 	}
 
 	return cl
-} // insert()
+} // Insert()
 
 func (cl TCountList) Len() int {
 	return len(cl)
@@ -147,7 +136,8 @@ func (cl *TCountList) sort() *TCountList {
 
 // `String()` returns the list as a linefeed separated string.
 //
-// (Implements `Stringer` interface)
+// (Implements `fmt.Stringer` interface)
+//
 // Returns:
 //   - `string`: The string representation of this list.
 func (cl TCountList) String() (rStr string) {
