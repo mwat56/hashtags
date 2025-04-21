@@ -1,10 +1,9 @@
 /*
-Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
@@ -34,15 +33,7 @@ func Test_newHashList(t *testing.T) {
 		os.Remove(fn2)
 	}()
 
-	// hash1, hash2 := "#hash1", "#hash2"
-	// id1, id2 := int64(654), int64(321)
-
 	hl1, _ := newHashList(fn1)
-	// hl1.hashAdd(hash1, id1).
-	// 	hashAdd(hash2, id2).
-	// 	hashAdd(hash2, id1).
-	// 	hashAdd(hash1, id2)
-	// _, _ = hl1.Store()
 	hl2, _ := newHashList(fn2)
 
 	tests := []struct {
@@ -53,6 +44,7 @@ func Test_newHashList(t *testing.T) {
 	}{
 		{" 1", fn1, hl1, false},
 		{" 2", fn2, hl2, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -80,7 +72,6 @@ func TestTHashList_checksum(t *testing.T) {
 			hash1: &tSourceList{id2},
 			hash2: &tSourceList{id3, id1},
 		},
-		//
 	}
 	h1a, _ := newHashList(fn)
 	h1a.insert(MarkHash, hash1, id2)
@@ -93,7 +84,6 @@ func TestTHashList_checksum(t *testing.T) {
 			hash1: &tSourceList{id1, id2},
 			hash2: &tSourceList{id2, id3},
 		},
-		//
 	}
 	h2a, _ := newHashList(fn)
 	h2a.insert(MarkHash, hash1, id1)
@@ -111,11 +101,11 @@ func TestTHashList_checksum(t *testing.T) {
 	}{
 		{"1", hl1, w1},
 		{"2", hl2, w2},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// atomic.StoreUint32(&tt.hl.µChange, 0)
 			if got := tt.hl.checksum(); got != tt.want {
 				t.Errorf("%q: THashList.checksum() = %v, want %v",
 					tt.name, got, tt.want)
@@ -133,12 +123,14 @@ func TestTHashList_clear(t *testing.T) {
 	hl1.insert(MarkHash, hash2, id2)
 	hl1.insert(MarkHash, hash2, id1)
 	hl1.insert(MarkHash, hash1, id2)
+
 	tests := []struct {
 		name string
 		hl   *tHashList
 		want int
 	}{
 		{" 1", hl1, 0},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -184,6 +176,7 @@ func TestTHashList_countedList(t *testing.T) {
 	}{
 		{" 1", hl1, wl1},
 		{" 2", hl2, wl2},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -218,6 +211,7 @@ func TestTHashList_equals(t *testing.T) {
 	}{
 		{"1", hl1, wl1, true},
 		{"2", hl1, wl2, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -248,6 +242,7 @@ func TestTHashList_insert(t *testing.T) {
 	}{
 		{"0", hl0, tArgs{}, false},
 		{"1", hl0, tArgs{MarkHash, "hash1", 1}, true},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -283,6 +278,7 @@ func TestTHashList_len(t *testing.T) {
 		{" 2", hl2, 1},
 		{" 3", hl3, 2},
 		{" 4", hl4, 3},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -322,6 +318,7 @@ func TestTHashList_lenTotal(t *testing.T) {
 	}{
 		{" 1", hl1, 6},
 		{" 2", hl2, 10},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -363,6 +360,7 @@ func Test_htHashMentionRE(t *testing.T) {
 		{" 5", t5, 4},
 		{" 6", t6, 3},
 		{" 7", t7, 5},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -441,6 +439,7 @@ func TestTHashList_parseID(t *testing.T) {
 		{"8", hl8, tArgs{8, tx8}, false},
 		{"9", hl9, tArgs{9, tx9}, true},
 		{"10", hl6, tArgs{id6, tx10}, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -486,6 +485,7 @@ func TestTHashList_removeHM(t *testing.T) {
 		{"5", tArgs{MarkHash, hash1, id3}, true},
 		{"6", tArgs{MarkHash, hash1, id3}, false},
 		{"7", tArgs{MarkHash, hash2, id3}, true},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -518,6 +518,7 @@ func TestTHashList_removeID(t *testing.T) {
 		{" 1", id1, true},
 		{" 2", id2, true},
 		{" 3", id3, true},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -564,6 +565,7 @@ func TestTHashList_renameID(t *testing.T) {
 		{"2", tArgs{id2, id5}, true},
 		{"3", tArgs{id3, id6}, true},
 		{"4", tArgs{id4, id4}, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -575,37 +577,6 @@ func TestTHashList_renameID(t *testing.T) {
 		})
 	}
 } // TestTHashList_renameID()
-
-// func TestTHashList_SetFilename(t *testing.T) {
-// 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
-// 	id1, id2, id3 := int64(987), int64(654), int64(321)
-// 	hl1 := &tHashList{
-// 		hm: tHashMap{
-// 			hash1: &tSourceList{id1, id3},
-// 			hash2: &tSourceList{id2, id3},
-// 			hash3: &tSourceList{id1, id3},
-// 		},
-// 	}
-
-// 	tests := []struct {
-// 		name  string
-// 		hl    *tHashList
-// 		fName string
-// 		want  *tHashList
-// 	}{
-// 		{" 1", hl1, `fn1.db`, hl1},
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got := tt.hl.SetFilename(tt.fName)
-// 			if (nil == got) || (got.fn != tt.fName) {
-// 				t.Errorf("%q: THashList.SetFilename() = %v, want %v",
-// 					tt.name, got, tt.want)
-// 			}
-// 		})
-// 	}
-// } // TestTHashList_SetFilename()
 
 func TestTHashList_updateID(t *testing.T) {
 	hash1, hash2, hash3 := "hash1", "hash2", "hash3"
@@ -635,6 +606,7 @@ func TestTHashList_updateID(t *testing.T) {
 		{"0", tArgs{0, tx0}, true},
 		{"1", tArgs{id1, tx1}, true},
 		{"2", tArgs{id2, tx2}, true},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
