@@ -1,14 +1,14 @@
 /*
-Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	....All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -269,17 +269,16 @@ func (hm *tHashMap) insert(aName string, aID int64) bool {
 //
 // Returns:
 //   - `[]string`: A sorted slice of all keys in the hash map.
-func (hm tHashMap) keys() []string {
-	hLen := len(hm)
+func (hm *tHashMap) keys() []string {
+	hLen := len(*hm)
 	if 0 == hLen {
-		var result []string
-		return result
+		return []string{}
 	}
 
 	// Create a slice to hold the keys
 	keys := make([]string, 0, hLen)
 	// Extract keys from the map
-	for key := range hm {
+	for key := range *hm {
 		keys = append(keys, key)
 	}
 	// Sort the keys ignoring the respective leading hash/mention mark
@@ -617,19 +616,25 @@ func (hm tHashMap) store(aFilename string) (int, error) {
 //
 // Returns:
 //   - `string`: The string representation of this hash map.
-func (hm tHashMap) String() (rStr string) {
-	if 0 == len(hm) {
-		return
+func (hm *tHashMap) String() string {
+	if 0 == len(*hm) {
+		return ""
 	}
+
+	// Pre-allocate buffer to avoid multiple allocations
+	var buf bytes.Buffer
+	buf.Grow(len(*hm) * 64) // Estimate average size
 
 	keys := hm.keys()
+	sl := &tSourceList{}
+
 	// Iterate through sorted keys and create a new sorted string
 	for _, hash := range keys {
-		sl := hm[hash]
-		rStr += fmt.Sprintf("[%s]\n%s", hash, sl.String())
+		sl = (*hm)[hash]
+		buf.WriteString(fmt.Sprintf("[%s]\n%s", hash, sl.String()))
 	}
 
-	return
+	return buf.String()
 } // String()
 
 // // `walk()` traverses through all entries in the #hashtag/@mention

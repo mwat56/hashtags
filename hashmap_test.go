@@ -1,10 +1,9 @@
 /*
-Copyright © 2023, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2023, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
@@ -42,19 +41,19 @@ func prepHashMap() *tHashMap {
 
 func Test_tHashMap_clear(t *testing.T) {
 	hm1 := prepHashMap()
-	wm1 := tHashMap{}
+	wm1 := &tHashMap{}
 
 	tests := []struct {
 		name string
 		hm   *tHashMap
-		want tHashMap
+		want *tHashMap
 	}{
 		{"1", hm1, wm1},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.clear(); !got.equals(tt.want) {
+			if got := tt.hm.clear(); !got.equals(*tt.want) {
 				t.Errorf("%q: tHashMap.clear() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -74,13 +73,13 @@ func Test_tHashMap_count(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		hm      tHashMap
+		hm      *tHashMap
 		delim   byte
 		wantInt int
 	}{
-		{"1", *hm1, MarkHash, wm1},
-		{"2", *hm2, MarkHash, wm2},
-		{"3", *hm3, MarkMention, wm3},
+		{"1", hm1, MarkHash, wm1},
+		{"2", hm2, MarkHash, wm2},
+		{"3", hm3, MarkMention, wm3},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -117,11 +116,11 @@ func Test_tHashMap_countedList(t *testing.T) {
 
 	tests := []struct {
 		name string
-		hm   tHashMap
+		hm   *tHashMap
 		want TCountList
 	}{
-		{"1", *hm1, wc1},
-		{"2", *hm2, wc2},
+		{"1", hm1, wc1},
+		{"2", hm2, wc2},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -261,7 +260,7 @@ func Test_tHashMap_keys(t *testing.T) {
 	// 	add("@mention1", 111).
 	// 	add("@mention2", 222)
 	hm0 := &tHashMap{}
-	var wl0 []string
+	wl0 := []string{}
 	hm1 := prepHashMap()
 	hm1.insert("#hash4", 444)
 	wm1 := []string{"#hash1", "#hash2", "#hash3", "#hash4", "@mention1", "@mention2"}
@@ -338,11 +337,12 @@ func Test_tHashMap_Load(t *testing.T) {
 		name    string
 		hm      *tHashMap
 		binary  bool
-		want    tHashMap
+		want    *tHashMap
 		wantErr bool
 	}{
-		{"1", hm1, false, *wm1, false},
-		{"2", hm1, true, *wm1, false},
+		{"1", hm1, false, wm1, false},
+		{"2", hm1, true, wm1, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -488,7 +488,7 @@ func Test_tHashMap_sort(t *testing.T) {
 			int64(333),
 		},
 	}
-	wm1 := tHashMap{
+	wm1 := &tHashMap{
 		"#hash1": &tSourceList{
 			int64(111),
 		},
@@ -510,14 +510,14 @@ func Test_tHashMap_sort(t *testing.T) {
 	tests := []struct {
 		name string
 		hm   *tHashMap
-		want tHashMap
+		want *tHashMap
 	}{
 		{"1", hm1, wm1},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hm.sort(); !got.equals(tt.want) {
+			if got := tt.hm.sort(); !got.equals(*tt.want) {
 				t.Errorf("%q: tHashMap.sort() = \n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -564,7 +564,7 @@ func Test_tHashMap_store(t *testing.T) {
 } // Test_tHashMap_store()
 
 func Test_tHashMap_String(t *testing.T) {
-	sl0 := tHashMap{}
+	sl0 := &tHashMap{}
 	ws0 := ""
 
 	sl1 := prepHashMap()
@@ -572,11 +572,11 @@ func Test_tHashMap_String(t *testing.T) {
 
 	tests := []struct {
 		name string
-		hm   tHashMap
+		hm   *tHashMap
 		want string
 	}{
 		{"0", sl0, ws0},
-		{"1", *sl1, ws1},
+		{"1", sl1, ws1},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
