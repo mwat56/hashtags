@@ -7,6 +7,10 @@ Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 package hashtags
 
 import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -15,15 +19,15 @@ import (
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 const (
-	// `MarkHash` is the first character in asy hash tag.
+	// `MarkHash` is the first character in a `#hashtag`.
 	MarkHash = byte('#')
 
-	// `MarkMention` is the first character in asy mention tag.
+	// `MarkMention` is the first character in a `@mention`.
 	MarkMention = byte('@')
 )
 
 type (
-	// Data cache for `CountedList()`
+	// `tCountCache` is a data cache for `CountedList()`.
 	tCountCache struct {
 		crc uint32     // current CRC
 		cl  TCountList // last list of counted items
@@ -32,12 +36,20 @@ type (
 	// `THashTags` is a list of `#hashtags` and `@mentions`
 	// pointing to sources (i.e. IDs).
 	THashTags struct {
-		fn      string       // the filename to use
-		hl      tHashList    // the actual map list of sources/IDs
 		mtx     sync.RWMutex // safeguard against concurrent accesses
+		hl      tHashList    // the actual map list of sources/IDs
+		fn      string       // the filename to use
 		changed uint32       // internal change flag
 		cc      tCountCache  // cache for `CountedList()`
 		safe    bool         // flag for optional thread safety
+	}
+
+	// `THashTagError` is a custom error type that provides detailed error
+	// information for hashtag-related operations.
+	THashTagError struct {
+		Op   string // operation that caused the error (e.g., "Load", "Store")
+		Path string // file path involved in the error, if applicable
+		Err  error  // underlying error that occurred
 	}
 )
 
@@ -51,13 +63,15 @@ var (
 )
 
 // --------------------------------------------------------------------------
-// constructor function
+// constructor function:
 
 // `New()` returns a new `THashTags` instance after reading
 // the given file.
 //
-// If the hash file doesn't exist that is not considered an error.
-// If there is an error, it will be of type *PathError.
+// NOTE: An empty filename or if the hash file doesn't exist is not
+// considered an error.
+//
+// If there is an error, it will be of type `*THashTagError`.
 //
 // Parameters:
 //   - `aFilename`: The name of the file to use for loading and storing.
@@ -68,7 +82,11 @@ var (
 func New(aFilename string, aSafe bool) (*THashTags, error) {
 	hashlist, err := newHashList(aFilename)
 	if nil != err {
-		return nil, err
+		return nil, &THashTagError{
+			Op:   "New",
+			Path: aFilename,
+			Err:  err,
+		}
 	}
 	ht := &THashTags{
 		fn:   aFilename,
@@ -80,8 +98,38 @@ func New(aFilename string, aSafe bool) (*THashTags, error) {
 } // New()
 
 // -------------------------------------------------------------------------
-// methods of `THashTags`
+// methods of `THashTagError`:
 
+// `Error()` implements the error interface, returning a formatted error message.
+//
+// Returns:
+//   - `string`: A formatted error message containing the operation, path (if any), and underlying error.
+func (e *THashTagError) Error() string {
+	if "" == e.Path {
+		return fmt.Sprintf("hashtags.%s: %v", e.Op, e.Err)
+	}
+
+	return fmt.Sprintf("hashtags.%s %s: %v", e.Op, e.Path, e.Err)
+} // Error()
+
+// `Unwrap()` returns the underlying error.
+//
+// Returns:
+//   - `error`: The underlying error that caused this `THashTagError`.
+func (e *THashTagError) Unwrap() error {
+	return e.Err
+} // Unwrap()
+
+// -------------------------------------------------------------------------
+// methods of `THashTags`:
+
+// `checksum()` returns the list's CRC32 checksum.
+//
+// This internal method is used by the public `Checksum()` method to get
+// a kind of 'footprint' of the current contents of the handled data.
+//
+// Returns:
+//   - `uint32`: The computed checksum.
 func (ht *THashTags) checksum() uint32 {
 	if 0 == atomic.LoadUint32(&ht.changed) {
 		atomic.StoreUint32(&ht.changed, ht.hl.checksum())
@@ -123,8 +171,17 @@ func (ht *THashTags) Clear() *THashTags {
 	return ht
 } // Clear()
 
+// `deferredStore()` returns a closure that, when executed, checks whether
+// the list's contents have changed and if so, asynchronously stores
+// the current state to the configured file.
+//
+// This method is meant to be used internally with the `defer` statement.
+//
+// Returns:
+//   - `func()`: A closure that handles deferred storage operations.
 func (ht *THashTags) deferredStore() func() {
 	oldCRC := ht.hl.checksum()
+
 	return func() {
 		if oldCRC != atomic.LoadUint32(&ht.changed) {
 			go ht.hl.store(ht.fn)
@@ -154,6 +211,11 @@ func (ht *THashTags) equals(aList *THashTags) bool {
 // Returns:
 //   - `string`: The filename for reading/storing this list.
 func (ht *THashTags) Filename() string {
+	if ht.safe {
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
+	}
+
 	return ht.fn
 } // Filename()
 
@@ -196,7 +258,7 @@ func (ht *THashTags) HashCount() int {
 // does nothing), returning `-1`.
 //
 // Parameters:
-//   - `aHash` The list key to lookup.
+//   - `aHash`: The list key to lookup.
 //
 // Returns:
 //   - `int`: The number of `aHash` in the list.
@@ -215,10 +277,10 @@ func (ht *THashTags) HashLen(aHash string) int {
 // does nothing), returning an empty slice.
 //
 // Parameters:
-//   - `aName`: The hash to lookup.
+//   - `aHash`: The hash to lookup.
 //
 // Returns:
-//   - `[]int64`: The number of references of `aName`.
+//   - `[]int64`: The number of references of `aHash`.
 func (ht *THashTags) HashList(aHash string) []int64 {
 	if ht.safe {
 		ht.mtx.RLock()
@@ -245,13 +307,14 @@ func (ht *THashTags) HashRemove(aHash string, aID int64) bool {
 	return ht.removeHM(MarkHash, aHash, aID)
 } // HashRemove()
 
-// `IDlist()` returns a list of #hashtags and @mentions associated with `aID`.
+// `IDlist()` returns a list of `#hashtags` and `@mentions` associated
+// with `aID`.
 //
 // Parameters:
 //   - `aID`: The referenced object to lookup.
 //
 // Returns:
-//   - `[]string`: The list of #hashtags and @mentions associated with `aID`.
+//   - `[]string`: The list of `#hashtags` and `@mentions` associated with `aID`.
 func (ht *THashTags) IDlist(aID int64) []string {
 	if ht.safe {
 		ht.mtx.RLock()
@@ -269,7 +332,7 @@ func (ht *THashTags) IDlist(aID int64) []string {
 // does nothing), returning `false`.
 //
 // Parameters:
-//   - `aID`: the ID to add to the list.
+//   - `aID`: The ID to add to the list.
 //   - `aText:` The text to search.
 //
 // Returns:
@@ -281,17 +344,18 @@ func (ht *THashTags) IDparse(aID int64, aText []byte) bool {
 	}
 	defer ht.deferredStore()
 
-	result := ht.hl.parseID(aID, aText)
-	if result {
+	if ht.hl.parseID(aID, aText) {
 		atomic.StoreUint32(&ht.changed, 0)
+		return true
 	}
-	return result
+
+	return false
 } // IDparse()
 
-// `IDremove()` deletes all @hashtags/@mentions associated with `aID`.
+// `IDremove()` deletes all `#hashtags` and `@mentions` associated with `aID`.
 //
 // Parameters:
-//   - `aID` is to be deleted from all lists.
+//   - `aID`: The ID to be deleted from all lists.
 //
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
@@ -302,12 +366,12 @@ func (ht *THashTags) IDremove(aID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	result := ht.hl.removeID(aID)
-	if result {
+	if ht.hl.removeID(aID) {
 		atomic.StoreUint32(&ht.changed, 0)
+		return true
 	}
 
-	return result
+	return false
 } // IDremove()
 
 // `IDrename()` replaces all occurrences of `aOldID` by `aNewID`.
@@ -319,8 +383,8 @@ func (ht *THashTags) IDremove(aID int64) bool {
 // needs to get changed.
 //
 // Parameters:
-//   - `aOldID` is to be replaced in all lists.
-//   - `aNewID` is the replacement in all lists.
+//   - `aOldID`: The ID to be replaced in all lists.
+//   - `aNewID`: The replacement in all lists.
 //
 // Returns:
 //   - `bool`: `true` if `aOldID` was renamed, or `false` otherwise.
@@ -335,16 +399,16 @@ func (ht *THashTags) IDrename(aOldID, aNewID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	result := ht.hl.renameID(aOldID, aNewID)
-	if result {
+	if ht.hl.renameID(aOldID, aNewID) {
 		atomic.StoreUint32(&ht.changed, 0)
+		return true
 	}
 
-	return result
+	return false
 } // IDrename()
 
-// `IDupdate()` checks `aText` removing all #hashtags/@mentions no longer
-// present and adding #hashtags/@mentions new in `aText`.
+// `IDupdate()` checks `aText` removing all `#hashtags` and `@mentions`
+// no longer present and adding `#hashtags` and `@mentions` new in `aText`.
 //
 // Parameters:
 //   - `aID`: The ID to update.
@@ -359,12 +423,12 @@ func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
 	}
 	defer ht.deferredStore()
 
-	result := ht.hl.updateID(aID, aText)
-	if result {
+	if ht.hl.updateID(aID, aText) {
 		atomic.StoreUint32(&ht.changed, 0)
+		return true
 	}
 
-	return result
+	return false
 } // IDupdate()
 
 // `insert()` appends `aID` to the list associated with `aName`.
@@ -374,7 +438,7 @@ func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
 //
 // Parameters:
 //   - `aDelim`: The start character of words to use (i.e. either '@' or '#').
-//   - `aName`: The hashtag/mention to lookup.
+//   - `aName`: The `#hashtag` or `@mention` to lookup.
 //   - `aID`: The referencing object to be added to the hash list.
 //
 // Returns:
@@ -387,19 +451,19 @@ func (ht *THashTags) insert(aDelim byte, aName string, aID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	result := ht.hl.insert(aDelim, aName, aID)
-	if result {
+	if ht.hl.insert(aDelim, aName, aID) {
 		atomic.StoreUint32(&ht.changed, 0)
+		return true
 	}
 
-	return result
+	return false
 } // insert()
 
 // `Len()` returns the current length of the list i.e. how many
-// #hashtags and @mentions are currently stored in the list.
+// `#hashtags` and `@mentions` are currently stored in the list.
 //
 // Returns:
-//   - `int`: The length of all #hashtag/@mention list.
+//   - `int`: The number of all `#hashtag` and `@mention` lists.
 func (ht *THashTags) Len() int {
 	if ht.safe {
 		ht.mtx.RLock()
@@ -409,11 +473,11 @@ func (ht *THashTags) Len() int {
 	return ht.hl.len()
 } // Len()
 
-// `LenTotal()` returns the length of all #hashtag/@mention lists
-// stored in the list.
+// `LenTotal()` returns the length of all `#hashtag` and `@mention`
+// lists stored in the list.
 //
 // Returns:
-//   - `int`: The total length of all #hashtag/@mention lists.
+//   - `int`: The total length of all `#hashtag` and `@mention` lists.
 func (ht *THashTags) LenTotal() int {
 	if ht.safe {
 		ht.mtx.RLock()
@@ -423,11 +487,11 @@ func (ht *THashTags) LenTotal() int {
 	return ht.hl.lenTotal()
 } // LenTotal()
 
-// `List()` returns a list of #hashtags/@mentions with
-// their respective count of associated IDs.
+// `List()` returns a list of `#hashtags` and `@mentions` with their
+// respective count of associated IDs.
 //
 // Returns:
-//   - `TCountList`: A list of #hashtags/@mentions with their counts of IDs.
+//   - `TCountList`: A list of `#hashtags` and `@mentions` with their counts of IDs.
 func (ht *THashTags) List() TCountList {
 	if ht.safe {
 		ht.mtx.RLock()
@@ -448,7 +512,8 @@ func (ht *THashTags) List() TCountList {
 // `Load()` reads the configured file returning the data structure
 // read from the file and a possible error condition.
 //
-// If the hash file doesn't exist that is not considered an error.
+// NOTE: An empty filename or the hash file doesn't exist that is not
+// considered an error.
 //
 // Returns:
 //   - `*THashTags`: The updated list.
@@ -460,12 +525,16 @@ func (ht *THashTags) Load() (*THashTags, error) {
 	}
 	defer ht.deferredStore()
 
-	_, err := ht.hl.load(ht.fn)
-	if nil == err {
-		atomic.StoreUint32(&ht.changed, 0)
+	if _, err := ht.hl.load(ht.fn); nil != err {
+		return ht, &THashTagError{
+			Op:   "Load",
+			Path: ht.fn,
+			Err:  err,
+		}
 	}
+	atomic.StoreUint32(&ht.changed, 0)
 
-	return ht, err
+	return ht, nil
 } // Load()
 
 // `MentionAdd()` appends `aID` to the list of `aMention`.
@@ -507,7 +576,7 @@ func (ht *THashTags) MentionCount() int {
 // does nothing) returning `-1`.
 //
 // Parameters:
-//   - `aMention` identifies the ID list to lookup.
+//   - `aMention`: Identifies the ID list to lookup.
 //
 // Returns:
 //   - `int`: The number of `aMention` in the list.
@@ -529,7 +598,7 @@ func (ht *THashTags) MentionLen(aMention string) int {
 //   - `aMention`: The mention to lookup.
 //
 // Returns:
-//   - `[]int64`: The number of references of `aName`.
+//   - `[]int64`: The number of references of `aMention`.
 func (ht *THashTags) MentionList(aMention string) []int64 {
 	if ht.safe {
 		ht.mtx.RLock()
@@ -565,7 +634,7 @@ func (ht *THashTags) MentionRemove(aMention string, aID int64) bool {
 // does nothing) returning `false`.
 //
 // Parameters:
-//   - `aDelim` is the start character of words to use (i.e. either '@' or '#').
+//   - `aDelim`: The start character of words to use (i.e. either '@' or '#').
 //   - `aName`: The hash/mention to lookup for `aID`.
 //   - `aID`: The source to remove from the list.
 //
@@ -578,12 +647,12 @@ func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	result := ht.hl.removeHM(aDelim, aName, aID)
-	if result {
+	if ht.hl.removeHM(aDelim, aName, aID) {
 		atomic.StoreUint32(&ht.changed, 0)
+		return true
 	}
 
-	return result
+	return false
 } // removeHM()
 
 // `SetFilename()` sets `aFilename` to be used by this list.
@@ -592,22 +661,38 @@ func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
 //   - `aFilename`: The name of the file to use for storage.
 //
 // Returns:
-//   - `*THashTags`: The current hash list.
-func (ht *THashTags) SetFilename(aFilename string) *THashTags {
+//   - `error`: If there is an error, it will be of type `*HashTagError`.
+func (ht *THashTags) SetFilename(aFilename string) error {
+	if strings.TrimSpace(aFilename) == "" {
+		return &THashTagError{
+			Op:  "SetFilename",
+			Err: errors.New("empty filename not allowed"),
+		}
+	}
+
+	// Check if directory exists and is writeable
+	dir := filepath.Dir(aFilename)
+	if _, err := os.Stat(dir); nil != err {
+		return &THashTagError{
+			Op:   "SetFilename",
+			Path: dir,
+			Err:  err,
+		}
+	}
+
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
 	}
-
 	ht.fn = aFilename
 
-	return ht
+	return nil
 } // SetFilename()
 
 // `Store()` writes the whole list to the configured file
 // returning the number of bytes written and a possible error.
 //
-// If there is an error, it will be of type `*PathError`.
+// If there is an error, it will be of type `*THashTagError`.
 //
 // Returns:
 //   - `int`: Number of bytes written to storage.
@@ -618,7 +703,16 @@ func (ht *THashTags) Store() (int, error) {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.store(ht.fn)
+	bytesWritten, err := ht.hl.store(ht.fn)
+	if nil != err {
+		return bytesWritten, &THashTagError{
+			Op:   "Store",
+			Path: ht.fn,
+			Err:  err,
+		}
+	}
+
+	return bytesWritten, nil
 } // Store()
 
 // `String()` returns the whole list as a linefeed separated string.
