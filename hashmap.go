@@ -26,7 +26,8 @@ import (
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 type (
-	// `tHashMap` is indexed by #hashtags/@mentions pointing to a `tSourceList`.
+	// `tHashMap` is indexed by `#hashtags`/`@mentions`
+	// pointing to a `tSourceList`.
 	tHashMap map[string]*tSourceList
 )
 
@@ -56,8 +57,8 @@ func newHashMap() *tHashMap {
 // The function first checks if the first character of `a` and `b` is a hash
 // or mention mark. If so, it removes the leading character from both strings.
 //
-// Returns;
-// - `int`: The result of the comparison the two strings as described above.
+// Returns:
+//   - `int`: The result of the comparison the two strings as described above.
 func cmp4sort(a, b string) int {
 	switch a[0] {
 	case MarkHash, MarkMention:
@@ -103,7 +104,12 @@ func (hm *tHashMap) clear() *tHashMap {
 	if (nil == hm) || (0 == len(*hm)) {
 		return hm
 	}
-	for hash, sl := range *hm {
+
+	var (
+		hash string
+		sl   *tSourceList
+	)
+	for hash, sl = range *hm {
 		sl.clear()
 		delete(*hm, hash)
 	}
@@ -120,8 +126,11 @@ func (hm *tHashMap) clear() *tHashMap {
 // Returns:
 //   - `int`: The number of hashtags/mentions.
 func (hm tHashMap) count(aDelim byte) int {
-	var result int
-	for hash := range hm {
+	var (
+		result int
+		hash   string
+	)
+	for hash = range hm {
 		if hash[0] == aDelim {
 			result++
 		}
@@ -130,23 +139,26 @@ func (hm tHashMap) count(aDelim byte) int {
 	return result
 } // count()
 
-// `countedList()` returns a list of #hashtags/@mentions with
+// `countedList()` returns a list of `#hashtags`/`@mentions` with
 // their respective count of associated IDs.
 //
 // Returns:
-//   - `TCountList`: A list of #hashtags/@mentions with their respective count of associated IDs.
+//   - `TCountList`: A list of `#hashtags`/`@mentions` with their respective count of associated IDs.
 func (hm tHashMap) countedList() TCountList {
 	if 0 == len(hm) {
 		return nil
 	}
 
-	// result := make(TCountList, 0, len(hm))
 	result := TCountList{}
-	for name, sl := range hm {
+	var (
+		name string
+		sl   *tSourceList
+	)
+	for name, sl = range hm {
 		result.Insert(TCountItem{len(*sl), name})
 	}
 
-	return result // *result.sort()
+	return result
 } // countedList()
 
 // `equals()` returns whether the current hash map is equal to the
@@ -162,9 +174,14 @@ func (hm tHashMap) equals(aMap tHashMap) bool {
 		return false
 	}
 
-	for hash, sl := range hm {
-		osl, ok := aMap[hash]
-		if !ok {
+	var (
+		hash string
+		osl  *tSourceList
+		sl   *tSourceList
+		ok   bool
+	)
+	for hash, sl = range hm {
+		if osl, ok = aMap[hash]; !ok {
 			return false
 		}
 		if !sl.equals(*osl) {
@@ -181,16 +198,20 @@ func (hm tHashMap) equals(aMap tHashMap) bool {
 //   - `aID`: The referenced object to lookup.
 //
 // Returns:
-// ^ - `[]string`: The list of #hashtags and @mentions associated with `aID`.
+//   - `[]string`: The list of #hashtags and @mentions associated with `aID`.
 func (hm *tHashMap) idList(aID int64) []string {
-	var result []string
+	var (
+		hash   string
+		result []string
+		sl     *tSourceList
+	)
 	hLen := len(*hm)
 	if 0 == hLen {
 		return result
 	}
 
 	result = make([]string, 0, hLen)
-	for hash, sl := range *hm {
+	for hash, sl = range *hm {
 		if 0 > sl.findIndex(aID) {
 			continue // ID not found
 		}
@@ -237,8 +258,8 @@ func (hm tHashMap) idxLen(aDelim byte, aName string) int {
 // `insert()` adds `aID` to the sources list associated with `aName`.
 //
 // Parameters:
-//   - `aName` is the list index to lookup.
-//   - `aID` is to be added to the hash list.
+//   - `aName`: The list index to lookup.
+//   - `aID`: The ID to be added to the hash list.
 //
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
@@ -276,10 +297,10 @@ func (hm *tHashMap) keys() []string {
 		return []string{}
 	}
 
+	var key string
 	// Create a slice to hold the keys
 	keys := make([]string, 0, hLen)
-	// Extract keys from the map
-	for key := range *hm {
+	for key = range *hm {
 		keys = append(keys, key)
 	}
 	// Sort the keys ignoring the respective leading hash/mention mark
@@ -294,7 +315,7 @@ func (hm *tHashMap) keys() []string {
 // does nothing), returning an empty slice.
 //
 // Parameters:
-//   - `aDelim` The start of words to search (i.e. either '@' or '#').
+//   - `aDelim`: The start of words to search (i.e. either '@' or '#').
 //   - `aName`: The hash to lookup.
 //
 // Returns:
@@ -319,8 +340,10 @@ func (hm tHashMap) list(aDelim byte, aName string) (rList []int64) {
 // `load()` reads the configured file returning the data structure
 // read from the file and a possible error condition.
 //
-// If the hash file doesn't exist that is not considered an error.
 // If there is an error, it will be of type `*PathError`.
+//
+// NOTE: An empty filename or the hash file doesn't exist that
+// is not considered an error.
 //
 // Parameters:
 //   - `aFilename`: Name of the file to load.
@@ -329,9 +352,11 @@ func (hm tHashMap) list(aDelim byte, aName string) (rList []int64) {
 //   - `*tHashMap`: The loaded hash map.
 //   - `error`: A possible I/O error.
 func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
-	if nil == hm {
-		return hm, se.Wrap(errors.New("nil == hashmap"), 1)
+	if ("" == aFilename) || (nil == hm) {
+		//
+		return hm, nil
 	}
+
 	var (
 		err  error
 		file *os.File
@@ -355,17 +380,17 @@ func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 	return hm, err
 } // load()
 
-// `loadBinary()` reads a file written by store() returning the modified
+// `loadBinary()` reads a file written by `store()` returning the modified
 // list and a possible error.
 //
+// Note: This method updates the list in place.
+//
 // Parameters:
-//   - aFile: The file to read from.
+//   - `aFile`: The file to read from.
 //
 // Returns:
-//   - (*tHashMap, error): The modified hash map.
 //   - `error`: A possible I/O error.
 func (hm *tHashMap) loadBinary(aFile *os.File) error {
-
 	iMap, iErr := loadBinaryInts(aFile)
 	if nil != iErr {
 		sMap, sErr := loadBinaryStrings(aFile)
@@ -416,9 +441,15 @@ func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 	}
 
 	result := newHashMap()
-	for key, sArr := range decodedMap {
+	var (
+		key  string
+		sArr []string
+		i64  int64
+		err  error
+	)
+	for key, sArr = range decodedMap {
 		for _, str := range sArr {
-			if i64, err := strconv.ParseInt(str, 16, 64); nil == err {
+			if i64, err = strconv.ParseInt(str, 16, 64); nil == err {
 				result.insert(key, i64)
 			}
 		}
@@ -431,21 +462,28 @@ func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 //
 // This method reads one line of the file at a time.
 //
+// NOTE: This method updates the list in place.
+//
 // Parameters:
 //   - `aFile`: The file to read from.
 //
 // Returns:
 //   - `error`: A possible I/O error.
 func (hm *tHashMap) loadText(aFile *os.File) error {
-	var (
-		hash string
-		read int
-	)
-
 	hm.clear()
+
+	var (
+		err      error
+		hash     string
+		line     string
+		matches  []string
+		read     int
+		i64      int64
+		lineRead bool
+	)
 	scanner := bufio.NewScanner(aFile)
-	for lineRead := scanner.Scan(); lineRead; lineRead = scanner.Scan() {
-		line := scanner.Text()
+	for lineRead = scanner.Scan(); lineRead; lineRead = scanner.Scan() {
+		line = scanner.Text()
 		read += len(line) + 1 // add trailing LF
 
 		line = strings.TrimSpace(line)
@@ -453,14 +491,14 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 			continue
 		}
 
-		if matches := htHashHeadRE.FindStringSubmatch(line); nil != matches {
+		if matches = htHashHeadRE.FindStringSubmatch(line); nil != matches {
 			hash = strings.ToLower(strings.TrimSpace(matches[1]))
-		} else if i64, err := strconv.ParseInt(line, 16, 64); nil == err {
+		} else if i64, err = strconv.ParseInt(line, 16, 64); nil == err {
 			hm.insert(hash, i64)
 		}
 	}
-	if err := scanner.Err(); nil != err {
-		return se.Wrap(err, 2)
+	if err = scanner.Err(); nil != err {
+		return se.Wrap(err, 1)
 	}
 
 	return nil
@@ -478,8 +516,13 @@ func (hm *tHashMap) removeID(aID int64) bool {
 		return false
 	}
 
-	var result bool
-	for hash, sl := range *hm {
+	var (
+		hash   string
+		sl     *tSourceList
+		result bool
+	)
+	for hash, sl = range *hm {
+		// remove the ID from every list
 		if sl.remove(aID) {
 			if 0 == len(*sl) {
 				delete(*hm, hash)
@@ -536,9 +579,12 @@ func (hm *tHashMap) renameID(aOldID, aNewID int64) bool {
 		return false
 	}
 
-	var result bool
-	for _, sl := range *hm {
-		if ok := sl.rename(aOldID, aNewID); ok {
+	var (
+		sl         *tSourceList
+		ok, result bool
+	)
+	for _, sl = range *hm {
+		if ok = sl.rename(aOldID, aNewID); ok {
 			result = true
 		}
 	}
@@ -560,13 +606,17 @@ func (hm *tHashMap) sort() *tHashMap {
 		return hm
 	}
 
+	var (
+		key string
+		sl  *tSourceList
+	)
+
 	keys := hm.keys()
 	// Create a new map to store sorted key-value pairs
 	sortedMap := make(tHashMap, len(keys))
-
 	// Iterate through sorted keys and create a new sorted map
-	for _, key := range keys {
-		sl := (*hm)[key]
+	for _, key = range keys {
+		sl = (*hm)[key]
 		sortedMap[key] = sl.sort()
 	}
 	(*hm) = sortedMap
@@ -581,9 +631,14 @@ func (hm *tHashMap) sort() *tHashMap {
 //
 // Returns:
 //   - `int`: Number of bytes written to storage.
+//   - `error`: A possible I/O error.
 func (hm tHashMap) store(aFilename string) (int, error) {
 	if "" == aFilename {
-		return 0, se.Wrap(errors.New("missing filename in store()"), 1)
+		return 0, se.Wrap(&THashTagError{
+			Op:   "store",
+			Path: aFilename,
+			Err:  errors.New("missing filename for `store()`"),
+		}, 5)
 	}
 
 	file, err := os.OpenFile(aFilename,
@@ -626,43 +681,18 @@ func (hm *tHashMap) String() string {
 	var buf bytes.Buffer
 	buf.Grow(len(*hm) * 64) // Estimate average size
 
+	var (
+		hash string
+		sl   *tSourceList
+	)
 	keys := hm.keys()
-	sl := &tSourceList{}
-
 	// Iterate through sorted keys and create a new sorted string
-	for _, hash := range keys {
+	for _, hash = range keys {
 		sl = (*hm)[hash]
 		buf.WriteString(fmt.Sprintf("[%s]\n%s", hash, sl.String()))
 	}
 
 	return buf.String()
 } // String()
-
-// // `walk()` traverses through all entries in the #hashtag/@mention
-// // lists calling `aFunc` for each entry.
-// //
-// // If `aFunc` returns `false` when called the respective ID
-// // will be removed from the associated #hashtag/@mention.
-// //
-// // NOTE: Since the order of the hashtags/mentions is NOT guaranteed
-// // here the order of visits to the items isn't ordered either.
-// //
-// // Parameters:
-// // - `aFunc` The function called for each ID in all lists.
-// //
-// // Returns:
-// // - `bool`: `true` if a ID was removed, or `false` otherwise.
-// func (hm *tHashMap) walk(aFunc TWalkFunc) bool {
-// 	var result bool
-// 	for hash, sl := range *hm {
-// 		for _, id := range *sl {
-// 			if !aFunc(hash, id) {
-// 				hm.removeID(id)
-// 				result = true
-// 			}
-// 		}
-// 	}
-// 	return result
-// } // walk()
 
 /* EoF */
