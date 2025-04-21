@@ -1,10 +1,9 @@
 /*
-Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
@@ -28,6 +27,7 @@ func Test_tSourceList_clear(t *testing.T) {
 		want *tSourceList
 	}{
 		{"1", sl1, wl1},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -61,6 +61,7 @@ func Test_tSourceList_equals(t *testing.T) {
 		{"0", sl1, nil, false},
 		{"1", sl1, sl1, true},
 		{"2", sl2, sl1, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -89,6 +90,7 @@ func Test_tSourceList_findIndex(t *testing.T) {
 		{"2", sl1, 3, 2},             // middle
 		{"3", sl1, 5, 4},             // last
 		{"4", sl1, 6, -1},            // not found
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -114,6 +116,7 @@ func Test_tSourceList_insert(t *testing.T) {
 		{"2", 5, true}, // end
 		{"3", 2, true}, // middle
 		{"4", 4, true}, // middle
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -142,6 +145,7 @@ func Test_tSourceList_remove(t *testing.T) {
 		{"4", sl1, 2, true},  // (new) beginning
 		{"5", sl1, 2, false}, // not found
 		{"6", sl1, 4, true},  // beginning == end
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -155,26 +159,39 @@ func Test_tSourceList_remove(t *testing.T) {
 } // Test_tSourceList_remove()
 
 func Test_tSourceList_rename(t *testing.T) {
-	sl := &tSourceList{1, 2, 3}
+	sl1 := &tSourceList{1, 2, 3}
+	sl2 := &tSourceList{}
 
 	type tArgs struct {
-		aOldID, aNewID int64
+		oldID, newID int64
 	}
 	tests := []struct {
 		name string
-		ids  tArgs
+		sl   *tSourceList
+		args tArgs
 		want bool
 	}{
-		{"0", tArgs{}, false},         // not found
-		{"1", tArgs{3, 4}, true},      // end
-		{"2", tArgs{4, 6}, true},      // (new) end
-		{"3", tArgs{3333, 333}, true}, // only new ID added
+		// Empty list
+		{"0", sl2, tArgs{1, 2}, false},
+		// Same IDs - no change
+		{"1", sl1, tArgs{1, 1}, false},
+		// Replace existing ID
+		{"2", sl1, tArgs{2, 4}, true},
+		// Old ID doesn't exist, new ID added
+		{"3", sl1, tArgs{99, 5}, true},
+		// Replace first element
+		{"4", sl1, tArgs{1, 6}, true},
+		// Replace last element
+		{"5", sl1, tArgs{3, 7}, true},
+		// Nil list
+		{"6", nil, tArgs{1, 2}, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := sl.rename(tt.ids.aOldID, tt.ids.aNewID); got != tt.want {
-				t.Errorf("%q: tSourceList.rename() =\n%v\n>>>> want: >>>>\n%v",
+			if got := tt.sl.rename(tt.args.oldID, tt.args.newID); got != tt.want {
+				t.Errorf("%q: tSourceList.rename() = %v, want %v",
 					tt.name, got, tt.want)
 			}
 		})
@@ -198,6 +215,7 @@ func Test_tSourceList_sort(t *testing.T) {
 		{"0", nil, nil},
 		{"1", sl1, wl1},
 		{"2", sl2, wl2},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -220,15 +238,19 @@ func Test_tSourceList_String(t *testing.T) {
 
 	sl2 := &tSourceList{}
 	wl2 := ""
+	sl3 := &tSourceList{3, 2, 1}
+	wl3 := "0000000000000003\n0000000000000002\n0000000000000001\n"
 
 	tests := []struct {
 		name string
 		sl   *tSourceList
 		want string
 	}{
-		// TODO: Add test cases.
 		{" 1", sl1, wl1},
 		{" 2", sl2, wl2},
+		{" 3", sl3, wl3},
+
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

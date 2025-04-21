@@ -1,13 +1,13 @@
 /*
-Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
+	"bytes"
 	"fmt"
 	"slices"
 	"strings"
@@ -33,7 +33,7 @@ func newSourceList() *tSourceList {
 	sl := make(tSourceList, 0, 32)
 
 	return &sl
-} // NewSourceList()
+} // newSourceList()
 
 // -------------------------------------------------------------------------
 // methods of tSourceList
@@ -222,18 +222,28 @@ func (sl *tSourceList) sort() *tSourceList {
 //
 // Returns:
 //   - `string`: The list's contents as a string.
-func (sl tSourceList) String() string {
-	var result string
-
-	for _, id := range sl {
-		strID := fmt.Sprintf("%x\n", id)
-		if 17 > len(strID) { // 16 hex chars + LF
-			strID = strings.Repeat("0", 17-len(strID)) + strID
-		}
-		result += strID
+func (sl *tSourceList) String() string {
+	if nil == sl {
+		return ""
 	}
 
-	return result
+	// Pre-allocate buffer to avoid multiple allocations
+	var (
+		buf   bytes.Buffer
+		strID string
+	)
+	buf.Grow(len(*sl) * 16) // Estimate size
+
+	for _, id := range *sl {
+		strID = fmt.Sprintf("%x\n", id)
+		if 17 > len(strID) { // 16 hex chars + LF
+			buf.WriteString(strings.Repeat("0", 17-len(strID)) + strID)
+		} else {
+			buf.WriteString(strID)
+		}
+	}
+
+	return buf.String()
 } // String()
 
 /* EoF */
