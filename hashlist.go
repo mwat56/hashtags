@@ -1,10 +1,9 @@
 /*
-Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
@@ -16,7 +15,7 @@ import (
 
 type (
 	// `tHashList` is a list of `#hashtags` and `@mentions`
-	// pointing to sources (i.e. IDs).
+	// pointing to their respective sources (i.e. IDs).
 	tHashList struct {
 		hm tHashMap // the actual map list of sources/IDs
 	}
@@ -29,13 +28,13 @@ type (
 // the given file.
 //
 // If the hash file doesn't exist that is not considered an error.
-// If there is an error, it will be of type *PathError.
+// If there is an error, it will be of type `*PathError`.
 //
 // Parameters:
-//   - `aFilename` is the name of the file to use for loading and storing.
+//   - `aFilename`: The name of the file to use for loading and storing.
 //
 // Returns:
-//   - `*THashTags`: The new `THashTags` instance.
+//   - `*tHashList`: The new `tHashList` instance.
 //   - `error`: If there is an error, it will be from reading `aFilename`.
 func newHashList(aFilename string) (*tHashList, error) {
 	result := &tHashList{
@@ -50,11 +49,12 @@ func newHashList(aFilename string) (*tHashList, error) {
 } // newHashList()
 
 // -------------------------------------------------------------------------
-// methods of tHashList
+// methods of `tHashList`
 
 // `checksum()` returns the list's CRC32 checksum.
 //
-// This method can be used to get a kind of 'footprint'.
+// This method can be used to get a kind of 'footprint' of the current
+// contents of the handled data.
 //
 // Returns:
 //   - `uint32`: The computed checksum.
@@ -62,25 +62,22 @@ func (hl *tHashList) checksum() uint32 {
 	return hl.hm.checksum()
 } // checksum()
 
-// `clear()` removes all entries from the hash list.
-//
-// This function is used to reset the hash list to an empty state.
-// After calling this function, the hash list will not contain any
-// #hashtag/@mention entries.
+// `clear()` empties the internal data structures:
+// all `#hashtags` and `@mentions` are deleted.
 //
 // Returns:
-//   - `*tHashList`: A pointer to the updated hash list.
+//   - `*tHashList`: This cleared list.
 func (hl *tHashList) clear() *tHashList {
 	hl.hm.clear()
 
 	return hl
 } // clear()
 
-// `countedList()` returns a list of #hashtags/@mentions with
+// `countedList()` returns a list of `#hashtags` and `@mentions` with
 // their respective count of associated IDs.
 //
 // Returns:
-//   - `TCountList`: A list of #hashtags/@mentions with their respective counts of associated IDs.
+//   - `TCountList`: A list of `#hashtags` and `@mentions` with their respective counts of associated IDs.
 func (hl *tHashList) countedList() TCountList {
 	return hl.hm.countedList()
 } // countedList()
@@ -88,10 +85,10 @@ func (hl *tHashList) countedList() TCountList {
 // `equals()` compares the current list with another list.
 //
 // Parameters:
-// - `aList`: The list to compare with.
+//   - `aList`: The list to compare with.
 //
 // Returns:
-// - `bool`: `true` if the lists are identical, `false` otherwise.
+//   - `bool`: `true` if the lists are identical, `false` otherwise.
 func (hl *tHashList) equals(aList *tHashList) bool {
 	if len((*hl).hm) != len((*aList).hm) {
 		return false
@@ -114,7 +111,7 @@ func (hl *tHashList) hashCount() int {
 // does nothing) returning `-1`.
 //
 // Parameters:
-//   - `aHash` The list key to lookup.
+//   - `aHash`: The list key to lookup.
 //
 // Returns:
 //   - `int`: The number of `aHash` in the list.
@@ -128,21 +125,22 @@ func (hl *tHashList) hashLen(aHash string) int {
 // does nothing), returning an empty slice.
 //
 // Parameters:
-//   - `aName`: The hash to lookup.
+//   - `aHash`: The hash to lookup.
 //
 // Returns:
-//   - `[]int64`: The number of references of `aName`.
+//   - `[]int64`: The number of references of `aHash`.
 func (hl *tHashList) hashList(aHash string) []int64 {
 	return hl.hm.list(MarkHash, aHash)
 } // hashList()
 
-// `IDlist()` returns a list of #hashtags and @mentions associated with `aID`.
+// `idList()` returns a list of `#hashtags` and `@mentions` associated
+// with `aID`.
 //
 // Parameters:
 //   - `aID`: The referenced object to lookup.
 //
 // Returns:
-//   - `[]string`: The list of #hashtags and @mentions associated with `aID`.
+//   - `[]string`: The list of `#hashtags` and `@mentions` associated with `aID`.
 func (hl *tHashList) idList(aID int64) []string {
 	if 0 == len(hl.hm) {
 		return nil
@@ -158,8 +156,8 @@ func (hl *tHashList) idList(aID int64) []string {
 //
 // Parameters:
 //   - `aDelim`: The start character of words to use (i.e. either '@' or '#').
-//   - `aName`: The hashtag/mention to lookup.
-//   - `aID`: The referencing object to be added to the hash list.
+//   - `aName`: The `#hashtag` or `@mention` to lookup.
+//   - `aID`: The referencing object to be added to the list.
 //
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
@@ -177,20 +175,27 @@ func (hl *tHashList) insert(aDelim byte, aName string, aID int64) bool {
 	return hl.hm.insert(aName, aID)
 } // insert()
 
-// `len()` returns the current length of the list i.e. how many #hashtags
-// and @mentions are currently stored in the list.
+// `len()` returns the current length of the list i.e. how many
+// `#hashtags` and `@mentions` are currently stored in the list.
+//
+// Returns:
+//   - `int`: The length of all `#hashtags` and `@mentions` list.
 func (hl *tHashList) len() int {
 	return len(hl.hm)
 } // len()
 
-// `lenTotal()` returns the length of all #hashtag/@mention lists stored
-// in the hash list.
+// `lenTotal()` returns the length of all `#hashtags` and `@mentions`
+// lists stored in the hash list.
 //
 // Returns:
-//   - `int`: The total length of all #hashtag/@mention lists.
+//   - `int`: The total length of all `#hashtags` and `@mentions` lists.
 func (hl *tHashList) lenTotal() (rLen int) {
-	rLen = len(hl.hm)
-	for _, sl := range hl.hm {
+	if rLen = len(hl.hm); 0 == rLen {
+		return
+	}
+	var sl *tSourceList
+
+	for _, sl = range hl.hm {
 		rLen += len(*sl)
 	}
 
@@ -201,12 +206,17 @@ func (hl *tHashList) lenTotal() (rLen int) {
 // read from the file and a possible error condition.
 //
 // If the hash file doesn't exist that is not considered an error.
+// If there is an error, it will be of type `*PathError`.
+//
+// Parameters:
+//   - `aFilename`: The name of the file to read.
 //
 // Returns:
-//   - `*THashList`: The updated list.
-//   - `error`: If there is an error, it will be of type `*PathError`.
+//   - `*tHashList`: The loaded list.
+//   - `error`: If there is an error, it will be from reading `aFilename`.
 func (hl *tHashList) load(aFilename string) (*tHashList, error) {
 	_, err := hl.hm.load(aFilename)
+
 	return hl, err
 } // load()
 
@@ -224,7 +234,7 @@ func (hl *tHashList) mentionCount() int {
 // does nothing) returning `-1`.
 //
 // Parameters:
-//   - `aMention` identifies the ID list to lookup.
+//   - `aMention`: Identifies the ID list to lookup.
 //
 // Returns:
 //   - `int`: The number of `aMention` in the list.
@@ -241,7 +251,7 @@ func (hl *tHashList) mentionLen(aMention string) int {
 //   - `aMention`: The mention to lookup.
 //
 // Returns:
-//   - `[]int64`: The number of references of `aName`.
+//   - `[]int64`: The number of references of `aMention`.
 func (hl tHashList) mentionList(aMention string) []int64 {
 	return hl.hm.list(MarkMention, aMention)
 } // mentionList()
@@ -264,7 +274,7 @@ var (
 )
 
 // `HashMentionRE()` returns a compiled regular expression used to
-// identify #hashtags and @mentions in a text.
+// identify `#hashtags` and `@mentions` in a text.
 //
 // This regular expression matches strings that start with either '@'
 // or '#' followed by any number of characters that are not whitespace.
@@ -297,10 +307,14 @@ func (hl *tHashList) parseID(aID int64, aText []byte) bool {
 		return false
 	}
 
-	var result bool
-	for _, sub := range matches {
-		match0 := string(sub[0])
-		hash := string(sub[1])
+	var (
+		hash, match0 string
+		sub          [][]byte
+		result       bool
+	)
+	for _, sub = range matches {
+		match0 = string(sub[0])
+		hash = string(sub[1])
 
 		if '_' == hash[len(hash)-1] {
 			// '_' can be both, part of the hashtag and italic
@@ -356,9 +370,9 @@ func (hl *tHashList) parseID(aID int64, aText []byte) bool {
 // `removeHM()` deletes `aID` from the list of `aName`.
 //
 // Parameters:
-//   - `aDelim` is the start character of words to use (i.e. either '@' or '#').
+//   - `aDelim`: The start character of words to use (i.e. either '@' or '#').
 //   - `aName`: The hash/mention to lookup for `aID`.
-//   - `aID` is the source to removeHM from the list.
+//   - `aID`: The source to removeHM from the list.
 //
 // Returns:
 //   - `bool`: `true` if `aName` was removed, or `false` otherwise.
@@ -371,7 +385,7 @@ func (hl *tHashList) removeHM(aDelim byte, aName string, aID int64) bool {
 	return hl.hm.removeHM(aDelim, aName, aID)
 } // removeHM()
 
-// `removeID()` deletes all #hashtags/@mentions associated with `aID`.
+// `removeID()` deletes all `#hashtags` and `@mentions` associated with `aID`.
 //
 // Parameters:
 //   - `aID`: The object to remove from all references list.
@@ -405,8 +419,11 @@ func (hl *tHashList) renameID(aOldID, aNewID int64) bool {
 		return false
 	}
 
-	var result bool
-	for _, sl := range hl.hm {
+	var (
+		result bool
+		sl     *tSourceList
+	)
+	for _, sl = range hl.hm {
 		if sl.rename(aOldID, aNewID) {
 			result = true
 		}
@@ -421,14 +438,14 @@ func (hl *tHashList) renameID(aOldID, aNewID int64) bool {
 // If there is an error, it will be of type `*PathError`.
 //
 // Parameters:
-//   - 'aFilename`: The name of the file to write.
+//   - `aFilename`: The name of the file to write.
 //
 // Returns:
 //   - `int`: Number of bytes written to storage.
 //   - `error`: A possible storage error, or `nil` in case of success.
 func (hl *tHashList) store(aFilename string) (int, error) {
 	return hl.hm.store(aFilename)
-} // Store()
+} // store()
 
 // `String()` returns the whole list as a linefeed separated string.
 //
@@ -438,8 +455,8 @@ func (hl *tHashList) String() string {
 	return hl.hm.String()
 } // String()
 
-// `updateID()` checks `aText` removing all #hashtags/@mentions no
-// longer present and adds #hashtags/@mentions new in `aText`.
+// `updateID()` checks `aText` removing all `#hashtags` and `@mentions`
+// no longer present and adds `#hashtags` and `@mentions` new in `aText`.
 //
 // Parameters:
 //   - `aID`: The ID to update.
@@ -457,63 +474,5 @@ func (hl *tHashList) updateID(aID int64, aText []byte) bool {
 
 	return (rr || rp)
 } // updateID()
-
-// -------------------------------------------------------------------------
-
-// type (
-// 	// `TWalkFunc` is used by `Walk()` when visiting an entry
-// 	// in the #hashtag/@mention lists.
-// 	//
-// 	// Parameters:
-// 	// - `aHash`: The hash list index to check.
-// 	// - `aID`: The ID to check.
-// 	//
-// 	// Returns:
-// 	// - `bool`: `true` if the entry was successfully visited,
-// 	// or `false` otherwise
-// 	//
-// 	// see `Walk()`
-// 	TWalkFunc func(aHash string, aID int64) bool
-
-// 	// `IHashWalker` is used by `Walker()` when visiting an entry
-// 	// in the #hashtag/@mentions lists.
-// 	IHashWalker interface {
-// 		Walk(aHash string, aID int64) bool
-// 	}
-// )
-
-// `Walk()` traverses through all entries in the #hashtag/@mention lists
-// calling `aFunc` for each entry.
-//
-// If `aFunc` returns `false` when called the respective ID
-// will be removed from the associated #hashtag/@mention.
-//
-// Parameters:
-// - `aFunc` The function called for each ID in all lists.
-// func (hl *tHashList) Walk(aFunc TWalkFunc) {
-// 	// hl.mtx.RLock()
-// 	// defer hl.mtx.RUnlock()
-
-// 	oldCRC := hl.checksum()
-// 	defer func() {
-// 		if oldCRC != atomic.LoadUint32(&hl.µChange) {
-// 			_, _ = hl.hm.store(hl.fn)
-// 		}
-// 	}()
-
-// 	changed := hl.hm.walk(aFunc)
-// 	if changed {
-// 		atomic.StoreUint32(&hl.µChange, 0)
-// 	}
-// } // Walk()
-
-// `Walker()` traverses through all entries in the hash lists
-// calling `aWalker` for each entry.
-//
-// Parameters:
-// - `aWalker` is an object implementing the `IHashWalker` interface.
-// func (hl *tHashList) Walker(aWalker IHashWalker) {
-// 	hl.Walk(aWalker.Walk)
-// } // Walker()
 
 /* EoF */
