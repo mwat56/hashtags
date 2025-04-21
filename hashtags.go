@@ -1,10 +1,9 @@
 /*
-Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 
-			All rights reserved
-		EMail : <support@mwat.de>
+	    All rights reserved
+	EMail : <support@mwat.de>
 */
-
 package hashtags
 
 import (
@@ -81,7 +80,7 @@ func New(aFilename string, aSafe bool) (*THashTags, error) {
 } // New()
 
 // -------------------------------------------------------------------------
-// methods of THashTags
+// methods of `THashTags`
 
 func (ht *THashTags) checksum() uint32 {
 	if 0 == atomic.LoadUint32(&ht.changed) {
@@ -123,6 +122,15 @@ func (ht *THashTags) Clear() *THashTags {
 
 	return ht
 } // Clear()
+
+func (ht *THashTags) deferredStore() func() {
+	oldCRC := ht.hl.checksum()
+	return func() {
+		if oldCRC != atomic.LoadUint32(&ht.changed) {
+			go ht.hl.store(ht.fn)
+		}
+	}
+} // deferredStore()
 
 // `equals()` compares the current list with another list.
 //
@@ -271,19 +279,12 @@ func (ht *THashTags) IDparse(aID int64, aText []byte) bool {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
 	}
-
-	oldCRC := ht.hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			ht.hl.store(ht.fn) //TODO: call ht.hl.method
-		}
-	}()
+	defer ht.deferredStore()
 
 	result := ht.hl.parseID(aID, aText)
 	if result {
 		atomic.StoreUint32(&ht.changed, 0)
 	}
-
 	return result
 } // IDparse()
 
@@ -299,15 +300,7 @@ func (ht *THashTags) IDremove(aID int64) bool {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
 	}
-
-	oldCRC := ht.hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			go func() {
-				ht.hl.store(ht.fn)
-			}()
-		}
-	}()
+	defer ht.deferredStore()
 
 	result := ht.hl.removeID(aID)
 	if result {
@@ -340,15 +333,7 @@ func (ht *THashTags) IDrename(aOldID, aNewID int64) bool {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
 	}
-
-	oldCRC := ht.hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			go func() {
-				ht.hl.store(ht.fn)
-			}()
-		}
-	}()
+	defer ht.deferredStore()
 
 	result := ht.hl.renameID(aOldID, aNewID)
 	if result {
@@ -372,15 +357,7 @@ func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
 	}
-
-	oldCRC := ht.hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			go func() {
-				ht.hl.store(ht.fn)
-			}()
-		}
-	}()
+	defer ht.deferredStore()
 
 	result := ht.hl.updateID(aID, aText)
 	if result {
@@ -408,15 +385,7 @@ func (ht *THashTags) insert(aDelim byte, aName string, aID int64) bool {
 	if 0 == len(aName) {
 		return false
 	}
-
-	oldCRC := ht.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			go func() {
-				ht.hl.store(ht.fn)
-			}()
-		}
-	}()
+	defer ht.deferredStore()
 
 	result := ht.hl.insert(aDelim, aName, aID)
 	if result {
@@ -489,15 +458,7 @@ func (ht *THashTags) Load() (*THashTags, error) {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
 	}
-
-	oldCRC := ht.hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			go func() {
-				ht.hl.store(ht.fn)
-			}()
-		}
-	}()
+	defer ht.deferredStore()
 
 	_, err := ht.hl.load(ht.fn)
 	if nil == err {
@@ -615,15 +576,7 @@ func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
 	if 0 == len(aName) {
 		return false
 	}
-
-	oldCRC := ht.hl.checksum()
-	defer func() {
-		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			go func() {
-				ht.hl.store(ht.fn)
-			}()
-		}
-	}()
+	defer ht.deferredStore()
 
 	result := ht.hl.removeHM(aDelim, aName, aID)
 	if result {
@@ -639,7 +592,7 @@ func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
 //   - `aFilename`: The name of the file to use for storage.
 //
 // Returns:
-//   - `*THashList`: The current hash list.
+//   - `*THashTags`: The current hash list.
 func (ht *THashTags) SetFilename(aFilename string) *THashTags {
 	if ht.safe {
 		ht.mtx.Lock()
