@@ -63,13 +63,10 @@ func Test_tHashMap_clear(t *testing.T) {
 
 func Test_tHashMap_count(t *testing.T) {
 	hm1 := prepHashMap()
-	wm1 := 3
 	hm2 := prepHashMap()
-	hm2.insert("#hash4", 222) //.sort()
-	wm2 := 4
+	hm2.insert("#hash4", 222)
 	hm3 := prepHashMap()
-	hm3.insert("@mention3", 222) //.sort()
-	wm3 := 3
+	hm3.insert("@mention3", 222)
 
 	tests := []struct {
 		name    string
@@ -77,9 +74,11 @@ func Test_tHashMap_count(t *testing.T) {
 		delim   byte
 		wantInt int
 	}{
-		{"1", hm1, MarkHash, wm1},
-		{"2", hm2, MarkHash, wm2},
-		{"3", hm3, MarkMention, wm3},
+		{"1", hm1, MarkHash, 3},
+		{"2", hm2, MarkHash, 4},
+		{"3", hm3, MarkMention, 3},
+		{"4", hm1, 'x', 0},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -306,8 +305,10 @@ func Test_tHashMap_list(t *testing.T) {
 		wantList tSourceList
 	}{
 		{"0", tArgs{}, wl0},
-		{"1", tArgs{MarkHash, "hash1"}, wl1},
-		{"2", tArgs{MarkHash, "hash3"}, wl2},
+		{"1", tArgs{MarkHash, " "}, wl0},
+		{"2", tArgs{MarkHash, "hash1"}, wl1},
+		{"3", tArgs{MarkHash, "hash3"}, wl2},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -321,7 +322,7 @@ func Test_tHashMap_list(t *testing.T) {
 	}
 } // Test_tHashMap_list()
 
-func Test_tHashMap_Load(t *testing.T) {
+func Test_tHashMap_load(t *testing.T) {
 	saveBinary := UseBinaryStorage
 	defer func() {
 		UseBinaryStorage = saveBinary
@@ -353,19 +354,19 @@ func Test_tHashMap_Load(t *testing.T) {
 
 			got, err := tt.hm.load(fName)
 			if (nil != err) != tt.wantErr {
-				t.Errorf("%q: tHashMap.Load() =\n%v\n>>>> want >>>>\n%v",
+				t.Errorf("%q: tHashMap.load() =\n%v\n>>>> want >>>>\n'%v'",
 					tt.name, err, tt.wantErr)
 				return
 			}
 			if !tt.want.equals(*got) {
-				t.Errorf("%q: tHashMap.Load() =\n%v\n>>>> want >>>>\n%v",
+				t.Errorf("%q: tHashMap.load() =\n%v\n>>>> want >>>>\n%v",
 					tt.name, got, tt.want)
 			}
 			// fName = hmFilename(!tt.binary)
 			// tt.hm.store(fName)
 		})
 	}
-} // Test_tHashMap_Load()
+} // Test_tHashMap_load()
 
 func Test_tHashMap_remove(t *testing.T) {
 	hm := prepHashMap()

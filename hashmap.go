@@ -104,7 +104,7 @@ func (hm *tHashMap) checksum() uint32 {
 // Returns:
 //   - `*tHashMap`: The cleared hash map.
 func (hm *tHashMap) clear() *tHashMap {
-	if (nil == hm) || (0 == len(*hm)) {
+	if 0 == len(*hm) {
 		return hm
 	}
 
@@ -128,8 +128,8 @@ func (hm *tHashMap) clear() *tHashMap {
 //
 // Returns:
 //   - `int`: The number of `#hashtags` and `@mentions`.
-func (hm tHashMap) count(aDelim byte) int {
-	if 0 == len(hm) {
+func (hm *tHashMap) count(aDelim byte) int {
+	if 0 == len(*hm) {
 		return 0
 	}
 	var (
@@ -137,7 +137,7 @@ func (hm tHashMap) count(aDelim byte) int {
 		result int
 	)
 
-	for hash = range hm {
+	for hash = range *hm {
 		if hash[0] == aDelim {
 			result++
 		}
@@ -151,8 +151,8 @@ func (hm tHashMap) count(aDelim byte) int {
 //
 // Returns:
 //   - `TCountList`: A list of `#hashtags` and `@mentions` with their respective count of associated IDs.
-func (hm tHashMap) countedList() TCountList {
-	if 0 == len(hm) {
+func (hm *tHashMap) countedList() TCountList {
+	if 0 == len(*hm) {
 		return nil
 	}
 
@@ -161,7 +161,7 @@ func (hm tHashMap) countedList() TCountList {
 		name string
 		sl   *tSourceList
 	)
-	for name, sl = range hm {
+	for name, sl = range *hm {
 		result.Insert(TCountItem{len(*sl), name})
 	}
 
@@ -176,22 +176,23 @@ func (hm tHashMap) countedList() TCountList {
 //
 // Returns:
 //   - `bool`: Whether the hash maps are equal.
-func (hm tHashMap) equals(aMap tHashMap) bool {
-	if len(hm) != len(aMap) {
+func (hm *tHashMap) equals(aMap tHashMap) bool {
+	if len(*hm) != len(aMap) {
 		return false
 	}
 
 	var (
-		hash string
-		osl  *tSourceList
-		sl   *tSourceList
-		ok   bool
+		hash  string
+		other *tSourceList
+		sl    *tSourceList
+		ok    bool
 	)
-	for hash, sl = range hm {
-		if osl, ok = aMap[hash]; !ok {
+
+	for hash, sl = range *hm {
+		if other, ok = aMap[hash]; !ok {
 			return false
 		}
-		if !sl.equals(*osl) {
+		if !sl.equals(*other) {
 			return false
 		}
 	}
@@ -246,9 +247,8 @@ func (hm *tHashMap) idList(aID int64) []string {
 //
 // Returns:
 //   - `int: The number of references of `aName`, or `-1` if not found.
-func (hm tHashMap) idxLen(aDelim byte, aName string) int {
-	aName = strings.ToLower(strings.TrimSpace((aName)))
-	if 0 == len(aName) {
+func (hm *tHashMap) idxLen(aDelim byte, aName string) int {
+	if aName = strings.ToLower(strings.TrimSpace((aName))); 0 == len(aName) {
 		return -1
 	}
 
@@ -256,7 +256,7 @@ func (hm tHashMap) idxLen(aDelim byte, aName string) int {
 		aName = string(aDelim) + aName
 	}
 
-	if sl, ok := hm[aName]; ok {
+	if sl, ok := (*hm)[aName]; ok {
 		return len(*sl)
 	}
 
@@ -328,9 +328,12 @@ func (hm *tHashMap) keys() []string {
 //
 // Returns:
 //   - `[]int64`: The number of references of `aName`.
-func (hm tHashMap) list(aDelim byte, aName string) (rList []int64) {
+func (hm *tHashMap) list(aDelim byte, aName string) (rList []int64) {
 	aName = strings.ToLower(strings.TrimSpace((aName)))
-	if 0 == len(aName) {
+	if "" == aName {
+		return
+	}
+	if 0 == len(*hm) {
 		return
 	}
 
@@ -338,7 +341,7 @@ func (hm tHashMap) list(aDelim byte, aName string) (rList []int64) {
 		aName = string(aDelim) + aName
 	}
 
-	if sl, ok := hm[aName]; ok {
+	if sl, ok := (*hm)[aName]; ok {
 		rList = []int64(*sl)
 	}
 
@@ -347,8 +350,6 @@ func (hm tHashMap) list(aDelim byte, aName string) (rList []int64) {
 
 // `load()` reads the configured file returning the data structure
 // read from the file and a possible error condition.
-//
-// If there is an error, it will be of type `*PathError`.
 //
 // NOTE: An empty filename or the hash file doesn't exist that
 // is not considered an error.
@@ -360,8 +361,8 @@ func (hm tHashMap) list(aDelim byte, aName string) (rList []int64) {
 //   - `*tHashMap`: The loaded hash map.
 //   - `error`: A possible I/O error.
 func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
-	if ("" == aFilename) || (nil == hm) {
-		return hm, nil
+	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
+		return nil, se.New(errors.New("empty filename"), 1)
 	}
 
 	var (
@@ -372,9 +373,9 @@ func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 	file, err = os.OpenFile(aFilename, os.O_RDONLY, 0) //#nosec G304
 	if nil != err {
 		if os.IsNotExist(err) {
-			return hm, nil
+			return nil, nil
 		}
-		return hm, se.Wrap(err, 5)
+		return nil, se.New(err, 5)
 	}
 	defer file.Close()
 
@@ -402,12 +403,12 @@ func (hm *tHashMap) loadBinary(aFile *os.File) error {
 	if nil != iErr {
 		sMap, sErr := loadBinaryStrings(aFile)
 		if nil == sErr {
-			(*hm) = *sMap
+			*hm = *sMap
 			return nil
 		}
 		return iErr
 	}
-	(*hm) = *iMap
+	*hm = *iMap
 
 	return nil
 } // loadBinary()
@@ -430,11 +431,11 @@ func loadBinaryInts(aFile *os.File) (*tHashMap, error) {
 		// `decoder.Decode()` returns `io.EOF` if the input
 		// is at EOF which we do not consider an error here.
 		if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			return nil, se.Wrap(err, 4)
+			return nil, se.New(err, 4)
 		}
 
 		// some other error occurred
-		return nil, se.Wrap(err, 8)
+		return nil, se.New(err, 8)
 	}
 
 	return decodedMap.sort(), nil
@@ -458,11 +459,11 @@ func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 		// `decoder.Decode()` returns `io.EOF` if the input
 		// is at EOF which we do not consider an error here.
 		if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			return nil, se.Wrap(err, 4)
+			return nil, se.New(err, 4)
 		}
 
 		// some other error occurred
-		return nil, se.Wrap(err, 8)
+		return nil, se.New(err, 8)
 	}
 
 	result := newHashMap()
@@ -523,7 +524,7 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 		}
 	}
 	if err = scanner.Err(); nil != err {
-		return se.Wrap(err, 1)
+		return se.New(err, 1)
 	}
 
 	return nil
@@ -537,7 +538,7 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (hm *tHashMap) removeID(aID int64) bool {
-	if (nil == hm) || 0 == len(*hm) {
+	if 0 == len(*hm) {
 		return false
 	}
 
@@ -569,8 +570,7 @@ func (hm *tHashMap) removeID(aID int64) bool {
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (hm *tHashMap) removeHM(aDelim byte, aName string, aID int64) bool {
-	aName = strings.ToLower(strings.TrimSpace((aName)))
-	if 0 == len(aName) {
+	if aName = strings.ToLower(strings.TrimSpace((aName))); "" == aName {
 		return false
 	}
 
@@ -644,7 +644,7 @@ func (hm *tHashMap) sort() *tHashMap {
 		sl = (*hm)[key]
 		sortedMap[key] = sl.sort()
 	}
-	(*hm) = sortedMap
+	*hm = sortedMap
 
 	return hm
 } // sort()
@@ -657,18 +657,14 @@ func (hm *tHashMap) sort() *tHashMap {
 // Returns:
 //   - `int`: Number of bytes written to storage.
 //   - `error`: A possible I/O error.
-func (hm tHashMap) store(aFilename string) (int, error) {
-	if "" == aFilename {
-		return 0, se.Wrap(&THashTagError{
-			Op:   "store",
-			Path: aFilename,
-			Err:  errors.New("missing filename for `store()`"),
-		}, 5)
+func (hm *tHashMap) store(aFilename string) (int, error) {
+	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
+		return 0, se.New(errors.New("empty filename"), 1)
 	}
 
 	file, err := os.OpenFile(aFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660) //#nosec G302 #nosec G304
 	if nil != err {
-		return 0, se.Wrap(err, 3)
+		return 0, se.New(err, 3)
 	}
 	defer file.Close()
 
@@ -679,11 +675,11 @@ func (hm tHashMap) store(aFilename string) (int, error) {
 
 	encoder := gob.NewEncoder(file)
 	if err = encoder.Encode(hm); nil != err {
-		return 0, se.Wrap(err, 1)
+		return 0, se.New(err, 1)
 	}
 	size, err := file.Seek(0, io.SeekEnd)
 	if nil != err {
-		return 0, se.Wrap(err, 2)
+		return 0, se.New(err, 2)
 	}
 
 	return int(size), nil
