@@ -150,7 +150,9 @@ func (sl *tSourceList) remove(aID int64) bool {
 		} else if (sLen - 1) == idx { // remove the last element
 			*sl = (*sl)[:idx]
 		} else { // remove element in the middle
-			*sl = append((*sl)[:idx], (*sl)[idx+1:]...)
+			// *sl = append((*sl)[:idx], (*sl)[idx+1:]...)
+			// replacing append(s[:i], s[i+1]...) by slices.Delete(s, i, i+1)
+			*sl = slices.Delete((*sl), idx, idx+1)
 		}
 		return true
 	}

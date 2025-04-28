@@ -138,20 +138,19 @@ func Test_tSourceList_remove(t *testing.T) {
 		id   int64
 		want bool
 	}{
-		{"0", sl0, 0, false}, // not found
-		{"1", sl1, 1, true},  // beginning
-		{"2", sl1, 5, true},  // end
-		{"3", sl1, 3, true},  // middle
-		{"4", sl1, 2, true},  // (new) beginning
-		{"5", sl1, 2, false}, // not found
-		{"6", sl1, 4, true},  // beginning == end
-
-		// TODO: Add test cases.
+		{"0", sl0, 0, false},  // empty list
+		{"1", sl1, 1, true},   // remove first element
+		{"2", sl1, 5, true},   // remove last element
+		{"3", sl1, 3, true},   // remove middle element
+		{"4", sl1, 2, true},   // remove another element
+		{"5", sl1, 2, false},  // try to remove already removed element
+		{"6", sl1, 4, true},   // remove last remaining element
+		{"7", sl1, 99, false}, // element not in list
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.sl.remove(tt.id); got != tt.want {
-				t.Errorf("%q: tSourceList.remove() =\n%v\n>>>> want: >>>>\n%v",
+				t.Errorf("%q: tSourceList.remove() = %v, want %v",
 					tt.name, got, tt.want)
 			}
 		})
