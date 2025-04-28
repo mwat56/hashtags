@@ -7,6 +7,7 @@ Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 package hashtags
 
 import (
+	"bytes"
 	"regexp"
 	"strings"
 )
@@ -24,24 +25,23 @@ type (
 // --------------------------------------------------------------------------
 // constructor function
 
-// `newHashList()` returns a new `tHashList` instance after reading
+// `newHashList()` returns a new `tHashList` instance after loading
 // the given file.
 //
 // If the hash file doesn't exist that is not considered an error.
-// If there is an error, it will be of type `*PathError`.
 //
 // Parameters:
 //   - `aFilename`: The name of the file to use for loading and storing.
 //
 // Returns:
 //   - `*tHashList`: The new `tHashList` instance.
-//   - `error`: If there is an error, it will be from reading `aFilename`.
+//   - `error`: If there is an error, it will be from loading `aFilename`.
 func newHashList(aFilename string) (*tHashList, error) {
 	result := &tHashList{
 		hm: make(tHashMap, 64),
 	}
 
-	if 0 == len(aFilename) {
+	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
 		return result, nil
 	}
 
@@ -90,6 +90,10 @@ func (hl *tHashList) countedList() TCountList {
 // Returns:
 //   - `bool`: `true` if the lists are identical, `false` otherwise.
 func (hl *tHashList) equals(aList *tHashList) bool {
+	if nil == aList {
+		return false
+	}
+
 	if len((*hl).hm) != len((*aList).hm) {
 		return false
 	}
@@ -143,7 +147,7 @@ func (hl *tHashList) hashList(aHash string) []int64 {
 //   - `[]string`: The list of `#hashtags` and `@mentions` associated with `aID`.
 func (hl *tHashList) idList(aID int64) []string {
 	if 0 == len(hl.hm) {
-		return nil
+		return []string{}
 	}
 
 	return hl.hm.idList(aID)
@@ -163,8 +167,7 @@ func (hl *tHashList) idList(aID int64) []string {
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (hl *tHashList) insert(aDelim byte, aName string, aID int64) bool {
 	// prepare for case-insensitive search:
-	aName = strings.ToLower(strings.TrimSpace(aName))
-	if 0 == len(aName) {
+	if aName = strings.ToLower(strings.TrimSpace(aName)); "" == aName {
 		return false
 	}
 
@@ -206,16 +209,15 @@ func (hl *tHashList) lenTotal() (rLen int) {
 // read from the file and a possible error condition.
 //
 // If the hash file doesn't exist that is not considered an error.
-// If there is an error, it will be of type `*PathError`.
 //
 // Parameters:
-//   - `aFilename`: The name of the file to read.
+//   - `aFilename`: The name of the file to load.
 //
 // Returns:
 //   - `*tHashList`: The loaded list.
-//   - `error`: If there is an error, it will be from reading `aFilename`.
+//   - `error`: If there is an error, it will be from loading `aFilename`.
 func (hl *tHashList) load(aFilename string) (*tHashList, error) {
-	_, err := hl.hm.load(aFilename)
+	_, err := hl.hm.load(aFilename) // already wrapped
 
 	return hl, err
 } // load()
@@ -252,7 +254,7 @@ func (hl *tHashList) mentionLen(aMention string) int {
 //
 // Returns:
 //   - `[]int64`: The number of references of `aMention`.
-func (hl tHashList) mentionList(aMention string) []int64 {
+func (hl *tHashList) mentionList(aMention string) []int64 {
 	return hl.hm.list(MarkMention, aMention)
 } // mentionList()
 
@@ -298,7 +300,7 @@ func HashMentionRE() *regexp.Regexp {
 // Returns:
 //   - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
 func (hl *tHashList) parseID(aID int64, aText []byte) bool {
-	if 0 == len(aText) {
+	if aText = bytes.TrimSpace(aText); 0 == len(aText) {
 		return false
 	}
 
@@ -371,14 +373,13 @@ func (hl *tHashList) parseID(aID int64, aText []byte) bool {
 //
 // Parameters:
 //   - `aDelim`: The start character of words to use (i.e. either '@' or '#').
-//   - `aName`: The hash/mention to lookup for `aID`.
-//   - `aID`: The source to removeHM from the list.
+//   - `aName`: The '#hashtag'/'@mention' to lookup for `aID`.
+//   - `aID`: The source to remove from the list.
 //
 // Returns:
 //   - `bool`: `true` if `aName` was removed, or `false` otherwise.
 func (hl *tHashList) removeHM(aDelim byte, aName string, aID int64) bool {
-	aName = strings.ToLower(strings.TrimSpace(aName))
-	if 0 == len(aName) {
+	if aName = strings.ToLower(strings.TrimSpace(aName)); "" == aName {
 		return false
 	}
 
@@ -393,11 +394,7 @@ func (hl *tHashList) removeHM(aDelim byte, aName string, aID int64) bool {
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (hl *tHashList) removeID(aID int64) bool {
-	if (nil == hl) || (0 == len(hl.hm)) {
-		return false
-	}
-
-	return hl.hm.removeID((aID))
+	return hl.hm.removeID(aID)
 } // removeID()
 
 // `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
@@ -435,8 +432,6 @@ func (hl *tHashList) renameID(aOldID, aNewID int64) bool {
 // `store()` writes the whole list to the configured file
 // returning the number of bytes written and a possible error.
 //
-// If there is an error, it will be of type `*PathError`.
-//
 // Parameters:
 //   - `aFilename`: The name of the file to write.
 //
@@ -465,7 +460,7 @@ func (hl *tHashList) String() string {
 // Returns:
 //   - `bool`: `true` if `aID` was updated, or `false` otherwise.
 func (hl *tHashList) updateID(aID int64, aText []byte) bool {
-	if (nil == hl) || (0 == len(aText)) || (0 == len(hl.hm)) {
+	if aText = bytes.TrimSpace(aText); 0 == len(aText) {
 		return false
 	}
 

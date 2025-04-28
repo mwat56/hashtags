@@ -50,7 +50,7 @@ func Test_newHashList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.tName, func(t *testing.T) {
 			got, err := newHashList(tt.fName)
-			if (err != nil) != tt.wantErr {
+			if (nil != err) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
