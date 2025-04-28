@@ -8,12 +8,13 @@ package hashtags
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	se "github.com/mwat56/sourceerror"
 )
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
@@ -44,13 +45,9 @@ type (
 		safe    bool         // flag for optional thread safety
 	}
 
-	// `THashTagError` is a custom error type that provides detailed error
-	// information for hashtag-related operations.
-	THashTagError struct {
-		Op   string // operation that caused the error (e.g., "Load", "Store")
-		Path string // file path involved in the error, if applicable
-		Err  error  // underlying error that occurred
-	}
+	// `THashTagError` is a custom error.
+	// Deprecated: Use [sourceerror.ErrSource] instead.
+	THashTagError = se.ErrSource
 )
 
 var (
@@ -71,23 +68,19 @@ var (
 // NOTE: An empty filename or if the hash file doesn't exist is not
 // considered an error.
 //
-// If there is an error, it will be of type `*THashTagError`.
-//
 // Parameters:
 //   - `aFilename`: The name of the file to use for loading and storing.
+//   - `aSafe`: Whether to use thread-safe operations or not.
 //
 // Returns:
 //   - `*THashTags`: The new `THashTags` instance.
-//   - `error`: If there is an error, it will be from reading `aFilename`.
+//   - `error`: `nil` in case of success, otherwise an error.
 func New(aFilename string, aSafe bool) (*THashTags, error) {
 	hashlist, err := newHashList(aFilename)
 	if nil != err {
-		return nil, &THashTagError{
-			Op:   "New",
-			Path: aFilename,
-			Err:  err,
-		}
+		return nil, se.New(err, 2)
 	}
+
 	ht := &THashTags{
 		fn:   aFilename,
 		hl:   *hashlist,
@@ -96,29 +89,6 @@ func New(aFilename string, aSafe bool) (*THashTags, error) {
 
 	return ht, nil
 } // New()
-
-// -------------------------------------------------------------------------
-// methods of `THashTagError`:
-
-// `Error()` implements the error interface, returning a formatted error message.
-//
-// Returns:
-//   - `string`: A formatted error message containing the operation, path (if any), and underlying error.
-func (e *THashTagError) Error() string {
-	if "" == e.Path {
-		return fmt.Sprintf("hashtags.%s: %v", e.Op, e.Err)
-	}
-
-	return fmt.Sprintf("hashtags.%s %s: %v", e.Op, e.Path, e.Err)
-} // Error()
-
-// `Unwrap()` returns the underlying error.
-//
-// Returns:
-//   - `error`: The underlying error that caused this `THashTagError`.
-func (e *THashTagError) Unwrap() error {
-	return e.Err
-} // Unwrap()
 
 // -------------------------------------------------------------------------
 // methods of `THashTags`:
@@ -195,15 +165,19 @@ func (ht *THashTags) deferredStore() func() {
 //   - `aList`: The list to compare with.
 //
 // Returns:
-//   - `bool`: True if the lists are identical, false otherwise.
+//   - `bool`: `true` if the lists are identical, `false` otherwise.
 func (ht *THashTags) equals(aList *THashTags) bool {
+	if nil == aList {
+		return false
+	}
+
 	if ht.safe {
-		ht.mtx.Lock()
-		defer ht.mtx.Unlock()
+		ht.mtx.RLock()
+		defer ht.mtx.RUnlock()
 	}
 
 	return ht.hl.equals(&aList.hl)
-} // compareTo()
+} // equals()
 
 // `Filename()` returns the configured filename for reading/storing
 // this list's contents.
@@ -231,6 +205,9 @@ func (ht *THashTags) Filename() string {
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (ht *THashTags) HashAdd(aHash string, aID int64) bool {
+	if aHash = strings.ToLower(strings.TrimSpace(aHash)); "" == aHash {
+		return false
+	}
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -445,8 +422,7 @@ func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (ht *THashTags) insert(aDelim byte, aName string, aID int64) bool {
 	// prepare for case-insensitive search:
-	aName = strings.ToLower(strings.TrimSpace(aName))
-	if 0 == len(aName) {
+	if aName = strings.ToLower(strings.TrimSpace(aName)); "" == aName {
 		return false
 	}
 	defer ht.deferredStore()
@@ -517,7 +493,7 @@ func (ht *THashTags) List() TCountList {
 //
 // Returns:
 //   - `*THashTags`: The updated list.
-//   - `error`: If there is an error, it will be of type `*PathError`.
+//   - `error`: `nil` in case of success, otherwise an error.
 func (ht *THashTags) Load() (*THashTags, error) {
 	if ht.safe {
 		ht.mtx.Lock()
@@ -526,11 +502,7 @@ func (ht *THashTags) Load() (*THashTags, error) {
 	defer ht.deferredStore()
 
 	if _, err := ht.hl.load(ht.fn); nil != err {
-		return ht, &THashTagError{
-			Op:   "Load",
-			Path: ht.fn,
-			Err:  err,
-		}
+		return ht, err
 	}
 	atomic.StoreUint32(&ht.changed, 0)
 
@@ -641,8 +613,7 @@ func (ht *THashTags) MentionRemove(aMention string, aID int64) bool {
 // Returns:
 //   - `bool`: `true` if `aID` was updated, or `false` otherwise.
 func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
-	aName = strings.ToLower(strings.TrimSpace(aName))
-	if 0 == len(aName) {
+	if aName = strings.ToLower(strings.TrimSpace(aName)); "" == aName {
 		return false
 	}
 	defer ht.deferredStore()
@@ -661,23 +632,16 @@ func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
 //   - `aFilename`: The name of the file to use for storage.
 //
 // Returns:
-//   - `error`: If there is an error, it will be of type `*HashTagError`.
+//   - `error`: `nil` in case of success, otherwise an error.
 func (ht *THashTags) SetFilename(aFilename string) error {
-	if strings.TrimSpace(aFilename) == "" {
-		return &THashTagError{
-			Op:  "SetFilename",
-			Err: errors.New("empty filename not allowed"),
-		}
+	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
+		return se.New(errors.New("empty filename not allowed"), 1)
 	}
 
 	// Check if directory exists and is writeable
 	dir := filepath.Dir(aFilename)
 	if _, err := os.Stat(dir); nil != err {
-		return &THashTagError{
-			Op:   "SetFilename",
-			Path: dir,
-			Err:  err,
-		}
+		return se.New(err, 1)
 	}
 
 	if ht.safe {
@@ -692,8 +656,6 @@ func (ht *THashTags) SetFilename(aFilename string) error {
 // `Store()` writes the whole list to the configured file
 // returning the number of bytes written and a possible error.
 //
-// If there is an error, it will be of type `*THashTagError`.
-//
 // Returns:
 //   - `int`: Number of bytes written to storage.
 //   - `error`: A possible storage error, or `nil` in case of success.
@@ -703,16 +665,7 @@ func (ht *THashTags) Store() (int, error) {
 		defer ht.mtx.RUnlock()
 	}
 
-	bytesWritten, err := ht.hl.store(ht.fn)
-	if nil != err {
-		return bytesWritten, &THashTagError{
-			Op:   "Store",
-			Path: ht.fn,
-			Err:  err,
-		}
-	}
-
-	return bytesWritten, nil
+	return ht.hl.store(ht.fn)
 } // Store()
 
 // `String()` returns the whole list as a linefeed separated string.
