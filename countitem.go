@@ -17,13 +17,13 @@ type (
 )
 
 // -------------------------------------------------------------------------
-// methods of TCountItem
+// methods of `TCountItem`:
 
 // `Compare()` compares two `TCountItem` instances based on their tags
 // and counts.
 //
 // Parameters:
-//   - `aItem`: The other TCountItem instance to compare with.
+//   - `aItem`: The other `TCountItem` instance to compare with.
 //
 // Returns:
 //   - `-1` if the current instance is less than `aItem`.
@@ -35,6 +35,7 @@ func (ci TCountItem) Compare(aItem TCountItem) int {
 	if MarkHash == at[0] || MarkMention == at[0] {
 		at = at[1:]
 	}
+
 	if MarkHash == bt[0] || MarkMention == bt[0] {
 		bt = bt[1:]
 	}
@@ -59,7 +60,7 @@ func (ci TCountItem) Compare(aItem TCountItem) int {
 // `Equal()` checks whether the current `TCountItem` is equal to `aItem`.
 //
 // Parameters:
-//   - `aItem`: The other item to compare with.
+//   - `aItem`: The other `TCountItem` instance to compare with.
 //
 // Returns:
 //   - `bool`: Whether the two items are equal.

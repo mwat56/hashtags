@@ -12,7 +12,7 @@ import (
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-func TestTCountItem_Compare(t *testing.T) {
+func Test_TCountItem_Compare(t *testing.T) {
 	ci0 := TCountItem{}
 	it0 := TCountItem{}
 
@@ -48,9 +48,9 @@ func TestTCountItem_Compare(t *testing.T) {
 			}
 		})
 	}
-} // TestTCountItem_Compare()
+} // Test_TCountItem_Compare()
 
-func TestTCountItem_Equal(t *testing.T) {
+func Test_TCountItem_Equal(t *testing.T) {
 	ci0 := TCountItem{}
 	ci1 := TCountItem{11, "one"}
 	ci2 := TCountItem{222, "#two"}
@@ -78,9 +78,9 @@ func TestTCountItem_Equal(t *testing.T) {
 			}
 		})
 	}
-} // TestTCountItem_Equal()
+} // Test_TCountItem_Equal()
 
-func TestTCountItem_Less(t *testing.T) {
+func Test_TCountItem_Less(t *testing.T) {
 	ci0 := TCountItem{}
 	ci1 := TCountItem{11, "one"}
 	ci2 := TCountItem{222, "#two"}
@@ -108,6 +108,6 @@ func TestTCountItem_Less(t *testing.T) {
 			}
 		})
 	}
-} // TestTCountItem_Less()
+} // Test_TCountItem_Less()
 
 /* EoF */
