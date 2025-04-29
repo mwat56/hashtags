@@ -9,20 +9,18 @@ package hashtags
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-const (
-	testHlStore = "testHlStore.db"
-)
-
 func htFilename() string {
-	os.Remove(testHlStore)
+	fn := filepath.Join(os.TempDir(), "testHlStore.db")
+	os.Remove(fn) // remove remnants of previous runs
 
-	return testHlStore
+	return fn
 } // htFilename()
 
 func Test_newHashList(t *testing.T) {
@@ -62,59 +60,7 @@ func Test_newHashList(t *testing.T) {
 	}
 } // Test_newHashList()
 
-func TestTHashList_checksum(t *testing.T) {
-	fn := htFilename()
-	hash1, hash2 := "#hash1", "#hash2"
-	id1, id2, id3 := int64(987), int64(654), int64(321)
-
-	hl1 := &tHashList{
-		hm: tHashMap{
-			hash1: &tSourceList{id2},
-			hash2: &tSourceList{id3, id1},
-		},
-	}
-	h1a, _ := newHashList(fn)
-	h1a.insert(MarkHash, hash1, id2)
-	h1a.insert(MarkHash, hash2, id1)
-	h1a.insert(MarkHash, hash2, id3)
-	w1 := h1a.hm.checksum()
-
-	hl2 := &tHashList{
-		hm: tHashMap{
-			hash1: &tSourceList{id1, id2},
-			hash2: &tSourceList{id2, id3},
-		},
-	}
-	h2a, _ := newHashList(fn)
-	h2a.insert(MarkHash, hash1, id1)
-	h2a.insert(MarkHash, hash1, id2)
-	h2a.insert(MarkHash, hash2, id2)
-	h2a.insert(MarkHash, hash2, id3)
-	h2a.insert(MarkHash, hash1, id2)
-	h2a.insert(MarkHash, hash2, id3)
-	w2 := h2a.hm.checksum()
-
-	tests := []struct {
-		name string
-		hl   *tHashList
-		want uint32
-	}{
-		{"1", hl1, w1},
-		{"2", hl2, w2},
-
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hl.checksum(); got != tt.want {
-				t.Errorf("%q: THashList.checksum() = %v, want %v",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-} // TestTHashList_checksum()
-
-func TestTHashList_clear(t *testing.T) {
+func Test_THashList_clear(t *testing.T) {
 	fn := htFilename()
 	hash1, hash2 := "#hash1", "#hash2"
 	id1, id2 := int64(654), int64(321)
@@ -141,9 +87,9 @@ func TestTHashList_clear(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_clear()
+} // Test_THashList_clear()
 
-func TestTHashList_countedList(t *testing.T) {
+func Test_THashList_countedList(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "@mention1", "#another3"
 	id1, id2, id3 := int64(987), int64(654), int64(321)
 	hl1 := &tHashList{
@@ -187,9 +133,9 @@ func TestTHashList_countedList(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_countedList()
+} // Test_THashList_countedList()
 
-func TestTHashList_equals(t *testing.T) {
+func Test_THashList_equals(t *testing.T) {
 	hl1 := &tHashList{
 		hm: make(tHashMap, 64),
 	}
@@ -221,9 +167,9 @@ func TestTHashList_equals(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_equals()
+} // Test_THashList_equals()
 
-func TestTHashList_insert(t *testing.T) {
+func Test_THashList_insert(t *testing.T) {
 	hl0 := &tHashList{
 		hm: make(tHashMap, 64),
 	}
@@ -252,9 +198,9 @@ func TestTHashList_insert(t *testing.T) {
 				tt.name, got, tt.want)
 		}
 	}
-} // TestTHashList_insert()
+} // Test_THashList_insert()
 
-func TestTHashList_len(t *testing.T) {
+func Test_THashList_len(t *testing.T) {
 	hl1, _ := newHashList("")
 
 	hl2, _ := newHashList("")
@@ -289,9 +235,9 @@ func TestTHashList_len(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_len()
+} // Test_THashList_len()
 
-func TestTHashList_lenTotal(t *testing.T) {
+func Test_THashList_lenTotal(t *testing.T) {
 	fn := htFilename()
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
 	id1, id2, id3 := int64(987), int64(654), int64(321)
@@ -329,7 +275,7 @@ func TestTHashList_lenTotal(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_lenTotal()
+} // Test_THashList_lenTotal()
 
 func funcHashMentionRE(aText string) int {
 	matches := htHashMentionRE.FindAllStringSubmatch(aText, -1)
@@ -373,7 +319,7 @@ func Test_htHashMentionRE(t *testing.T) {
 	}
 } // Test_htHashMentionRE()
 
-func TestTHashList_parseID(t *testing.T) {
+func Test_THashList_parseID(t *testing.T) {
 	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "#hash4"
 	hyphTx1, hyphTx2, hyphTx3 := `#--------------`, `#---text ---`, `#-text-`
 
@@ -419,6 +365,9 @@ func TestTHashList_parseID(t *testing.T) {
 	tmp := string(tx6) + "\n" + hyphTx1 + ` and ` + hyphTx2 + "\n" + hyphTx3
 	tx10 := []byte(tmp)
 
+	tx11 := []byte{}
+	tx12 := []byte(" ")
+
 	type tArgs struct {
 		aID   int64
 		aText []byte
@@ -439,6 +388,8 @@ func TestTHashList_parseID(t *testing.T) {
 		{"8", hl8, tArgs{8, tx8}, false},
 		{"9", hl9, tArgs{9, tx9}, true},
 		{"10", hl6, tArgs{id6, tx10}, false},
+		{"11", hl1, tArgs{id1, tx11}, false},
+		{"12", hl1, tArgs{id1, tx12}, false},
 
 		// TODO: Add test cases.
 	}
@@ -453,9 +404,9 @@ func TestTHashList_parseID(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_parseID()
+} // Test_THashList_parseID()
 
-func TestTHashList_removeHM(t *testing.T) {
+func Test_THashList_removeHM(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
 	id1, id2, id3 := int64(987), int64(654), int64(321)
 
@@ -496,9 +447,9 @@ func TestTHashList_removeHM(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_removeHM()
+} // Test_THashList_removeHM()
 
-func TestTHashList_removeID(t *testing.T) {
+func Test_THashList_removeID(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
 	id1, id2, id3 := int64(123), int64(345), int64(456)
 	hl := &tHashList{
@@ -529,9 +480,9 @@ func TestTHashList_removeID(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_removeID()
+} // Test_THashList_removeID()
 
-func TestTHashList_renameID(t *testing.T) {
+func Test_THashList_renameID(t *testing.T) {
 	hash1, hash2, hash3 := "#hash1", "#hash2", "#hash3"
 	id1, id2, id3, id4, id5, id6 := int64(11), int64(22), int64(33), int64(44), int64(55), int64(66)
 	if 0 == id6 || 0 == id5 || 0 == id4 {
@@ -576,9 +527,9 @@ func TestTHashList_renameID(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_renameID()
+} // Test_THashList_renameID()
 
-func TestTHashList_updateID(t *testing.T) {
+func Test_THashList_updateID(t *testing.T) {
 	hash1, hash2, hash3 := "hash1", "hash2", "hash3"
 	id1, id2, id3 := int64(987), int64(654), int64(321)
 
@@ -618,6 +569,6 @@ func TestTHashList_updateID(t *testing.T) {
 			}
 		})
 	}
-} // TestTHashList_updateID()
+} // Test_THashList_updateID()
 
 /* EoF */

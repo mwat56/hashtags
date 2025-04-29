@@ -23,12 +23,12 @@ type (
 )
 
 // --------------------------------------------------------------------------
-// constructor function
+// constructor function:
 
 // `newHashList()` returns a new `tHashList` instance after loading
 // the given file.
 //
-// If the hash file doesn't exist that is not considered an error.
+// If the `aFilename` doesn't exist that is not considered an error.
 //
 // Parameters:
 //   - `aFilename`: The name of the file to use for loading and storing.
@@ -38,7 +38,7 @@ type (
 //   - `error`: If there is an error, it will be from loading `aFilename`.
 func newHashList(aFilename string) (*tHashList, error) {
 	result := &tHashList{
-		hm: make(tHashMap, 64),
+		hm: *newHashMap(),
 	}
 
 	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
@@ -49,7 +49,7 @@ func newHashList(aFilename string) (*tHashList, error) {
 } // newHashList()
 
 // -------------------------------------------------------------------------
-// methods of `tHashList`
+// methods of `tHashList`:
 
 // `checksum()` returns the list's CRC32 checksum.
 //
@@ -208,7 +208,7 @@ func (hl *tHashList) lenTotal() (rLen int) {
 // `load()` reads the configured file returning the data structure
 // read from the file and a possible error condition.
 //
-// If the hash file doesn't exist that is not considered an error.
+// If the `aFilename` doesn't exist that is not considered an error.
 //
 // Parameters:
 //   - `aFilename`: The name of the file to load.
@@ -217,7 +217,7 @@ func (hl *tHashList) lenTotal() (rLen int) {
 //   - `*tHashList`: The loaded list.
 //   - `error`: If there is an error, it will be from loading `aFilename`.
 func (hl *tHashList) load(aFilename string) (*tHashList, error) {
-	_, err := hl.hm.load(aFilename) // already wrapped
+	_, err := hl.hm.load(aFilename) // err already wrapped
 
 	return hl, err
 } // load()
@@ -261,10 +261,6 @@ func (hl *tHashList) mentionList(aMention string) []int64 {
 var (
 	// RegEx to identify a numeric HTML entity.
 	htEntityRE = regexp.MustCompile(`#[0-9]+;`)
-
-	// match: [#Hashtag|@Mention]
-	htHashHeadRE = regexp.MustCompile(`^\[\s*([#@][^\]]*?)\s*\]$`)
-	//                                        11111111111
 
 	// match: #hashtag|@mention
 	htHashMentionRE = regexp.MustCompile(
