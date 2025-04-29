@@ -13,7 +13,7 @@
 	- [Installation](#installation)
 	- [Usage](#usage)
 		- [Methods](#methods)
-			- [Haschtag related methods](#haschtag-related-methods)
+			- [Hashtag related methods](#hashtag-related-methods)
 			- [ID related methods](#id-related-methods)
 			- [Mentions related methods](#mentions-related-methods)
 			- [Maintenance methods](#maintenance-methods)
@@ -33,22 +33,22 @@ It provides the `THashTags` class which can be used to parse texts for the occur
 
 You can use `Go` to install this package for you:
 
-	go get -u github.com/mwat56/hashtags
+	go get -u github.com/mwat56/hashtags@latest
 
 ## Usage
 
-For each `#hashtag` or `@mention` a list of _IDs_ is maintained.
-These _IDs_ can be any (`int64`) data that identifies the text in which the `#hashtag` or `@mention` was found, e.g. some database record reference or article ID.
-The only condition is that it is unique as far as the program using this package is concerned.
+For each `#hashtag` or `@mention` a list of **IDs** is maintained.
+These **IDs** can be any (`int64`) data that identifies the text in which the `#hashtag` or `@mention` was found, e.g. some database record reference or article ID.
+The only condition is that it must be unique as far as the program using this package is concerned.
 
 _Note_ that both `#hashtag` and `@mention` are stored lower-cased to allow for case-insensitive searches.
 
 To get a `THashTags` instance there's a simple way:
 
-	fName := "mytags.lst"
-	ht, err := hashtags.New(fName, true)
+	fName := "mytags.lst" // possibly read from some config file
+	ht, err := hashtags.New(fName)
 	if nil != err {
-		log.PrintF("Problem loading file '%s': %v", fName, err)
+		log.PrintF("Problem loading file %q: %v", fName, err)
 	}
 
 	// ...
@@ -57,14 +57,14 @@ To get a `THashTags` instance there's a simple way:
 
 	written, err := ht.Store()
 	if nil != err {
-		log.PrintF("Problem writing file '%s': %v", fName, err)
+		log.PrintF("Problem storing file %q: %v", fName, err)
 	}
 
-The constructor function `New()` takes two arguments: A `string` specifying the name of the file to use for loading/storing the list's data, and a `bool` value indicating whether the list should be thread-safe or not. The setting for the latter depends on the actual use-case.
+The constructor function `New()` takes a single arguments: A `string` specifying the name of the file to use for loading/storing the list's data. If that is an empty string no lading/storing of data will happen.
 
 The package provides a global boolean configuration variable called `UseBinaryStorage` which is `true` by default. It determines whether the data written by `Store()` and read by `Load()` use plain text (i.e. `hashtags.UseBinaryStorage = false`) or a binary data format.
 The advantage of the _plain text_ format is that it can be inspected by any text related tool (like e.g. `grep` or `diff`).
-The advantage of the _binary format_ is that it is about three to four times as fast when loading/storing data and it uses a few bytes less than the text format.
+The advantage of the _binary format_ is that it is about three to four times as fast when loading/storing data and it uses less disk space than the text format.
 For this reasons it's used by default (i.e. `hashtags.UseBinaryStorage == true`). During development of your own application using this package, however, you might want to change to text format for diagnostic purposes.
 
 For more details please refer to the [package documentation](https://godoc.org/github.com/mwat56/hashtags/).
@@ -73,7 +73,7 @@ For more details please refer to the [package documentation](https://godoc.org/g
 
 There are several kinds of methods provided:
 
-#### Haschtag related methods
+#### Hashtag related methods
 
 The following methods can be used to handle hashtags:
 
@@ -105,11 +105,11 @@ The following methods can be used to handle mentions:
 
 #### Maintenance methods
 
- - `Clear() *THashTags` empties the internal data structures: all `#hashtags` and `@mentions` are deleted.
+ - `Clear() *THashTags` empties the internal data structures: all `#hashtags` and `@mentions` and their respective IDs are deleted.
  - `Filename() string` returns the filename given to the initial `New()` call for reading/storing the list's contents.
  - `Len() int` returns the current length of the list i.e. how many #hashtags and @mentions are currently stored in the list.
  - `LenTotal() int` returns the length of all #hashtag/@mention lists and their respective number of source IDs stored in the list.
- - `List() TCountList`  returns a list of #hashtags/@mentions with their respective count of associated IDs.
+ - `List() TCountList` returns a list of #hashtags/@mentions with their respective count of associated IDs.
  - `Load() (*THashTags, error)` reads the configured file returning the data structure read from the file given with the `New()` call and a possible error condition.
  - `SetFilename(aFilename string) *THashTags` sets the filename for loading/storing the hashtags, returning the updated list instance.
  - `Store() (int, error)` writes the whole list to the configured file returning the number of bytes written and a possible error.
@@ -121,11 +121,12 @@ Although there are a lot of options (methods) available, basically the module is
 
 1. Create a new instance:
 
-		myList := hashtags.New("myFile.db", true)
+		myList := hashtags.New("myFile.db")
 
 2. Whenever your application receives a new document, retrieve or create it's ID and text, then call
 
 		ok := myList.IDparse(docID, docText)
+	This will associate all hashtags and mentions found in `docText` with the provided `docID`.
 
 ## Libraries
 
@@ -135,7 +136,7 @@ The following external libraries were used building `HashTags`:
 
 ## Licence
 
-	Copyright © 2019, 2024  M.Watermann, 10247 Berlin, Germany
+	Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 			All rights reserved
 		EMail : <support@mwat.de>
 
