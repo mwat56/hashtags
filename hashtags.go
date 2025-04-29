@@ -11,6 +11,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -58,10 +59,46 @@ var (
 	// Loading/storing binary data is about three times as fast with
 	// the `THashTags` data than reading and parsing plain text data.
 	UseBinaryStorage = true
+
+	// RegEx to identify a numeric HTML entity.
+	htEntityRE = regexp.MustCompile(`#[0-9]+;`)
+
+	// match: #hashtag|@mention
+	htHashMentionRE = regexp.MustCompile(
+		`(?ims)(?:^|\s|[^\p{L}\d_])?([@#][\p{L}’'\d_§-]+)(?:[^\p{L}\d_]|$)`)
+	//	                             1111111111111111111  222222222222222
+
+	// RegEx to match texts like `#----`.
+	htHyphenRE = regexp.MustCompile(`#[^-]*--`)
 )
 
 // --------------------------------------------------------------------------
 // constructor function:
+
+// `newHashList()` returns a new `tHashList` instance after loading
+// the given file.
+//
+// If the `aFilename` doesn't exist that is not considered an error.
+//
+// Parameters:
+//   - `aFilename`: The name of the file to use for loading and storing.
+//
+// Returns:
+//   - `*tHashList`: The new `tHashList` instance.
+//   - `error`: If there is an error, it will be from loading `aFilename`.
+func newHashList(aFilename string) (*tHashList, error) {
+	hl := &tHashList{
+		hm: *newHashMap(),
+	}
+
+	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
+		return hl, nil
+	}
+
+	_, err := hl.hm.load(aFilename) // err already wrapped
+
+	return hl, err
+} // newHashList()
 
 // `New()` returns a new `THashTags` instance after reading
 // the given file.
@@ -91,6 +128,18 @@ func New(aFilename string, aSafe bool) (*THashTags, error) {
 	return ht, nil
 } // New()
 
+// `HashMentionRE()` returns a compiled regular expression used to
+// identify `#hashtags` and `@mentions` in a text.
+//
+// This regular expression matches strings that start with either '@'
+// or '#' followed by any number of characters that are not whitespace.
+//
+// Returns:
+//   - `*regexp.Regexp`: A pointer to the compiled regular expression.
+func HashMentionRE() *regexp.Regexp {
+	return htHashMentionRE
+} // HashMentionRE()
+
 // -------------------------------------------------------------------------
 // methods of `THashTags`:
 
@@ -103,7 +152,7 @@ func New(aFilename string, aSafe bool) (*THashTags, error) {
 //   - `uint32`: The computed checksum.
 func (ht *THashTags) checksum() uint32 {
 	if 0 == atomic.LoadUint32(&ht.changed) {
-		atomic.StoreUint32(&ht.changed, ht.hl.checksum())
+		atomic.StoreUint32(&ht.changed, ht.hl.hm.checksum())
 	}
 
 	return atomic.LoadUint32(&ht.changed)
@@ -136,7 +185,7 @@ func (ht *THashTags) Clear() *THashTags {
 		defer ht.mtx.Unlock()
 	}
 
-	ht.hl.clear()
+	ht.hl.hm.clear()
 	atomic.StoreUint32(&ht.changed, 0)
 
 	return ht
@@ -151,11 +200,11 @@ func (ht *THashTags) Clear() *THashTags {
 // Returns:
 //   - `func()`: A closure that handles deferred storage operations.
 func (ht *THashTags) deferredStore() func() {
-	oldCRC := ht.hl.checksum()
+	oldCRC := ht.hl.hm.checksum()
 
 	return func() {
 		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			go ht.hl.store(ht.fn)
+			go ht.hl.hm.store(ht.fn)
 		}
 	}
 } // deferredStore()
@@ -169,7 +218,7 @@ func (ht *THashTags) deferredStore() func() {
 //   - `bool`: `true` if the lists are identical, `false` otherwise.
 func (ht *THashTags) equals(aList *THashTags) bool {
 	if nil == aList {
-		return false
+		return (nil == ht)
 	}
 
 	if ht.safe {
@@ -177,7 +226,7 @@ func (ht *THashTags) equals(aList *THashTags) bool {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.equals(&aList.hl)
+	return ht.hl.hm.equals(aList.hl.hm)
 } // equals()
 
 // `Filename()` returns the configured filename for reading/storing
@@ -228,7 +277,7 @@ func (ht *THashTags) HashCount() int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hashCount()
+	return ht.hl.hm.count(MarkHash)
 } // HashCount()
 
 // `HashLen()` returns the number of IDs stored for `aHash`.
@@ -251,7 +300,7 @@ func (ht *THashTags) HashLen(aHash string) int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hashLen(aHash)
+	return ht.hl.hm.idxLen(MarkHash, aHash)
 } // HashLen()
 
 // `HashList()` returns a list of IDs associated with `aHash`.
@@ -274,7 +323,7 @@ func (ht *THashTags) HashList(aHash string) []int64 {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hashList(aHash)
+	return ht.hl.hm.list(MarkHash, aHash)
 } // HashList()
 
 // `HashRemove()` deletes `aID` from the list of `aHash`.
@@ -312,7 +361,7 @@ func (ht *THashTags) IDlist(aID int64) []string {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.idList(aID)
+	return ht.hl.hm.idList(aID)
 } // IDlist()
 
 // `IDparse()` checks whether `aText` associated with `aID` contains
@@ -339,7 +388,7 @@ func (ht *THashTags) IDparse(aID int64, aText []byte) bool {
 	}
 	defer ht.deferredStore()
 
-	if ht.hl.parseID(aID, aText) {
+	if ht.parseID(aID, aText) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -361,7 +410,7 @@ func (ht *THashTags) IDremove(aID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	if ht.hl.removeID(aID) {
+	if ht.hl.hm.removeID(aID) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -394,7 +443,7 @@ func (ht *THashTags) IDrename(aOldID, aNewID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	if ht.hl.renameID(aOldID, aNewID) {
+	if ht.hl.hm.renameID(aOldID, aNewID) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -422,7 +471,10 @@ func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
 	}
 	defer ht.deferredStore()
 
-	if ht.hl.updateID(aID, aText) {
+	rr := ht.hl.hm.removeID(aID)
+	rp := ht.parseID(aID, aText)
+
+	if rr || rp {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -446,9 +498,13 @@ func (ht *THashTags) insert(aDelim byte, aName string, aID int64) bool {
 	if aName = strings.TrimSpace(aName); "" == aName {
 		return false
 	}
+
+	if aName[0] != aDelim {
+		aName = string(aDelim) + aName
+	}
 	defer ht.deferredStore()
 
-	if ht.hl.insert(aDelim, aName, aID) {
+	if ht.hl.hm.insert(aName, aID) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -467,7 +523,7 @@ func (ht *THashTags) Len() int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.len()
+	return len(ht.hl.hm)
 } // Len()
 
 // `LenTotal()` returns the length of all `#hashtag` and `@mention`
@@ -481,7 +537,7 @@ func (ht *THashTags) LenTotal() int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.lenTotal()
+	return ht.hl.hm.lenTotal()
 } // LenTotal()
 
 // `List()` returns a list of `#hashtags` and `@mentions` with their
@@ -495,13 +551,13 @@ func (ht *THashTags) List() TCountList {
 		defer ht.mtx.RUnlock()
 	}
 
-	if (ht.hl.checksum() == ht.cc.crc) && (0 < len(ht.cc.cl)) {
+	if (ht.hl.hm.checksum() == ht.cc.crc) && (0 < len(ht.cc.cl)) {
 		return ht.cc.cl
 	}
 
 	ht.cc.cl = nil
-	ht.cc.crc = ht.hl.checksum()
-	ht.cc.cl = ht.hl.countedList()
+	ht.cc.crc = ht.hl.hm.checksum()
+	ht.cc.cl = ht.hl.hm.countedList()
 
 	return ht.cc.cl
 } // List()
@@ -522,7 +578,7 @@ func (ht *THashTags) Load() (*THashTags, error) {
 	}
 	defer ht.deferredStore()
 
-	if _, err := ht.hl.load(ht.fn); nil != err {
+	if _, err := ht.hl.hm.load(ht.fn); nil != err {
 		return ht, err
 	}
 	atomic.StoreUint32(&ht.changed, 0)
@@ -564,7 +620,7 @@ func (ht *THashTags) MentionCount() int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.mentionCount()
+	return ht.hl.hm.count(MarkMention)
 } // MentionCount()
 
 // `MentionLen()` returns the number of IDs stored for `aMention`.
@@ -587,7 +643,7 @@ func (ht *THashTags) MentionLen(aMention string) int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.mentionLen(aMention)
+	return ht.hl.hm.idxLen(MarkMention, aMention)
 } // MentionLen()
 
 // `MentionList()` returns a list of IDs associated with `aMention`.
@@ -610,7 +666,7 @@ func (ht *THashTags) MentionList(aMention string) []int64 {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.mentionList(aMention)
+	return ht.hl.hm.list(MarkMention, aMention)
 } // MentionList()
 
 // `MentionRemove()` deletes `aID` from the list of `aMention`.
@@ -637,6 +693,84 @@ func (ht *THashTags) MentionRemove(aMention string, aID int64) bool {
 	return ht.removeHM(MarkMention, aMention, aID)
 } // MentionRemove()
 
+// `parseID()` checks whether `aText` contains strings starting with
+// `[@|#]` and - if found - adds them to the respective lists with `aID`.
+//
+// If `aText` is empty it is silently ignored (i.e. this method
+// does nothing), returning `false`.
+//
+// Parameters:
+//   - `aID`: The ID to add to the list of hashes/mention.
+//   - `aText`: The text to parse for hashtags and mentions.
+//
+// Returns:
+//   - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
+func (ht *THashTags) parseID(aID int64, aText []byte) bool {
+	matches := htHashMentionRE.FindAllSubmatch(aText, -1)
+	if (nil == matches) || (0 == len(matches)) {
+		return false
+	}
+
+	var (
+		tag, match0 string
+		sub         [][]byte
+		result      bool
+	)
+	for _, sub = range matches {
+		match0 = string(sub[0])
+		tag = string(sub[1])
+
+		if '_' == tag[len(tag)-1] {
+			// '_' can be both, part of the hashtag and italic
+			// markup so we must remove it if it's at the end:
+			tag = tag[:len(tag)-1]
+		}
+		if MarkHash == tag[0] {
+			// `match0` is the match including prefix and postfix
+			switch match0[len(match0)-1] {
+			case '"':
+				// Double quote following a possible hashtag:
+				// most probably an URL#fragment, so check
+				// whether it's a quoted string:
+				if '"' != match0[0] {
+					continue // URL#fragment
+				}
+
+			case ')':
+				// This is a tricky one: It can either be a
+				// normal right round bracket or the end of
+				// a Markdown link. Here we assume that it's
+				// the latter one and ignore this match:
+				continue
+
+			case '-':
+				// A hyphen at the end of a hashtag:
+				// that's not part of an acceptable tag.
+				continue
+
+			case ';':
+				if htEntityRE.MatchString(match0) {
+					// leave HTML entities as is
+					continue
+				}
+			}
+			if htHyphenRE.MatchString(tag) {
+				continue
+			}
+		} else if MarkMention == tag[0] {
+			if '.' == match0[len(match0)-1] {
+				// we assume that it's an email address
+				continue
+			}
+		}
+		if ht.insert(tag[0], tag, aID) {
+			result = true
+		}
+	}
+
+	return result
+} // parseID()
+
 // `removeHM()` deletes `aID` from the list of `aName`.
 //
 // If `aName` is empty it is silently ignored (i.e. this method
@@ -656,7 +790,7 @@ func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
 
 	defer ht.deferredStore()
 
-	if ht.hl.removeHM(aDelim, aName, aID) {
+	if ht.hl.hm.removeHM(aDelim, aName, aID) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -703,7 +837,7 @@ func (ht *THashTags) Store() (int, error) {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.store(ht.fn)
+	return ht.hl.hm.store(ht.fn)
 } // Store()
 
 // `String()` returns the whole list as a linefeed separated string.
@@ -716,7 +850,7 @@ func (ht *THashTags) String() string {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.String()
+	return ht.hl.hm.String()
 } // String()
 
 /* EoF */

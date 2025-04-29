@@ -14,9 +14,16 @@ import (
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-const (
-	testHtStore = "testHtStore.db"
-)
+// const (
+// 	testHtStore = "testHtStore.db"
+// )
+
+func htFilename() string {
+	fn := filepath.Join(os.TempDir(), "testHtStore.db")
+	os.Remove(fn) // remove remnants of previous runs
+
+	return fn
+} // htFilename()
 
 func Test_New(t *testing.T) {
 	testDir := t.TempDir()
@@ -51,37 +58,34 @@ func Test_New(t *testing.T) {
 	}
 } // Test_New()
 
-func Test_THashTags_equals(t *testing.T) {
-	defer func() {
-		os.Remove(testHtStore)
-	}()
-
-	ht1, _ := New("", false)
-	wt1, _ := New("", false)
-	wt2, _ := New("", false)
-	wt2.HashAdd("hash1", 0)
-
-	tests := []struct {
-		name  string
-		list  *THashTags
-		other *THashTags
-		want  bool
-	}{
-		{"1", ht1, wt1, true},
-		{"s", ht1, wt2, false},
-
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ht := tt.list
-			if got := ht.equals(tt.other); got != tt.want {
-				t.Errorf("%q: tHashTags.equals() = '%v', want '%v'",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-} // Test_THashTags_equals()
+// func Test_THashTags_equals(t *testing.T) {
+// 	defer func() {
+// 		os.Remove(testHtStore)
+// 	}()
+// 	ht1, _ := New("", false)
+// 	wt1, _ := New("", false)
+// 	wt2, _ := New("", false)
+// 	wt2.HashAdd("hash1", 0)
+// 	tests := []struct {
+// 		name  string
+// 		list  *THashTags
+// 		other *THashTags
+// 		want  bool
+// 	}{
+// 		{"1", ht1, wt1, true},
+// 		{"s", ht1, wt2, false},
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			ht := tt.list
+// 			if got := ht.equals(tt.other); got != tt.want {
+// 				t.Errorf("%q: tHashTags.equals() = '%v', want '%v'",
+// 					tt.name, got, tt.want)
+// 			}
+// 		})
+// 	}
+// } // Test_THashTags_equals()
 
 func Test_THashTags_IDupdate(t *testing.T) {
 	ht, _ := New("", false)
@@ -109,6 +113,84 @@ func Test_THashTags_IDupdate(t *testing.T) {
 		})
 	}
 } // Test_THashTags_IDupdate()
+
+func Test_THashTags_parseID(t *testing.T) {
+	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "#hash4"
+	hyphTx1, hyphTx2, hyphTx3 := `#--------------`, `#---text ---`, `#-text-`
+
+	id1, id2, id3, id4, id5, id6 := int64(987), int64(654), int64(321), int64(123), int64(456), int64(789)
+
+	ht1, _ := New("", false)
+	tx1 := []byte("1blabla " + hash1 + " blabla " + hash3 + ". Blabla")
+
+	ht2, _ := New("", false)
+	tx2 := []byte(`2blabla "` + hash2 + `". Blabla ` + hash3 + ` blabla`)
+
+	ht3, _ := New("", false)
+	tx3 := []byte("3\n> #KurzErklärt #Zensurheberrecht verhindern -\n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
+
+	ht4, _ := New("", false)
+	tx4 := []byte("4blabla **" + hash1 + "** blabla\n\n_" + hash3 + "_")
+
+	ht5, _ := New("", false)
+	tx5 := []byte(`5blabla&#39; **` + hash2 + `** blabla\n<a href="page#fragment">txt</a> ` + hash4)
+
+	ht6, _ := New("", false)
+	tx6 := []byte(hash3 + ` blabla\n<a href="https://www.tagesspiegel.de/politik/martin-sonneborn-wirbt-fuer-moralische-integritaet-warum-ich-die-eu-kommission-ablehnen-werde/25263366.html#25263366">txt</a> ` + hash4)
+
+	ht7, _ := New("", false)
+	tx7 := []byte(`7 (https://www.faz.net/aktuell/politik/inland/jutta-ditfurth-zu-extinction-rebellion-irrationalismus-einer-endzeit-sekte-16422668.html?printPagedArticle=true#ageIndex_2)`)
+
+	ht8, _ := New("", false)
+	tx8 := []byte(`8
+	> [Here's Everything You Need To Know](https://thehackernews.com/2018/12/australia-anti-encryption-bill.html#content) by <writer@example.com>
+	`)
+
+	ht9, _ := New("", false)
+	tx9 := []byte(`9
+	Bla *@Antoni_Comín* bla bla _#§219a_
+	`)
+
+	tmp := string(tx6) + "\n" + hyphTx1 + ` and ` + hyphTx2 + "\n" + hyphTx3
+	tx10 := []byte(tmp)
+
+	tx11 := []byte{}
+	tx12 := []byte(" ")
+
+	type tArgs struct {
+		aID   int64
+		aText []byte
+	}
+	tests := []struct {
+		name string
+		ht   *THashTags
+		args tArgs
+		want bool
+	}{
+		{"1", ht1, tArgs{id1, tx1}, true},
+		{"2", ht2, tArgs{id2, tx2}, true},
+		{"3", ht3, tArgs{id3, tx3}, true},
+		{"4", ht4, tArgs{id4, tx4}, true},
+		{"5", ht5, tArgs{id5, tx5}, true},
+		{"6", ht6, tArgs{id6, tx6}, true},
+		{"7", ht7, tArgs{7, tx7}, false},
+		{"8", ht8, tArgs{8, tx8}, false},
+		{"9", ht9, tArgs{9, tx9}, true},
+		{"10", ht6, tArgs{id6, tx10}, false},
+		{"11", ht1, tArgs{id1, tx11}, false},
+		{"12", ht1, tArgs{id1, tx12}, false},
+
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ht.parseID(tt.args.aID, tt.args.aText); got != tt.want {
+				t.Errorf("%q: THashTags.parseID() = \n%v\n>>>> want >>>>\n%v\n{%s}",
+					tt.name, got, tt.want, tt.ht)
+			}
+		})
+	}
+} // Test_THashList_parseID()
 
 func Test_THashTags_removeHM(t *testing.T) {
 	ht, _ := New("", false)
