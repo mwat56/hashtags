@@ -8,21 +8,22 @@ package hashtags
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 )
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-// const (
-// 	testHtStore = "testHtStore.db"
-// )
+func prepHT() *THashTags {
+	fn := filepath.Join(os.TempDir(), ".testHtStore.db")
+	os.Remove(fn) // remove remnants of previous runs
 
-// func htFilename() string {
-// 	fn := filepath.Join(os.TempDir(), "testHtStore.db")
-// 	os.Remove(fn) // remove remnants of previous runs
-// 	return fn
-// } // htFilename()
+	ht, _ := New(fn)
+	ht.safe = false // no locking wanted while testing
+
+	return ht
+} // prepHT()
 
 func Test_New(t *testing.T) {
 	testDir := t.TempDir()
@@ -31,15 +32,14 @@ func Test_New(t *testing.T) {
 	tests := []struct {
 		name     string
 		filename string
-		safe     bool
 		wantErr  bool
 	}{
-		{"valid new file", validFile, true, false},
-		{"valid new file unsafe", validFile, false, false},
+		{"valid new file", validFile, false},
+		{"valid new file unsafe", validFile, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.filename, tt.safe)
+			got, err := New(tt.filename)
 			if (nil != err) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -58,7 +58,8 @@ func Test_New(t *testing.T) {
 } // Test_New()
 
 func Test_THashTags_IDupdate(t *testing.T) {
-	ht, _ := New("", false)
+	ht := prepHT()
+	ht.safe = false
 	id := int64(1)
 
 	tests := []struct {
@@ -90,33 +91,33 @@ func Test_THashTags_parseID(t *testing.T) {
 
 	id1, id2, id3, id4, id5, id6 := int64(987), int64(654), int64(321), int64(123), int64(456), int64(789)
 
-	ht1, _ := New("", false)
+	ht1 := prepHT()
 	tx1 := []byte("1blabla " + hash1 + " blabla " + hash3 + ". Blabla")
 
-	ht2, _ := New("", false)
+	ht2 := prepHT()
 	tx2 := []byte(`2blabla "` + hash2 + `". Blabla ` + hash3 + ` blabla`)
 
-	ht3, _ := New("", false)
+	ht3 := prepHT()
 	tx3 := []byte("3\n> #KurzErklärt #Zensurheberrecht verhindern -\n> [Glyphosat-Gutachten selbst anfragen!](https://fragdenstaat.de/aktionen/zensurheberrecht-2019/)\n")
 
-	ht4, _ := New("", false)
+	ht4 := prepHT()
 	tx4 := []byte("4blabla **" + hash1 + "** blabla\n\n_" + hash3 + "_")
 
-	ht5, _ := New("", false)
+	ht5 := prepHT()
 	tx5 := []byte(`5blabla&#39; **` + hash2 + `** blabla\n<a href="page#fragment">txt</a> ` + hash4)
 
-	ht6, _ := New("", false)
+	ht6 := prepHT()
 	tx6 := []byte(hash3 + ` blabla\n<a href="https://www.tagesspiegel.de/politik/martin-sonneborn-wirbt-fuer-moralische-integritaet-warum-ich-die-eu-kommission-ablehnen-werde/25263366.html#25263366">txt</a> ` + hash4)
 
-	ht7, _ := New("", false)
+	ht7 := prepHT()
 	tx7 := []byte(`7 (https://www.faz.net/aktuell/politik/inland/jutta-ditfurth-zu-extinction-rebellion-irrationalismus-einer-endzeit-sekte-16422668.html?printPagedArticle=true#ageIndex_2)`)
 
-	ht8, _ := New("", false)
+	ht8 := prepHT()
 	tx8 := []byte(`8
 	> [Here's Everything You Need To Know](https://thehackernews.com/2018/12/australia-anti-encryption-bill.html#content) by <writer@example.com>
 	`)
 
-	ht9, _ := New("", false)
+	ht9 := prepHT()
 	tx9 := []byte(`9
 	Bla *@Antoni_Comín* bla bla _#§219a_
 	`)
@@ -163,7 +164,7 @@ func Test_THashTags_parseID(t *testing.T) {
 } // Test_THashList_parseID()
 
 func Test_THashTags_removeHM(t *testing.T) {
-	ht, _ := New("", false)
+	ht := prepHT()
 
 	// Setup test data
 	ht.HashAdd("#test1", 101)
@@ -201,7 +202,7 @@ func Test_THashTags_removeHM(t *testing.T) {
 } // Test_THashTags_removeHM()
 
 func Test_THashTags_SetFilename(t *testing.T) {
-	ht, _ := New("", false)
+	ht := prepHT()
 	tmpDir := t.TempDir() // Creates a temporary directory for testing
 
 	tests := []struct {

@@ -83,17 +83,16 @@ var (
 //
 // Parameters:
 //   - `aFilename`: The name of the file to use for loading and storing.
-//   - `aSafe`: Whether to use thread-safe operations or not.
 //
 // Returns:
 //   - `*THashTags`: The new `THashTags` instance.
 //   - `error`: `nil` in case of success, otherwise an error.
-func New(aFilename string, aSafe bool) (*THashTags, error) {
-
+func New(aFilename string) (*THashTags, error) {
 	ht := &THashTags{
 		hm:   newHashMap(),
-		safe: aSafe,
+		safe: true,
 	}
+
 	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
 		return ht, nil
 	}
@@ -521,8 +520,11 @@ func (ht *THashTags) List() TCountList {
 // `Load()` reads the configured file returning the data structure
 // read from the file and a possible error condition.
 //
+// The filename to use has to be given to the constructor [New] or
+// with a call to [SetFilename].
+//
 // NOTE: An empty filename or the hash file doesn't exist that is not
-// considered an error.
+// considered an error but  keeps all data strictly in memory.
 //
 // Returns:
 //   - `*THashTags`: The updated list.
@@ -783,6 +785,9 @@ func (ht *THashTags) SetFilename(aFilename string) error {
 
 // `Store()` writes the whole list to the configured file
 // returning the number of bytes written and a possible error.
+//
+// The filename to use has to be given to the constructor [New] or
+// given with a call to [SetFilename].
 //
 // Returns:
 //   - `int`: Number of bytes written to storage.
