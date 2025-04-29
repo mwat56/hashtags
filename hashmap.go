@@ -683,21 +683,16 @@ func (hm *tHashMap) renameID(aOldID, aNewID int64) bool {
 // Returns:
 //   - `*tHashMap`: The sorted hash map.
 func (hm *tHashMap) sort() *tHashMap {
-	hLen := len(*hm)
-	if 0 == hLen {
+	if 0 == len(*hm) {
 		return hm
 	}
-
 	var (
 		key string
 		sl  *tSourceList
 	)
 
 	keys := hm.keys()
-	kLen := len(keys)
-	if kLen < defaultListSize {
-		kLen = defaultListSize
-	}
+	kLen := max(len(keys), defaultListSize)
 	// Create a new map to store sorted key-value pairs
 	sortedMap := make(tHashMap, kLen)
 	// Iterate through sorted keys and create a new sorted map
