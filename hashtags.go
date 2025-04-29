@@ -7,6 +7,7 @@ Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 package hashtags
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -40,8 +41,8 @@ type (
 		mtx     sync.RWMutex // safeguard against concurrent accesses
 		hl      tHashList    // the actual map list of sources/IDs
 		fn      string       // the filename to use
-		changed uint32       // internal change flag
 		cc      tCountCache  // cache for `CountedList()`
+		changed uint32       // internal change flag
 		safe    bool         // flag for optional thread safety
 	}
 
@@ -205,9 +206,10 @@ func (ht *THashTags) Filename() string {
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (ht *THashTags) HashAdd(aHash string, aID int64) bool {
-	if aHash = strings.ToLower(strings.TrimSpace(aHash)); "" == aHash {
+	if aHash = strings.TrimSpace(aHash); "" == aHash {
 		return false
 	}
+
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -240,6 +242,10 @@ func (ht *THashTags) HashCount() int {
 // Returns:
 //   - `int`: The number of `aHash` in the list.
 func (ht *THashTags) HashLen(aHash string) int {
+	if aHash = strings.TrimSpace(aHash); "" == aHash {
+		return 0
+	}
+
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
@@ -259,6 +265,10 @@ func (ht *THashTags) HashLen(aHash string) int {
 // Returns:
 //   - `[]int64`: The number of references of `aHash`.
 func (ht *THashTags) HashList(aHash string) []int64 {
+	if aHash = strings.TrimSpace(aHash); "" == aHash {
+		return []int64{}
+	}
+
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
@@ -276,6 +286,10 @@ func (ht *THashTags) HashList(aHash string) []int64 {
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (ht *THashTags) HashRemove(aHash string, aID int64) bool {
+	if aHash = strings.TrimSpace(aHash); "" == aHash {
+		return false
+	}
+
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -315,6 +329,10 @@ func (ht *THashTags) IDlist(aID int64) []string {
 // Returns:
 //   - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
 func (ht *THashTags) IDparse(aID int64, aText []byte) bool {
+	if aText = bytes.TrimSpace(aText); 0 == len(aText) {
+		return false
+	}
+
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -394,6 +412,10 @@ func (ht *THashTags) IDrename(aOldID, aNewID int64) bool {
 // Returns:
 //   - `bool`: `true` if `aID` was updated, or `false` otherwise.
 func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
+	if aText = bytes.TrimSpace(aText); 0 == len(aText) {
+		return ht.IDremove(aID)
+	}
+
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -421,8 +443,7 @@ func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (ht *THashTags) insert(aDelim byte, aName string, aID int64) bool {
-	// prepare for case-insensitive search:
-	if aName = strings.ToLower(strings.TrimSpace(aName)); "" == aName {
+	if aName = strings.TrimSpace(aName); "" == aName {
 		return false
 	}
 	defer ht.deferredStore()
@@ -521,6 +542,10 @@ func (ht *THashTags) Load() (*THashTags, error) {
 // Returns:
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (ht *THashTags) MentionAdd(aMention string, aID int64) bool {
+	if aMention = strings.TrimSpace(aMention); "" == aMention {
+		return false
+	}
+
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -553,6 +578,10 @@ func (ht *THashTags) MentionCount() int {
 // Returns:
 //   - `int`: The number of `aMention` in the list.
 func (ht *THashTags) MentionLen(aMention string) int {
+	if aMention = strings.TrimSpace(aMention); "" == aMention {
+		return 0
+	}
+
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
@@ -572,6 +601,10 @@ func (ht *THashTags) MentionLen(aMention string) int {
 // Returns:
 //   - `[]int64`: The number of references of `aMention`.
 func (ht *THashTags) MentionList(aMention string) []int64 {
+	if aMention = strings.TrimSpace(aMention); "" == aMention {
+		return []int64{}
+	}
+
 	if ht.safe {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
@@ -592,6 +625,10 @@ func (ht *THashTags) MentionList(aMention string) []int64 {
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (ht *THashTags) MentionRemove(aMention string, aID int64) bool {
+	if aMention = strings.TrimSpace(aMention); "" == aMention {
+		return false
+	}
+
 	if ht.safe {
 		ht.mtx.Lock()
 		defer ht.mtx.Unlock()
@@ -613,9 +650,10 @@ func (ht *THashTags) MentionRemove(aMention string, aID int64) bool {
 // Returns:
 //   - `bool`: `true` if `aID` was updated, or `false` otherwise.
 func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
-	if aName = strings.ToLower(strings.TrimSpace(aName)); "" == aName {
+	if aName = strings.TrimSpace(aName); "" == aName {
 		return false
 	}
+
 	defer ht.deferredStore()
 
 	if ht.hl.removeHM(aDelim, aName, aID) {

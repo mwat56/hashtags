@@ -51,56 +51,6 @@ func Test_New(t *testing.T) {
 	}
 } // Test_New()
 
-/*
-func Test_THashTags_checksum(t *testing.T) {
-	testDir := t.TempDir()
-	validFile := filepath.Join(testDir, "checksum.db")
-
-	ht, err := New(validFile, false)
-	if err != nil {
-		t.Fatalf("Failed to create new THashTags: %v", err)
-	}
-
-	// Initial checksum should be 0 for empty instance
-	initialChecksum := ht.checksum()
-
-	// Add some data to change the checksum
-	ht.HashAdd("#test", 1)
-
-	// Checksum should change after adding data
-	modifiedChecksum := ht.checksum()
-
-	// Add more data
-	ht.HashAdd("#another", 2)
-	ht.MentionAdd("@user", 3)
-
-	// Checksum should change again
-	finalChecksum := ht.checksum()
-
-	tests := []struct {
-		name string
-		cs1  uint32
-		cs2  uint32
-		want bool
-	}{
-		{"initial vs modified", initialChecksum, modifiedChecksum, false},
-		{"modified vs final", modifiedChecksum, finalChecksum, false},
-		{"same checksum", finalChecksum, finalChecksum, true},
-
-		// TODO: Add test cases.
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if (tt.cs1 == tt.cs2) != tt.want {
-				t.Errorf("THashTags.checksum() comparison = '%v', want '%v'",
-					(tt.cs1 == tt.cs2), tt.want)
-			}
-		})
-	}
-} // Test_THashTags_checksum()
-*/
-
 func Test_THashTags_equals(t *testing.T) {
 	defer func() {
 		os.Remove(testHtStore)
@@ -132,6 +82,33 @@ func Test_THashTags_equals(t *testing.T) {
 		})
 	}
 } // Test_THashTags_equals()
+
+func Test_THashTags_IDupdate(t *testing.T) {
+	ht, _ := New("", false)
+	id := int64(1)
+
+	tests := []struct {
+		name string
+		id   int64
+		text []byte
+		want bool
+	}{
+		{"empty text", id, []byte(""), false},
+		{"with hashtag", id, []byte("This is a #test"), true},
+		{"with mention", id, []byte("Hello @world"), true},
+		{"with both", id, []byte("Hello @world and #test"), true},
+		{"no tags", id, []byte("Plain text without tags"), true}, // remove tags from previous test
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ht.IDupdate(tt.id, tt.text); got != tt.want {
+				t.Errorf("%q: THashTags.IDupdate() = %v, want %v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+} // Test_THashTags_IDupdate()
 
 func Test_THashTags_removeHM(t *testing.T) {
 	ht, _ := New("", false)
