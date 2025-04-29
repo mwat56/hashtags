@@ -21,22 +21,22 @@ type (
 )
 
 // --------------------------------------------------------------------------
-// constructor function
+// constructor function:
 
 // `newSourceList()` creates and returns a new instance of `tSourceList`.
 //
-// The initial capacity of the list is set to 32 to optimise memory usage.
+// The initial capacity of the list is set to 64 to optimise memory usage.
 //
 // Returns:
 //   - `*tSourceList`: A pointer to the newly created instance.
 func newSourceList() *tSourceList {
-	sl := make(tSourceList, 0, 32)
+	sl := make(tSourceList, 0, 64)
 
 	return &sl
 } // newSourceList()
 
 // -------------------------------------------------------------------------
-// methods of tSourceList
+// methods of `tSourceList`:
 
 // `clear()` removes all entries in this list.
 //
@@ -44,7 +44,10 @@ func newSourceList() *tSourceList {
 //   - `*tSourceList`: A pointer to the updated sources list.
 func (sl *tSourceList) clear() *tSourceList {
 	if nil != sl {
-		(*sl) = (*sl)[:0]
+		if sLen := len(*sl); 0 < sLen {
+			(*sl) = (*sl)[:0]
+			clear((*sl)[0:sLen]) // zero out the former elements for GC
+		}
 	}
 
 	return sl
@@ -162,7 +165,7 @@ func (sl *tSourceList) remove(aID int64) bool {
 
 // `rename()` replaces all occurrences of `aOldID` by `aNewID`.
 //
-// If `aOldID` equals `aNewID`, or aOldID` doesn't exist then they are
+// If `aOldID` equals `aNewID`, or `aOldID` doesn't exist then they are
 // silently ignored (i.e. this method does nothing), returning `false`.
 //
 // This method is intended for rare cases when the ID of a document
@@ -232,11 +235,12 @@ func (sl *tSourceList) String() string {
 	// Pre-allocate buffer to avoid multiple allocations
 	var (
 		buf   bytes.Buffer
+		id    int64
 		strID string
 	)
 	buf.Grow(len(*sl) * 16) // Estimate size
 
-	for _, id := range *sl {
+	for _, id = range *sl {
 		strID = fmt.Sprintf("%x\n", id)
 		if 17 > len(strID) { // 16 hex chars + LF
 			buf.WriteString(strings.Repeat("0", 17-len(strID)) + strID)

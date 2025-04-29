@@ -7,18 +7,14 @@ Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 package hashtags
 
 import (
-	"reflect"
+	"slices"
 	"testing"
 )
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 func Test_tSourceList_clear(t *testing.T) {
-	sl1 := &tSourceList{
-		1,
-		2,
-		3,
-	}
+	sl1 := &tSourceList{1, 2, 3, 4, 5, 6, 7, 8, 9}
 	wl1 := &tSourceList{}
 
 	tests := []struct {
@@ -41,16 +37,8 @@ func Test_tSourceList_clear(t *testing.T) {
 } // Test_tSourceList_clear()
 
 func Test_tSourceList_equals(t *testing.T) {
-	sl1 := tSourceList{
-		1,
-		2,
-		3,
-	}
-	sl2 := tSourceList{
-		3,
-		2,
-		1,
-	}
+	sl1 := tSourceList{1, 2, 3}
+	sl2 := tSourceList{3, 2, 1}
 
 	tests := []struct {
 		name string
@@ -67,7 +55,7 @@ func Test_tSourceList_equals(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.sl.equals(tt.list); got != tt.want {
-				t.Errorf("%q: tSourceList.equals() = %v\n>>>> want: >>>>\n%v",
+				t.Errorf("%q: tSourceList.equals() = '%v', want '%v'",
 					tt.name, got, tt.want)
 			}
 		})
@@ -85,18 +73,18 @@ func Test_tSourceList_findIndex(t *testing.T) {
 		id   int64
 		want int
 	}{
-		{"0", &tSourceList{}, 1, -1}, // empty list
-		{"1", sl1, 1, 0},             // first
-		{"2", sl1, 3, 2},             // middle
-		{"3", sl1, 5, 4},             // last
-		{"4", sl1, 6, -1},            // not found
+		{"empty list", &tSourceList{}, 1, -1},
+		{"first", sl1, 1, 0},
+		{"middle", sl1, 3, 2},
+		{"last", sl1, 5, 4},
+		{"not found", sl1, 6, -1},
 
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.sl.findIndex(tt.id); got != tt.want {
-				t.Errorf("%q: tSourceList.findIndex() =\n %v,\n>>>> want: >>>>\n%v",
+				t.Errorf("%q: tSourceList.findIndex() = '%d', want '%d'",
 					tt.name, got, tt.want)
 			}
 		})
@@ -111,18 +99,19 @@ func Test_tSourceList_insert(t *testing.T) {
 		id   int64
 		want bool
 	}{
-		{"0", 1, true}, // beginning
-		{"1", 3, true}, // end
-		{"2", 5, true}, // end
-		{"3", 2, true}, // middle
-		{"4", 4, true}, // middle
+		{"beginning", 1, true},
+		{"end 2", 3, true},
+		{"end 5", 5, true},
+		{"middle 2", 2, true},
+		{"middle 4", 4, true},
 
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := sl.insert(tt.id); got != tt.want {
-				t.Errorf("tSourceList.insert() = %v, want %v", got, tt.want)
+				t.Errorf("tSourceList.insert() = %v, want %v",
+					got, tt.want)
 			}
 		})
 	}
@@ -170,20 +159,14 @@ func Test_tSourceList_rename(t *testing.T) {
 		args tArgs
 		want bool
 	}{
-		// Empty list
-		{"0", sl2, tArgs{1, 2}, false},
-		// Same IDs - no change
-		{"1", sl1, tArgs{1, 1}, false},
-		// Replace existing ID
-		{"2", sl1, tArgs{2, 4}, true},
-		// Old ID doesn't exist, new ID added
-		{"3", sl1, tArgs{99, 5}, true},
-		// Replace first element
-		{"4", sl1, tArgs{1, 6}, true},
-		// Replace last element
-		{"5", sl1, tArgs{3, 7}, true},
-		// Nil list
-		{"6", nil, tArgs{1, 2}, false},
+
+		{"0", sl2, tArgs{1, 2}, false}, // Empty list
+		{"1", sl1, tArgs{1, 1}, false}, // Same IDs - no change
+		{"2", sl1, tArgs{2, 4}, true},  // Replace existing ID
+		{"3", sl1, tArgs{99, 5}, true}, // Old ID doesn't exist, new ID added
+		{"4", sl1, tArgs{1, 6}, true},  // Replace first element
+		{"5", sl1, tArgs{3, 7}, true},  // Replace last element
+		{"6", nil, tArgs{1, 2}, false}, // Nil list
 
 		// TODO: Add test cases.
 	}
@@ -200,12 +183,14 @@ func Test_tSourceList_rename(t *testing.T) {
 func Test_tSourceList_sort(t *testing.T) {
 	sl1 := &tSourceList{}
 	wl1 := &tSourceList{}
+
 	sl2 := &tSourceList{
 		3, 1, 2,
 	}
 	wl2 := &tSourceList{
 		1, 2, 3,
 	}
+
 	tests := []struct {
 		name string
 		sl   *tSourceList
@@ -219,7 +204,21 @@ func Test_tSourceList_sort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sl.sort(); !reflect.DeepEqual(got, tt.want) {
+			got := tt.sl.sort()
+			if nil == got {
+				if nil == tt.want {
+					return
+				}
+				t.Errorf("%q: tSourceList.sort() = nil, want %v",
+					tt.name, tt.want)
+				return
+			} else if nil == tt.want {
+				t.Errorf("%q: tSourceList.sort() =\n%v\n>>>> want: >>>>\n%v",
+					tt.name, got, tt.want)
+				return
+			}
+
+			if !slices.Equal(*got, *tt.want) {
 				t.Errorf("%q: tSourceList.sort() =\n%v\n>>>> want: >>>>\n%v",
 					tt.name, got, tt.want)
 			}
@@ -254,7 +253,7 @@ func Test_tSourceList_String(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.sl.String(); got != tt.want {
-				t.Errorf("%q: tSourceList.String() =\n%v\n>>>> want: >>>>\n%v",
+				t.Errorf("%q: tSourceList.String() =\n%q\n>>>> want: >>>>\n%q",
 					tt.name, got, tt.want)
 			}
 		})
