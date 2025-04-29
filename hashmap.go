@@ -203,14 +203,14 @@ func (hm *tHashMap) equals(aMap tHashMap) bool {
 	}
 
 	var (
-		hash  string
+		tag   string
 		other *tSourceList
 		sl    *tSourceList
 		ok    bool
 	)
 
-	for hash, sl = range *hm {
-		if other, ok = aMap[hash]; !ok {
+	for tag, sl = range *hm {
+		if other, ok = aMap[tag]; !ok {
 			return false
 		}
 		if !sl.equals(*other) {
@@ -273,7 +273,7 @@ func (hm *tHashMap) idList(aID int64) []string {
 //   - `int: The number of references of `aTag`, or `-1` if not found.
 func (hm *tHashMap) idxLen(aDelim byte, aTag string) int {
 	// prepare for case-insensitive search:
-	if aTag = strings.ToLower(strings.TrimSpace((aTag))); "" == aTag {
+	if aTag = strings.ToLower(aTag); "" == aTag {
 		return -1
 	}
 
@@ -298,7 +298,7 @@ func (hm *tHashMap) idxLen(aDelim byte, aTag string) int {
 //   - `bool`: `true` if `aID` was added, or `false` otherwise.
 func (hm *tHashMap) insert(aTag string, aID int64) bool {
 	// prepare for case-insensitive search:
-	if aTag = strings.ToLower(strings.TrimSpace((aTag))); "" == aTag {
+	if aTag = strings.ToLower(aTag); "" == aTag {
 		return false
 	}
 
@@ -345,6 +345,24 @@ func (hm *tHashMap) keys() []string {
 	return keys
 } // keys()
 
+// `lenTotal()` returns the length of all `#hashtags` and `@mentions`
+// lists stored in the hash list.
+//
+// Returns:
+//   - `int`: The total length of all `#hashtags` and `@mentions` lists.
+func (hm *tHashMap) lenTotal() (rLen int) {
+	if rLen = len(*hm); 0 == rLen {
+		return
+	}
+	var sl *tSourceList
+
+	for _, sl = range *hm {
+		rLen += len(*sl)
+	}
+
+	return
+} // lenTotal()
+
 // `list()` returns a list of object IDs associated with `aTag`.
 //
 // If `aTag` is empty it is silently ignored (i.e. this method
@@ -358,7 +376,7 @@ func (hm *tHashMap) keys() []string {
 //   - `[]int64`: The number of references of `aTag`.
 func (hm *tHashMap) list(aDelim byte, aTag string) (rList []int64) {
 	// prepare for case-insensitive search:
-	if aTag = strings.ToLower(strings.TrimSpace((aTag))); "" == aTag {
+	if aTag = strings.ToLower(aTag); "" == aTag {
 		return
 	}
 	if 0 == len(*hm) {
@@ -517,141 +535,6 @@ func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 	return result, nil
 } // loadBinaryStrings()
 
-/*
-// Load from custom binary format
-func loadCustomBinary(aFilename string) (*tHashMap, error) {
-	file, err := os.Open(aFilename)
-	if nil != err {
-		return nil, se.New(err, 3)
-	}
-	defer file.Close()
-
-	// Read file contents
-	data, err := io.ReadAll(file)
-	if nil != err {
-		return nil, se.New(err, 4)
-	}
-
-	// Create a reader
-	reader := bytes.NewReader(data)
-
-	// Read map size
-	var mapSize uint32
-	if err := binary.Read(reader, binary.LittleEndian, &mapSize); nil != err {
-		return nil, se.New(err, 1)
-	}
-
-	// Create result map
-	result := make(tHashMap, mapSize)
-
-	// Read each key and its values
-	for i := uint32(0); i < mapSize; i++ {
-		// Read key length
-		var keyLen uint16
-		if err := binary.Read(reader, binary.LittleEndian, &keyLen); nil != err {
-			return nil, se.New(err, 1)
-		}
-
-		// Read key data
-		keyBytes := make([]byte, keyLen)
-		if _, err := reader.Read(keyBytes); nil != err {
-			return nil, se.New(err, 1)
-		}
-		key := string(keyBytes)
-
-		// Read source list length
-		var listLen uint32
-		if err := binary.Read(reader, binary.LittleEndian, &listLen); nil != err {
-			return nil, se.New(err, 1)
-		}
-
-		// Create source list
-		sourceList := make(tSourceList, listLen)
-
-		// Read each ID
-		for j := uint32(0); j < listLen; j++ {
-			var id int64
-			if err := binary.Read(reader, binary.LittleEndian, &id); nil != err {
-				return nil, se.New(err, 1)
-			}
-			sourceList[j] = id
-		}
-
-		// Add to result map
-		result[key] = &sourceList
-	}
-
-	return &result, nil
-} // loadCustomBinary()
-
-// Custom binary format implementation
-func (hm *tHashMap) storeCustomBinary(aFilename string) (int, error) {
-	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
-		return 0, se.New(errors.New("empty filename"), 1)
-	}
-
-	file, err := os.OpenFile(aFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660)
-	if nil != err {
-		return 0, se.New(err, 3)
-	}
-	defer file.Close()
-
-	// Sort before storing
-	hm.sort()
-
-	// Create a buffer to write to
-	var buf bytes.Buffer
-
-	// Write map size
-	binary.Write(&buf, binary.LittleEndian, uint32(len(*hm)))
-
-	// Get sorted keys
-	keys := hm.keys()
-
-	// Write each key and its values
-	for _, key := range keys {
-		sourceList := (*hm)[key]
-
-		// Write key length and key data
-		keyBytes := []byte(key)
-		binary.Write(&buf, binary.LittleEndian, uint16(len(keyBytes)))
-		buf.Write(keyBytes)
-
-		// Write source list length
-		binary.Write(&buf, binary.LittleEndian, uint32(len(*sourceList)))
-
-		// Write each ID in the source list
-		for _, id := range *sourceList {
-			binary.Write(&buf, binary.LittleEndian, id)
-		}
-	}
-
-	// Write to file
-	n, err := file.Write(buf.Bytes())
-	if nil != err {
-		return 0, se.New(err, 7)
-	}
-
-	return n, nil
-} // storeCustomBinary()
-
-/ *
-Benchmark_LoadTxT-32        	      88	  13262349 ns/op	 4180856 B/op	  134686 allocs/op
-Benchmark_LoadGob-32        	     547	   2179557 ns/op	 1597248 B/op	    3273 allocs/op
-Benchmark_LoadCustom-32     	     217	   5293254 ns/op	 7397189 B/op	  134192 allocs/op
-Benchmark_StoreTxt-32       	      60	  19557579 ns/op	22988071 B/op	  256540 allocs/op
-Benchmark_StoreGob-32       	     614	   1864101 ns/op	 2009184 B/op	    1416 allocs/op
-Benchmark_StoreCustom-32    	     234	   4530603 ns/op	 5311705 B/op	  133042 allocs/op
-
-Benchmark_LoadTxT-32        	      92	  12997165 ns/op	 4189581 B/op	  134686 allocs/op
-Benchmark_LoadGob-32        	     554	   2146167 ns/op	 1597286 B/op	    3273 allocs/op
-Benchmark_LoadCustom-32     	     234	   5461455 ns/op	 7397210 B/op	  134192 allocs/op
-Benchmark_StoreTxt-32       	      56	  20874706 ns/op	22995867 B/op	  256797 allocs/op
-Benchmark_StoreGob-32       	     579	   1986293 ns/op	 2009586 B/op	    1437 allocs/op
-Benchmark_StoreCustom-32    	     235	   4823791 ns/op	 5311626 B/op	  133038 allocs/op
-
-*/
-
 // `loadText()` parses a text file written by `store()` returning
 // a possible error.
 //
@@ -699,10 +582,7 @@ func (hm *tHashMap) loadText(aFile *os.File) error {
 	if err = scanner.Err(); nil != err {
 		return se.New(err, 1)
 	}
-	/*
-		Benchmark_LoadTxT-32     	    1364	    866126 ns/op	  213210 B/op	    8713 allocs/op
-		Benchmark_LoadGob-32     	    6244	    176462 ns/op	  139274 B/op	     969 allocs/op
-	*/
+
 	return nil
 } // loadText()
 
@@ -746,14 +626,10 @@ func (hm *tHashMap) removeID(aID int64) bool {
 // Returns:
 //   - `bool`: `true` if `aID` was removed, or `false` otherwise.
 func (hm *tHashMap) removeHM(aDelim byte, aTag string, aID int64) bool {
-	if "" == aTag {
-		return false
-	}
-	if aTag = strings.TrimSpace(aTag); "" == aTag {
-		return false
-	}
 	// prepare for case-insensitive search:
-	aTag = strings.ToLower(aTag)
+	if aTag = strings.ToLower(aTag); "" == aTag {
+		return false
+	}
 
 	if aTag[0] != aDelim {
 		aTag = string(aDelim) + aTag
@@ -781,7 +657,7 @@ func (hm *tHashMap) removeHM(aDelim byte, aTag string, aID int64) bool {
 // Returns:
 //   - `bool`: `true` if the the renaming was successful, or `false` otherwise.
 func (hm *tHashMap) renameID(aOldID, aNewID int64) bool {
-	if (0 == len(*hm)) || (aOldID == aNewID) {
+	if (aOldID == aNewID) || (0 == len(*hm)) {
 		return false
 	}
 

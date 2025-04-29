@@ -111,6 +111,7 @@ func Test_tHashMap_clear(t *testing.T) {
 		want *tHashMap
 	}{
 		{"1", hm1, wm1},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -231,6 +232,7 @@ func Test_tHashMap_equals(t *testing.T) {
 	}{
 		{"1", hm1, om1, true},
 		{"2", hm1, om2, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -269,6 +271,8 @@ func Test_tHashMap_idList(t *testing.T) {
 		{"not found", hm1, 999, 0, nil},
 		{"unique ID in large map", hm2, 999999, 2, []string{"#uniquehash", "@uniquemention"}}, // lowercase!
 		{"common ID in large map", hm2, 0, baseListLen * 2, nil},                              // All entries in prepHashMap have ID 0
+
+		// TODO: Add test cases.
 	}
 
 	for _, tt := range tests {
@@ -320,6 +324,7 @@ func Test_tHashMap_idxLen(t *testing.T) {
 		{"2", tArgs{MarkHash, "hash2"}, baseListLen + 1},
 		{"3", tArgs{MarkMention, "@hash2"}, -1},
 		{"4", tArgs{MarkMention, "mention1"}, baseListLen},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -347,9 +352,10 @@ func Test_tHashMap_insert(t *testing.T) {
 		args tArgs
 		want bool
 	}{
-		// {" 0", hm1, tArgs{"", 0}, false},            // empty hash
+		{" 0", hm1, tArgs{"", 0}, false},            // empty hash
 		{" 1", hm1, tArgs{"@mention2", 220}, false}, // already added
-		// {" 2", hm2, tArgs{"#hash4", 222}, true},
+		{" 2", hm2, tArgs{"#hash4", 222}, true},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -379,6 +385,8 @@ func Test_tHashMap_keys(t *testing.T) {
 		{"empty", hm0, []string{}, 0},
 		{"small", hm1, []string{"#hash1", "#hash2", "@mention1"}, 3},
 		{"large", prepHashMap(), nil, baseListLen * 2},
+
+		// TODO: Add test cases.
 	}
 
 	for _, tt := range tests {
@@ -411,6 +419,45 @@ func Test_tHashMap_keys(t *testing.T) {
 		})
 	}
 } // Test_tHashMap_keys()
+
+func Test_tHashMap_lenTotal(t *testing.T) {
+	hash1, hash2, hash3 := "#Hash1", "#Hash2", "#UndHash3"
+	id1, id2, id3 := int64(987), int64(654), int64(321)
+
+	hm1 := newHashMap()
+	hm1.insert(hash1, id1)
+	hm1.insert(hash2, id2)
+	hm1.insert(hash2, id1)
+	hm1.insert(hash1, id2)
+
+	hm2 := newHashMap()
+	hm2.insert(hash1, id1)
+	hm2.insert(hash2, id2)
+	hm2.insert(hash2, id1)
+	hm2.insert(hash1, id2)
+	hm2.insert(hash3, id1)
+	hm2.insert(hash3, id2)
+	hm2.insert(hash3, id3)
+
+	tests := []struct {
+		name string
+		hm   *tHashMap
+		want int
+	}{
+		{" 1", hm1, 6},
+		{" 2", hm2, 10},
+
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hm.lenTotal(); got != tt.want {
+				t.Errorf("%q: THashMap.lenTotal() = %v, want %v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+} // Test_tHashMap_lenTotal()
 
 func Test_tHashMap_list(t *testing.T) {
 	// Create a small, controlled hashmap for testing
@@ -453,6 +500,8 @@ func Test_tHashMap_list(t *testing.T) {
 		// Tests with large hashmap - just check length
 		{"6", hm2, tArgs{MarkHash, "hash0"}, wl6},
 		{"7", hm2, tArgs{MarkMention, "mention0"}, wl7},
+
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -511,13 +560,13 @@ func Test_tHashMap_load(t *testing.T) {
 
 			got, err := tt.hm.load(fn)
 			if (nil != err) != tt.wantErr {
-				t.Errorf("%q: tHashMap.load() =\n%v\n>>>> want >>>>\n'%v'",
+				t.Errorf("%q: tHashMap.load() =\n'%v'\n>>>> want >>>>\n'%v'",
 					tt.name, err, tt.wantErr)
 				return
 			}
 			if !tt.want.equals(*got) {
-				t.Errorf("%q: tHashMap.load() =\n%v\n>>>> want >>>>\n%v",
-					tt.name, got, tt.want)
+				t.Errorf("%q: tHashMap.load() =\n%d\n>>>> want >>>>\n%d",
+					tt.name, len(*got), len(*tt.want))
 			}
 			// fName = hmFilename(!tt.binary)
 			// tt.hm.store(fName)
@@ -635,9 +684,9 @@ func Test_tHashMap_renameID(t *testing.T) {
 	hm1.insert("#hash1", id3)
 	hm1.insert("@mention1", id3)
 
-	hm3 := prepHashMap()
-	hm3.insert("#hash3", id2)
-	hm3.insert("#hash4", id2)
+	hm2 := prepHashMap()
+	hm2.insert("#hash3", id2)
+	hm2.insert("#hash4", id2)
 
 	type tArgs struct {
 		aOldID, aNewID int64
@@ -650,7 +699,9 @@ func Test_tHashMap_renameID(t *testing.T) {
 	}{
 		{"0", hm1, tArgs{}, false}, // no change
 		{"1", hm1, tArgs{id1, id2}, true},
-		{"2", hm3, tArgs{id2, id3}, true},
+		{"2", hm2, tArgs{id2, id3}, true},
+		{"3", newHashMap(), tArgs{id1, id2}, false},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -707,6 +758,7 @@ func Test_tHashMap_sort(t *testing.T) {
 		want *tHashMap
 	}{
 		{"1", hm1, wm1},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -778,6 +830,8 @@ func Test_tHashMap_String(t *testing.T) {
 		{"empty", hm1, want1},
 		{"single entry", hm2, "[#test]\n000000000000007b\n"},
 		{"large map", hm3, ""}, // We'll check length instead of exact content
+
+		// TODO: Add test cases.
 	}
 
 	for _, tt := range tests {
@@ -855,30 +909,6 @@ func Benchmark_LoadGob(b *testing.B) {
 	// os.Remove(fn)
 } // Benchmark_LoadBin()
 
-/*
-func Benchmark_LoadCustom(b *testing.B) {
-	saveBinary := UseBinaryStorage
-	defer func() {
-		UseBinaryStorage = saveBinary
-	}()
-	fn := hmFilename(true) + `.custom`
-
-	hm := prepHashMap()
-	hm.insert("@CrashTestDummy", 1)
-	hm.storeCustomBinary(fn)
-
-	b.ResetTimer()
-
-	for n := 0; n < b.N; n++ {
-		if _, err := loadCustomBinary(fn); nil != err {
-			log.Printf("LoadBin(): %v", err)
-		}
-	}
-
-	// os.Remove(fn)
-} // Benchmark_LoadBin()
-*/
-
 func Benchmark_StoreTxt(b *testing.B) {
 	saveBinary := UseBinaryStorage
 	defer func() {
@@ -916,26 +946,5 @@ func Benchmark_StoreGob(b *testing.B) {
 
 	// os.Remove(fn)
 } // Benchmark_StoreBin()
-
-/*
-func Benchmark_StoreCustom(b *testing.B) {
-	saveBinary := UseBinaryStorage
-	defer func() {
-		UseBinaryStorage = saveBinary
-	}()
-	fn := hmFilename(true) + `.custom`
-
-	hm := prepHashMap()
-	hm.insert("@CrashTestDummy", 1)
-
-	for n := 0; n < b.N; n++ {
-		if _, err := hm.storeCustomBinary(fn); nil != err {
-			log.Printf("StoreBin(): %v", err)
-		}
-	}
-
-	// os.Remove(fn)
-} // Benchmark_StoreCustom()
-*/
 
 /* EoF */
