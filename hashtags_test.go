@@ -7,7 +7,7 @@ Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 package hashtags
 
 import (
-	"os"
+	"fmt"
 	"path/filepath"
 	"testing"
 )
@@ -18,12 +18,11 @@ import (
 // 	testHtStore = "testHtStore.db"
 // )
 
-func htFilename() string {
-	fn := filepath.Join(os.TempDir(), "testHtStore.db")
-	os.Remove(fn) // remove remnants of previous runs
-
-	return fn
-} // htFilename()
+// func htFilename() string {
+// 	fn := filepath.Join(os.TempDir(), "testHtStore.db")
+// 	os.Remove(fn) // remove remnants of previous runs
+// 	return fn
+// } // htFilename()
 
 func Test_New(t *testing.T) {
 	testDir := t.TempDir()
@@ -57,35 +56,6 @@ func Test_New(t *testing.T) {
 		})
 	}
 } // Test_New()
-
-// func Test_THashTags_equals(t *testing.T) {
-// 	defer func() {
-// 		os.Remove(testHtStore)
-// 	}()
-// 	ht1, _ := New("", false)
-// 	wt1, _ := New("", false)
-// 	wt2, _ := New("", false)
-// 	wt2.HashAdd("hash1", 0)
-// 	tests := []struct {
-// 		name  string
-// 		list  *THashTags
-// 		other *THashTags
-// 		want  bool
-// 	}{
-// 		{"1", ht1, wt1, true},
-// 		{"s", ht1, wt2, false},
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			ht := tt.list
-// 			if got := ht.equals(tt.other); got != tt.want {
-// 				t.Errorf("%q: tHashTags.equals() = '%v', want '%v'",
-// 					tt.name, got, tt.want)
-// 			}
-// 		})
-// 	}
-// } // Test_THashTags_equals()
 
 func Test_THashTags_IDupdate(t *testing.T) {
 	ht, _ := New("", false)
@@ -259,5 +229,47 @@ func Test_THashTags_SetFilename(t *testing.T) {
 		})
 	}
 } // Test_THashTags_SetFilename()
+
+func funcHashMentionRE(aText string) int {
+	matches := htHashMentionRE.FindAllStringSubmatch(aText, -1)
+
+	println(fmt.Sprintf("%s: %v", aText, matches))
+
+	return len(matches)
+} // funcHashMentionRE()
+
+func Test_htHashMentionRE(t *testing.T) {
+	t1 := `1blabla #HÄSCH1 blabla #hash2. Blabla`
+	t2 := `2blabla #hash2. Blabla "#hash3" blabla`
+	t3 := `\n>#KurzErklärt #Zensurheberrecht verhindern\n`
+	t4 := `4blabla **#HÄSCH1** blabla\n\n_#hash3_`
+	t5 := `5blabla&#39; **#hash2** blabla\n<a href="page#hash3">txt</a> #hash4`
+	t6 := `#hash3 blabla\n<a href="https://www.tagesspiegel.de/politik/martin-sonneborn-wirbt-fuer-moralische-integritaet-warum-ich-die-eu-kommission-ablehnen-werde/25263366.html#25263366">txt</a> #hash4`
+	t7 := `2blabla #hash2. @Dale_O'Leary "#hash3" @Dale_O’Leary blabla @Henry's`
+
+	tests := []struct {
+		name string
+		text string
+		want int
+	}{
+		{" 1", t1, 2},
+		{" 2", t2, 2},
+		{" 3", t3, 2},
+		{" 4", t4, 2},
+		{" 5", t5, 4},
+		{" 6", t6, 3},
+		{" 7", t7, 5},
+
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := funcHashMentionRE(tt.text); got != tt.want {
+				t.Errorf("%q: funcHashMentionRE() = %v, want %v",
+					tt.name, got, tt.want)
+			}
+		})
+	}
+} // Test_htHashMentionRE()
 
 /* EoF */

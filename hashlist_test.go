@@ -6,13 +6,6 @@ Copyright © 2019, 2025  M.Watermann, 10247 Berlin, Germany
 */
 package hashtags
 
-import (
-	"fmt"
-	"os"
-	"reflect"
-	"testing"
-)
-
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
 // func htFilename() string {
@@ -21,42 +14,39 @@ import (
 // 	return fn
 // } // htFilename()
 
-func Test_newHashList(t *testing.T) {
-	fn1 := htFilename() + "1"
-	fn2 := htFilename() + "2"
-	defer func() {
-		os.Remove(fn1)
-		os.Remove(fn2)
-	}()
-
-	hl1, _ := newHashList(fn1)
-	hl2, _ := newHashList(fn2)
-
-	tests := []struct {
-		tName   string
-		fName   string
-		want    *tHashList
-		wantErr bool
-	}{
-		{" 1", fn1, hl1, false},
-		{" 2", fn2, hl2, false},
-
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.tName, func(t *testing.T) {
-			got, err := newHashList(tt.fName)
-			if (nil != err) != tt.wantErr {
-				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("%q: New() =\n{%v}\n>>>> want: >>>>\n{%v}",
-					tt.tName, got, tt.want)
-			}
-		})
-	}
-} // Test_newHashList()
+// func Test_newHashList(t *testing.T) {
+// 	fn1 := htFilename() + "1"
+// 	fn2 := htFilename() + "2"
+// 	defer func() {
+// 		os.Remove(fn1)
+// 		os.Remove(fn2)
+// 	}()
+// 	hl1, _ := newHashList(fn1)
+// 	hl2, _ := newHashList(fn2)
+// 	tests := []struct {
+// 		tName   string
+// 		fName   string
+// 		want    *tHashList
+// 		wantErr bool
+// 	}{
+// 		{" 1", fn1, hl1, false},
+// 		{" 2", fn2, hl2, false},
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.tName, func(t *testing.T) {
+// 			got, err := newHashList(tt.fName)
+// 			if (nil != err) != tt.wantErr {
+// 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			if !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("%q: New() =\n{%v}\n>>>> want: >>>>\n{%v}",
+// 					tt.tName, got, tt.want)
+// 			}
+// 		})
+// 	}
+// } // Test_newHashList()
 
 // func Test_THashList_equals(t *testing.T) {
 // 	hl1 := &tHashList{
@@ -117,47 +107,43 @@ func Test_newHashList(t *testing.T) {
 // 	}
 // } // Test_THashList_insert()
 
-func funcHashMentionRE(aText string) int {
-	matches := htHashMentionRE.FindAllStringSubmatch(aText, -1)
+// func funcHashMentionRE(aText string) int {
+// 	matches := htHashMentionRE.FindAllStringSubmatch(aText, -1)
+// 	println(fmt.Sprintf("%s: %v", aText, matches))
+// 	return len(matches)
+// } // funcHashMentionRE()
 
-	println(fmt.Sprintf("%s: %v", aText, matches))
-
-	return len(matches)
-} // funcHashMentionRE()
-
-func Test_htHashMentionRE(t *testing.T) {
-	t1 := `1blabla #HÄSCH1 blabla #hash2. Blabla`
-	t2 := `2blabla #hash2. Blabla "#hash3" blabla`
-	t3 := `\n>#KurzErklärt #Zensurheberrecht verhindern\n`
-	t4 := `4blabla **#HÄSCH1** blabla\n\n_#hash3_`
-	t5 := `5blabla&#39; **#hash2** blabla\n<a href="page#hash3">txt</a> #hash4`
-	t6 := `#hash3 blabla\n<a href="https://www.tagesspiegel.de/politik/martin-sonneborn-wirbt-fuer-moralische-integritaet-warum-ich-die-eu-kommission-ablehnen-werde/25263366.html#25263366">txt</a> #hash4`
-	t7 := `2blabla #hash2. @Dale_O'Leary "#hash3" @Dale_O’Leary blabla @Henry's`
-
-	tests := []struct {
-		name string
-		text string
-		want int
-	}{
-		{" 1", t1, 2},
-		{" 2", t2, 2},
-		{" 3", t3, 2},
-		{" 4", t4, 2},
-		{" 5", t5, 4},
-		{" 6", t6, 3},
-		{" 7", t7, 5},
-
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := funcHashMentionRE(tt.text); got != tt.want {
-				t.Errorf("%q: funcHashMentionRE() = %v, want %v",
-					tt.name, got, tt.want)
-			}
-		})
-	}
-} // Test_htHashMentionRE()
+// func Test_htHashMentionRE(t *testing.T) {
+// 	t1 := `1blabla #HÄSCH1 blabla #hash2. Blabla`
+// 	t2 := `2blabla #hash2. Blabla "#hash3" blabla`
+// 	t3 := `\n>#KurzErklärt #Zensurheberrecht verhindern\n`
+// 	t4 := `4blabla **#HÄSCH1** blabla\n\n_#hash3_`
+// 	t5 := `5blabla&#39; **#hash2** blabla\n<a href="page#hash3">txt</a> #hash4`
+// 	t6 := `#hash3 blabla\n<a href="https://www.tagesspiegel.de/politik/martin-sonneborn-wirbt-fuer-moralische-integritaet-warum-ich-die-eu-kommission-ablehnen-werde/25263366.html#25263366">txt</a> #hash4`
+// 	t7 := `2blabla #hash2. @Dale_O'Leary "#hash3" @Dale_O’Leary blabla @Henry's`
+// 	tests := []struct {
+// 		name string
+// 		text string
+// 		want int
+// 	}{
+// 		{" 1", t1, 2},
+// 		{" 2", t2, 2},
+// 		{" 3", t3, 2},
+// 		{" 4", t4, 2},
+// 		{" 5", t5, 4},
+// 		{" 6", t6, 3},
+// 		{" 7", t7, 5},
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if got := funcHashMentionRE(tt.text); got != tt.want {
+// 				t.Errorf("%q: funcHashMentionRE() = %v, want %v",
+// 					tt.name, got, tt.want)
+// 			}
+// 		})
+// 	}
+// } // Test_htHashMentionRE()
 
 // func Test_THashList_parseID(t *testing.T) {
 // 	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "#hash4"

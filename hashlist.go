@@ -8,13 +8,13 @@ package hashtags
 
 //lint:file-ignore ST1017 - I prefer Yoda conditions
 
-type (
-	// `tHashList` is a list of `#hashtags` and `@mentions`
-	// pointing to their respective sources (i.e. IDs).
-	tHashList struct {
-		hm tHashMap // the actual map list of sources/IDs
-	}
-)
+// type (
+// 	// `tHashList` is a list of `#hashtags` and `@mentions`
+// 	// pointing to their respective sources (i.e. IDs).
+// 	tHashList struct {
+// 		hm tHashMap // the actual map list of sources/IDs
+// 	}
+// )
 
 // --------------------------------------------------------------------------
 // // constructor function:

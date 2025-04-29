@@ -40,7 +40,7 @@ type (
 	// pointing to sources (i.e. IDs).
 	THashTags struct {
 		mtx     sync.RWMutex // safeguard against concurrent accesses
-		hl      tHashList    // the actual map list of sources/IDs
+		hm      *tHashMap    // the actual map list of sources/IDs
 		fn      string       // the filename to use
 		cc      tCountCache  // cache for `CountedList()`
 		changed uint32       // internal change flag
@@ -75,31 +75,6 @@ var (
 // --------------------------------------------------------------------------
 // constructor function:
 
-// `newHashList()` returns a new `tHashList` instance after loading
-// the given file.
-//
-// If the `aFilename` doesn't exist that is not considered an error.
-//
-// Parameters:
-//   - `aFilename`: The name of the file to use for loading and storing.
-//
-// Returns:
-//   - `*tHashList`: The new `tHashList` instance.
-//   - `error`: If there is an error, it will be from loading `aFilename`.
-func newHashList(aFilename string) (*tHashList, error) {
-	hl := &tHashList{
-		hm: *newHashMap(),
-	}
-
-	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
-		return hl, nil
-	}
-
-	_, err := hl.hm.load(aFilename) // err already wrapped
-
-	return hl, err
-} // newHashList()
-
 // `New()` returns a new `THashTags` instance after reading
 // the given file.
 //
@@ -114,18 +89,19 @@ func newHashList(aFilename string) (*tHashList, error) {
 //   - `*THashTags`: The new `THashTags` instance.
 //   - `error`: `nil` in case of success, otherwise an error.
 func New(aFilename string, aSafe bool) (*THashTags, error) {
-	hashlist, err := newHashList(aFilename)
-	if nil != err {
-		return nil, se.New(err, 2)
-	}
 
 	ht := &THashTags{
-		fn:   aFilename,
-		hl:   *hashlist,
+		hm:   newHashMap(),
 		safe: aSafe,
 	}
+	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
+		return ht, nil
+	}
+	ht.fn = aFilename
 
-	return ht, nil
+	_, err := ht.hm.load(aFilename) // err already wrapped
+
+	return ht, err
 } // New()
 
 // `HashMentionRE()` returns a compiled regular expression used to
@@ -152,7 +128,7 @@ func HashMentionRE() *regexp.Regexp {
 //   - `uint32`: The computed checksum.
 func (ht *THashTags) checksum() uint32 {
 	if 0 == atomic.LoadUint32(&ht.changed) {
-		atomic.StoreUint32(&ht.changed, ht.hl.hm.checksum())
+		atomic.StoreUint32(&ht.changed, ht.hm.checksum())
 	}
 
 	return atomic.LoadUint32(&ht.changed)
@@ -185,7 +161,7 @@ func (ht *THashTags) Clear() *THashTags {
 		defer ht.mtx.Unlock()
 	}
 
-	ht.hl.hm.clear()
+	ht.hm.clear()
 	atomic.StoreUint32(&ht.changed, 0)
 
 	return ht
@@ -200,34 +176,14 @@ func (ht *THashTags) Clear() *THashTags {
 // Returns:
 //   - `func()`: A closure that handles deferred storage operations.
 func (ht *THashTags) deferredStore() func() {
-	oldCRC := ht.hl.hm.checksum()
+	oldCRC := ht.hm.checksum()
 
 	return func() {
 		if oldCRC != atomic.LoadUint32(&ht.changed) {
-			go ht.hl.hm.store(ht.fn)
+			go ht.hm.store(ht.fn)
 		}
 	}
 } // deferredStore()
-
-// `equals()` compares the current list with another list.
-//
-// Parameters:
-//   - `aList`: The list to compare with.
-//
-// Returns:
-//   - `bool`: `true` if the lists are identical, `false` otherwise.
-func (ht *THashTags) equals(aList *THashTags) bool {
-	if nil == aList {
-		return (nil == ht)
-	}
-
-	if ht.safe {
-		ht.mtx.RLock()
-		defer ht.mtx.RUnlock()
-	}
-
-	return ht.hl.hm.equals(aList.hl.hm)
-} // equals()
 
 // `Filename()` returns the configured filename for reading/storing
 // this list's contents.
@@ -277,7 +233,7 @@ func (ht *THashTags) HashCount() int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.count(MarkHash)
+	return ht.hm.count(MarkHash)
 } // HashCount()
 
 // `HashLen()` returns the number of IDs stored for `aHash`.
@@ -300,7 +256,7 @@ func (ht *THashTags) HashLen(aHash string) int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.idxLen(MarkHash, aHash)
+	return ht.hm.idxLen(MarkHash, aHash)
 } // HashLen()
 
 // `HashList()` returns a list of IDs associated with `aHash`.
@@ -323,7 +279,7 @@ func (ht *THashTags) HashList(aHash string) []int64 {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.list(MarkHash, aHash)
+	return ht.hm.list(MarkHash, aHash)
 } // HashList()
 
 // `HashRemove()` deletes `aID` from the list of `aHash`.
@@ -361,7 +317,7 @@ func (ht *THashTags) IDlist(aID int64) []string {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.idList(aID)
+	return ht.hm.idList(aID)
 } // IDlist()
 
 // `IDparse()` checks whether `aText` associated with `aID` contains
@@ -410,7 +366,7 @@ func (ht *THashTags) IDremove(aID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	if ht.hl.hm.removeID(aID) {
+	if ht.hm.removeID(aID) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -443,7 +399,7 @@ func (ht *THashTags) IDrename(aOldID, aNewID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	if ht.hl.hm.renameID(aOldID, aNewID) {
+	if ht.hm.renameID(aOldID, aNewID) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -471,7 +427,7 @@ func (ht *THashTags) IDupdate(aID int64, aText []byte) bool {
 	}
 	defer ht.deferredStore()
 
-	rr := ht.hl.hm.removeID(aID)
+	rr := ht.hm.removeID(aID)
 	rp := ht.parseID(aID, aText)
 
 	if rr || rp {
@@ -504,7 +460,7 @@ func (ht *THashTags) insert(aDelim byte, aName string, aID int64) bool {
 	}
 	defer ht.deferredStore()
 
-	if ht.hl.hm.insert(aName, aID) {
+	if ht.hm.insert(aName, aID) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -523,7 +479,7 @@ func (ht *THashTags) Len() int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return len(ht.hl.hm)
+	return len(*ht.hm)
 } // Len()
 
 // `LenTotal()` returns the length of all `#hashtag` and `@mention`
@@ -537,7 +493,7 @@ func (ht *THashTags) LenTotal() int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.lenTotal()
+	return ht.hm.lenTotal()
 } // LenTotal()
 
 // `List()` returns a list of `#hashtags` and `@mentions` with their
@@ -551,13 +507,13 @@ func (ht *THashTags) List() TCountList {
 		defer ht.mtx.RUnlock()
 	}
 
-	if (ht.hl.hm.checksum() == ht.cc.crc) && (0 < len(ht.cc.cl)) {
+	if (ht.hm.checksum() == ht.cc.crc) && (0 < len(ht.cc.cl)) {
 		return ht.cc.cl
 	}
 
 	ht.cc.cl = nil
-	ht.cc.crc = ht.hl.hm.checksum()
-	ht.cc.cl = ht.hl.hm.countedList()
+	ht.cc.crc = ht.hm.checksum()
+	ht.cc.cl = ht.hm.countedList()
 
 	return ht.cc.cl
 } // List()
@@ -578,7 +534,7 @@ func (ht *THashTags) Load() (*THashTags, error) {
 	}
 	defer ht.deferredStore()
 
-	if _, err := ht.hl.hm.load(ht.fn); nil != err {
+	if _, err := ht.hm.load(ht.fn); nil != err {
 		return ht, err
 	}
 	atomic.StoreUint32(&ht.changed, 0)
@@ -620,7 +576,7 @@ func (ht *THashTags) MentionCount() int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.count(MarkMention)
+	return ht.hm.count(MarkMention)
 } // MentionCount()
 
 // `MentionLen()` returns the number of IDs stored for `aMention`.
@@ -643,7 +599,7 @@ func (ht *THashTags) MentionLen(aMention string) int {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.idxLen(MarkMention, aMention)
+	return ht.hm.idxLen(MarkMention, aMention)
 } // MentionLen()
 
 // `MentionList()` returns a list of IDs associated with `aMention`.
@@ -666,7 +622,7 @@ func (ht *THashTags) MentionList(aMention string) []int64 {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.list(MarkMention, aMention)
+	return ht.hm.list(MarkMention, aMention)
 } // MentionList()
 
 // `MentionRemove()` deletes `aID` from the list of `aMention`.
@@ -790,7 +746,7 @@ func (ht *THashTags) removeHM(aDelim byte, aName string, aID int64) bool {
 
 	defer ht.deferredStore()
 
-	if ht.hl.hm.removeHM(aDelim, aName, aID) {
+	if ht.hm.removeHM(aDelim, aName, aID) {
 		atomic.StoreUint32(&ht.changed, 0)
 		return true
 	}
@@ -837,7 +793,7 @@ func (ht *THashTags) Store() (int, error) {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.store(ht.fn)
+	return ht.hm.store(ht.fn)
 } // Store()
 
 // `String()` returns the whole list as a linefeed separated string.
@@ -850,7 +806,7 @@ func (ht *THashTags) String() string {
 		defer ht.mtx.RUnlock()
 	}
 
-	return ht.hl.hm.String()
+	return ht.hm.String()
 } // String()
 
 /* EoF */
