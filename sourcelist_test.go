@@ -160,13 +160,13 @@ func Test_tSourceList_rename(t *testing.T) {
 		want bool
 	}{
 
-		{"0", sl2, tArgs{1, 2}, false}, // Empty list
-		{"1", sl1, tArgs{1, 1}, false}, // Same IDs - no change
-		{"2", sl1, tArgs{2, 4}, true},  // Replace existing ID
-		{"3", sl1, tArgs{99, 5}, true}, // Old ID doesn't exist, new ID added
-		{"4", sl1, tArgs{1, 6}, true},  // Replace first element
-		{"5", sl1, tArgs{3, 7}, true},  // Replace last element
-		{"6", nil, tArgs{1, 2}, false}, // Nil list
+		{" 0", sl2, tArgs{1, 2}, false},  // Empty list
+		{" 1", sl1, tArgs{1, 1}, false},  // Same IDs - no change
+		{" 2", sl1, tArgs{2, 4}, true},   // Replace existing ID
+		{" 3", sl1, tArgs{99, 5}, false}, // Old ID doesn't exist
+		{" 4", sl1, tArgs{1, 6}, true},   // Replace first element
+		{" 5", sl1, tArgs{3, 7}, true},   // Replace last element
+		{" 6", nil, tArgs{1, 2}, false},  // Nil list
 
 		// TODO: Add test cases.
 	}

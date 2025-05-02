@@ -178,16 +178,13 @@ func (sl *tSourceList) remove(aID int64) bool {
 // Returns:
 //   - `bool`: `true` if the the renaming was successful, or `false` otherwise.
 func (sl *tSourceList) rename(aOldID, aNewID int64) bool {
-	if nil == sl {
-		return false
-	}
-	if (0 == len(*sl)) || (aOldID == aNewID) {
+	if (nil == sl) || (0 == len(*sl)) || (aOldID == aNewID) {
 		return false
 	}
 
 	idx := sl.findIndex(aOldID)
 	if 0 > idx { // ID not found
-		return sl.insert(aNewID)
+		return false // ignored according to specification
 	}
 
 	if !sl.insert(aNewID) {
