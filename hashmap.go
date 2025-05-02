@@ -397,8 +397,8 @@ func (hm *tHashMap) list(aDelim byte, aTag string) (rList []int64) {
 // `load()` reads the configured file returning the data structure
 // read from the file and a possible error condition.
 //
-// NOTE: An empty filename or the hash file doesn't exist that
-// is not considered an error.
+// NOTE: An empty filename or a non-existing hash file are not
+// considered an error.
 //
 // Parameters:
 //   - `aFilename`: Name of the file to load.
@@ -408,7 +408,7 @@ func (hm *tHashMap) list(aDelim byte, aTag string) (rList []int64) {
 //   - `error`: A possible I/O error.
 func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 	if aFilename = strings.TrimSpace(aFilename); "" == aFilename {
-		return nil, se.New(errors.New("empty filename"), 1)
+		return hm, nil
 	}
 
 	var (
@@ -419,19 +419,17 @@ func (hm *tHashMap) load(aFilename string) (*tHashMap, error) {
 	file, err = os.OpenFile(aFilename, os.O_RDONLY, 0) //#nosec G304
 	if nil != err {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return hm, nil
 		}
 		return nil, se.New(err, 5)
 	}
 	defer file.Close()
 
 	if UseBinaryStorage {
-		err = hm.loadBinary(file)
-	} else {
-		err = hm.loadText(file)
+		return hm, hm.loadBinary(file)
 	}
 
-	return hm, err
+	return hm, hm.loadText(file)
 } // load()
 
 // `loadBinary()` reads a file written by `store()` returning the modified
@@ -649,6 +647,9 @@ func (hm *tHashMap) removeHM(aDelim byte, aTag string, aID int64) bool {
 } // removeHM()
 
 // `renameID()` replaces all occurrences of `aOldID` by `aNewID`.
+//
+// If `aOldID` equals `aNewID`, or `aOldID` doesn't exist then they are
+// silently ignored (i.e. this method does nothing), returning `false`.
 //
 // Parameters:
 //   - `aOldID`: The ID to be replaced in this list.
