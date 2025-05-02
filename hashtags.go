@@ -375,8 +375,8 @@ func (ht *THashTags) IDremove(aID int64) bool {
 
 // `IDrename()` replaces all occurrences of `aOldID` by `aNewID`.
 //
-// If `aOldID` equals `aNewID` they are silently ignored (i.e. this
-// method does nothing), returning `false`.
+// If `aOldID` equals `aNewID`, or `aOldID` doesn't exist then they are
+// silently ignored (i.e. this method does nothing), returning `false`.
 //
 // This method is intended for rare cases when the ID of a document
 // needs to get changed.
@@ -388,7 +388,7 @@ func (ht *THashTags) IDremove(aID int64) bool {
 // Returns:
 //   - `bool`: `true` if `aOldID` was renamed, or `false` otherwise.
 func (ht *THashTags) IDrename(aOldID, aNewID int64) bool {
-	if aOldID == aNewID {
+	if (aOldID == aNewID) || (0 == len(*ht.hm)) {
 		return false
 	}
 
@@ -505,13 +505,16 @@ func (ht *THashTags) List() TCountList {
 		ht.mtx.RLock()
 		defer ht.mtx.RUnlock()
 	}
+	defer ht.deferredStore()
 
-	if (0 < len(ht.cc.cl)) && (ht.hm.checksum() == ht.cc.crc) {
+	currentCRC := ht.hm.checksum()
+	if (0 < len(ht.cc.cl)) && (currentCRC == ht.cc.crc) {
 		return ht.cc.cl
 	}
 
 	ht.cc.cl = nil
-	ht.cc.crc = ht.hm.checksum()
+	atomic.StoreUint32(&ht.changed, currentCRC)
+	ht.cc.crc = atomic.LoadUint32(&ht.changed)
 	ht.cc.cl = ht.hm.countedList()
 
 	return ht.cc.cl
@@ -524,7 +527,7 @@ func (ht *THashTags) List() TCountList {
 // with a call to [SetFilename].
 //
 // NOTE: An empty filename or the hash file doesn't exist that is not
-// considered an error but  keeps all data strictly in memory.
+// considered an error but keeps all data strictly in memory.
 //
 // Returns:
 //   - `*THashTags`: The updated list.
@@ -662,21 +665,21 @@ func (ht *THashTags) MentionRemove(aMention string, aID int64) bool {
 //   - `aText`: The text to parse for hashtags and mentions.
 //
 // Returns:
-//   - `bool`: `true` if `aID` was updated from `aText`, or `false` otherwise.
-func (ht *THashTags) parseID(aID int64, aText []byte) bool {
+//   - `rOK`: `true` if `aID` was updated from `aText`, or `false` otherwise.
+func (ht *THashTags) parseID(aID int64, aText []byte) (rOK bool) {
 	matches := htHashMentionRE.FindAllSubmatch(aText, -1)
 	if (nil == matches) || (0 == len(matches)) {
-		return false
+		return
 	}
 
 	var (
-		tag, match0 string
-		sub         [][]byte
-		result      bool
+		match0 []byte
+		sub    [][]byte
+		tag    []byte
 	)
 	for _, sub = range matches {
-		match0 = string(sub[0])
-		tag = string(sub[1])
+		match0 = sub[0]
+		tag = sub[1]
 
 		if '_' == tag[len(tag)-1] {
 			// '_' can be both, part of the hashtag and italic
@@ -707,12 +710,13 @@ func (ht *THashTags) parseID(aID int64, aText []byte) bool {
 				continue
 
 			case ';':
-				if htEntityRE.MatchString(match0) {
+				if htEntityRE.MatchString(string(match0)) {
 					// leave HTML entities as is
 					continue
 				}
-			}
-			if htHyphenRE.MatchString(tag) {
+			} // switch
+
+			if htHyphenRE.MatchString(string(tag)) {
 				continue
 			}
 		} else if MarkMention == tag[0] {
@@ -720,13 +724,14 @@ func (ht *THashTags) parseID(aID int64, aText []byte) bool {
 				// we assume that it's an email address
 				continue
 			}
-		}
-		if ht.insert(tag[0], tag, aID) {
-			result = true
-		}
-	}
+		} // if
 
-	return result
+		if ht.insert(tag[0], string(tag), aID) {
+			rOK = true // at least one change
+		}
+	} // for
+
+	return
 } // parseID()
 
 // `removeHM()` deletes `aID` from the list of `aName`.

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -21,6 +22,12 @@ func prepHT() *THashTags {
 
 	ht, _ := New(fn)
 	ht.safe = false // no locking wanted while testing
+	(*ht.hm) = make(tHashMap, baseListLen*2)
+	for j := range baseListLen {
+		h, m := "#hash"+strconv.Itoa(j), "@mention"+strconv.Itoa(j)
+		ht.hm.insert(h, int64(j*11))
+		ht.hm.insert(m, int64(j*11))
+	}
 
 	return ht
 } // prepHT()
@@ -57,6 +64,88 @@ func Test_New(t *testing.T) {
 	}
 } // Test_New()
 
+func Test_THashTags_IDparse(t *testing.T) {
+	ht := prepHT()
+
+	tests := []struct {
+		name string
+		id   int64
+		text []byte
+		want bool
+	}{
+		{"empty text", 1, []byte(""), false},
+		{"with hashtag", 2, []byte("This is a #test"), true},
+		{"with mention", 3, []byte("Hello @world"), true},
+		{"with both", 4, []byte("Hello @world and #test"), true},
+		{"with special chars", 5, []byte("Test with #HÄSCH1 and @Antoni_Comín"), true},
+		{"with markdown", 6, []byte("**#bold** and _@italic_"), true},
+		{"no tags", 7, []byte("Plain text without tags"), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ht.IDparse(tt.id, tt.text); got != tt.want {
+				t.Errorf("THashTags.IDparse() = '%v', want '%v'",
+					got, tt.want)
+			}
+
+			// If we expect tags to be found, verify they were added correctly
+			if tt.want {
+				tags := ht.IDlist(tt.id)
+				if 0 == len(tags) {
+					t.Errorf("Expected tags for ID %d, but found none",
+						tt.id)
+				}
+			}
+		})
+	}
+} // Test_THashTags_IDparse()
+
+func Test_THashTags_IDrename(t *testing.T) {
+	ht := prepHT()
+
+	// Setup test data with hashtags and mentions
+	id1, id2 := int64(101), int64(202)
+	ht.IDparse(id1, []byte("This is a #test and @user"))
+
+	tests := []struct {
+		name  string
+		oldID int64
+		newID int64
+		want  bool
+	}{
+		{"same IDs", id1, id1, false},
+		{"nonexistent oldID", int64(9999), id2, false},
+		{"valid rename", id1, id2, true},
+		{"already renamed", id1, id2, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ht.IDrename(tt.oldID, tt.newID); got != tt.want {
+				t.Errorf("THashTags.IDrename() = %v, want %v", got, tt.want)
+			}
+
+			// For valid rename, verify tags were properly transferred
+			if tt.want {
+				// Old ID should have no tags
+				oldTags := ht.IDlist(tt.oldID)
+				if len(oldTags) > 0 {
+					t.Errorf("Expected no tags for old ID %d, found %v",
+						tt.oldID, oldTags)
+				}
+
+				// New ID should have the tags
+				newTags := ht.IDlist(tt.newID)
+				if len(newTags) == 0 {
+					t.Errorf("Expected tags for new ID %d, but found none",
+						tt.newID)
+				}
+			}
+		})
+	}
+} // Test_THashTags_IDrename()
+
 func Test_THashTags_IDupdate(t *testing.T) {
 	ht := prepHT()
 	ht.safe = false
@@ -84,6 +173,115 @@ func Test_THashTags_IDupdate(t *testing.T) {
 		})
 	}
 } // Test_THashTags_IDupdate()
+
+func Test_THashTags_List(t *testing.T) {
+	ht := prepHT() // a list with 128 entries
+
+	// Add some test data
+	ht.HashAdd("#test1", 1)
+	ht.HashAdd("#test2", 2)
+	ht.HashAdd("#test2", 3)
+	ht.MentionAdd("@user1", 1)
+	ht.MentionAdd("@user2", 2)
+
+	tests := []struct {
+		name     string
+		wantLen  int
+		wantTags []string
+	}{
+		{"basic", 132, []string{"#test1", "#test2", "@user1", "@user2"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ht.List()
+
+			if len(got) != tt.wantLen {
+				t.Errorf("THashTags.List() returned %d items, want %d",
+					len(got), tt.wantLen)
+			}
+
+			// Check that all expected tags are present
+			foundTags := make(map[string]bool)
+			for _, item := range got {
+				foundTags[item.Tag] = true
+			}
+
+			for _, tag := range tt.wantTags {
+				if !foundTags[tag] {
+					t.Errorf("THashTags.List() missing expected tag %q", tag)
+				}
+			}
+
+			// Check that #test2 has count of 2
+			for _, item := range got {
+				if item.Tag == "#test2" && item.Count != 2 {
+					t.Errorf("Tag #test2 has count %d, want 2", item.Count)
+				}
+			}
+		})
+	}
+} // Test_THashTags_List()
+
+func Test_THashTags_Load(t *testing.T) {
+	// Create a temporary directory for test files
+	testDir := t.TempDir()
+
+	// Create a valid file with some data
+	validFile := filepath.Join(testDir, ".valid.db")
+	ht0, _ := New(validFile)
+	ht0.safe = false
+	ht0.HashAdd("#test1", 101)
+	ht0.HashAdd("#test2", 102)
+	ht0.MentionAdd("@user1", 201)
+	ht0.Store()
+
+	// Create an empty instance pointing to the same file
+	ht1, _ := New(validFile)
+	ht1.safe = false
+
+	// Create an instance with invalid filename
+	invalidFile := filepath.Join(testDir, "nonexistent", "invalid.db")
+	ht2, _ := New(invalidFile)
+	ht2.safe = false
+	ht3, _ := New("")
+	ht3.safe = false
+
+	tests := []struct {
+		name    string
+		ht      *THashTags
+		wantErr bool
+	}{
+		{"valid file", ht1, false},
+		{"invalid file", ht2, false},
+		{"empty filename", ht3, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := tc.ht.Load()
+			if (err != nil) != tc.wantErr {
+				t.Errorf("THashTags.Load() error = '%v', wantErr '%v'",
+					err, tc.wantErr)
+				return
+			}
+
+			if !tc.wantErr {
+				if got == nil {
+					t.Error("THashTags.Load() returned nil, want non-nil THashTags")
+					return
+				}
+
+				if tc.name == "valid file" {
+					// Check that data was loaded correctly
+					if got.HashLen("#test1") != 1 || got.HashLen("#test2") != 1 || got.MentionLen("@user1") != 1 {
+						t.Errorf("THashTags.Load() didn't load expected data")
+					}
+				}
+			}
+		})
+	}
+} // Test_THashTags_Load()
 
 func Test_THashTags_parseID(t *testing.T) {
 	hash1, hash2, hash3, hash4 := "#HÄSCH1", "#hash2", "#hash3", "#hash4"
