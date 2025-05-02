@@ -506,7 +506,7 @@ func (ht *THashTags) List() TCountList {
 		defer ht.mtx.RUnlock()
 	}
 
-	if (ht.hm.checksum() == ht.cc.crc) && (0 < len(ht.cc.cl)) {
+	if (0 < len(ht.cc.cl)) && (ht.hm.checksum() == ht.cc.crc) {
 		return ht.cc.cl
 	}
 

@@ -517,7 +517,7 @@ func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 		return nil, se.New(err, 8)
 	}
 
-	result := newHashMap()
+	hm := newHashMap()
 	var (
 		key  string
 		sArr []string
@@ -527,12 +527,12 @@ func loadBinaryStrings(aFile *os.File) (*tHashMap, error) {
 	for key, sArr = range decodedMap {
 		for _, str := range sArr {
 			if i64, err = strconv.ParseInt(str, 16, 64); nil == err {
-				result.insert(key, i64)
+				hm.insert(key, i64)
 			}
 		}
 	}
 
-	return result, nil
+	return hm, nil
 } // loadBinaryStrings()
 
 // `loadText()` parses a text file written by `store()` returning
